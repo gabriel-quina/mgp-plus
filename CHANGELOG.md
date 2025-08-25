@@ -7,9 +7,22 @@ Todas as mudanças notáveis neste projeto serão documentadas aqui.
 ## [Unreleased]
 
 ### ✨ Adicionado
-- Estrutura base do sistema com classe abstrata `Pessoa`
-- Cadastro e listagem de alunos:
-  - Model e migration de `Aluno`
-  - Seeder de exemplo
-  - Controller, rotas e views Blade
-  - Validação de dados no cadastro
+- Models e Controllers para `Student`, `School`, `City` e `State`
+- Requests de validação (`Store*` e `Update*`) para entidades principais
+- API Resources para serialização de dados
+- Migrations refatoradas para `states`, `cities`, `schools` e `students`
+- Factories e Seeders (`StateSeeder`, `StudentSeeder`) para popular dados
+- Novas views Blade para `students`, `schools` e `cities`
+- Arquivo de rotas `api.php` para endpoints REST
+
+### 🔧 Alterado
+- `bootstrap/app.php` atualizado
+- `DatabaseSeeder.php` adaptado para novos seeders
+- `package.json` com ajustes de dependências
+- `routes/web.php` reorganizado para novas entidades
+
+### 🗑 Removido
+- Estrutura antiga de `Aluno` e `Pessoa`
+- Controllers, Models, Migrations e Seeders relacionados a `Aluno`
+- Views Blade de `alunos`
+
