@@ -8,6 +8,7 @@ Todas as mudanças notáveis neste projeto serão documentadas aqui.
 
 ### ✨ Adicionado
 - Models e Controllers para `Student`, `School`, `City` e `State`
+- Controllers específicos de API: `CityApiController`, `SchoolApiController`, `StateApiController`, `StudentApiController`
 - Requests de validação (`Store*` e `Update*`) para entidades principais
 - API Resources para serialização de dados
 - Migrations refatoradas para `states`, `cities`, `schools` e `students`
