@@ -2,25 +2,34 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $this->call([
+            // Catálogos territoriais
+            StateSeeder::class,
+            CitySeeder::class,
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+            // Catálogo escolar
+            GradeLevelSeeder::class,
+            WorkshopSeeder::class,
+            SchoolSeeder::class,
+
+            // Pessoas
+            StudentSeeder::class,
+            TeacherSeeder::class,
+
+            // 1) cria episódios (matrículas) — define quais anos existirão em cada escola
+            StudentEnrollmentSeeder::class,
+
+            // 2) cria turmas APENAS para anos/turnos/escolas que tenham matrículas
+            ClassroomSeeder::class,
+
+            RbacSeeder::class,
+            MasterUserSeeder::class,
         ]);
-
-        $this->call(StudentSeeder::class);
-        $this->call(StateSeeder::class);
     }
 }

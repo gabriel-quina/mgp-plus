@@ -1,17 +1,27 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Dashboard') }}
-        </h2>
-    </x-slot>
+@extends('layouts.app')
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900 dark:text-gray-100">
-                    {{ __("You're logged in!") }}
-                </div>
+@section('title', 'Dashboard')
+
+@section('content')
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h1 class="h4 mb-2">Dashboard</h1>
+
+            <div class="text-muted">
+                Você está logado como:
+                <strong>{{ auth()->user()->name }}</strong>
             </div>
+
+            <div class="mt-2">
+                Identificador:
+                <strong>{{ auth()->user()->email ?? auth()->user()->cpf }}</strong>
+            </div>
+
+            @if (auth()->user()->is_master)
+                <div class="alert alert-dark mt-3 mb-0">
+                    Modo Master ativo.
+                </div>
+            @endif
         </div>
     </div>
-</x-app-layout>
+@endsection

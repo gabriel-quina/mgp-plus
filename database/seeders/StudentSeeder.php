@@ -2,9 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\City;
-use App\Models\School;
-use App\Models\State;
 use App\Models\Student;
 use Illuminate\Database\Seeder;
 
@@ -12,18 +9,15 @@ class StudentSeeder extends Seeder
 {
     public function run(): void
     {
-        $schools = School::query()->inRandomOrder()->get();
+        // Gera um conjunto enxuto de alunos para testar a malha:
+        // ~ 120 alunos no total (ajuste se quiser)
+        $targetTotal = 120;
 
-        if ($schools->isEmpty()) {
-            $state = State::query()->first() ?? State::factory()->create(['name' => 'São Paulo', 'uf' => 'SP']);
-            $city = City::factory()->create(['state_id' => $state->id]);
-            $schools = School::factory()->count(3)->create(['city_id' => $city->id]);
+        $existing = Student::count();
+        $toCreate = max(0, $targetTotal - $existing);
+
+        if ($toCreate > 0) {
+            Student::factory()->count($toCreate)->create();
         }
-
-        Student::factory()
-            ->count(100)
-            ->recycle($schools)
-            ->create();
     }
 }
-

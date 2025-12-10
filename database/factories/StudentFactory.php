@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\School;
 use App\Models\Student;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -12,14 +11,24 @@ class StudentFactory extends Factory
 
     public function definition(): array
     {
-        $email = $this->faker->boolean(70) ? $this->faker->unique()->safeEmail() : null;
+        // monta nome "puro": primeiro nome + sobrenome
+        $first = $this->faker->firstName();   // sem títulos
+        $last  = $this->faker->lastName();
+
+        $name = trim("$first $last");
+
+        // redundante por segurança: remove qualquer prefixo indesejado que venha do faker
+        // (Sr, Sra, Dr, Dra, Prof, etc — com ou sem ponto, maiúsc/minúsc)
+        $name = preg_replace(
+            '/\b(Sr|Sra|Sr\.|Sra\.|Dr|Dra|Dr\.|Dra\.|Prof|Profa|Prof\.|Profa\.)\b\s*/iu',
+            '',
+            $name
+        );
 
         return [
-            'school_id' => School::factory(),
-            'name'      => $this->faker->name(),
-            'cpf'       => $this->faker->unique()->numerify('###########'),
-            'email'     => $email,
-            'birthdate' => $this->faker->dateTimeBetween('-22 years', '-8 years')->format('Y-m-d'),
+            'name' => $name,
+            // o school_id será definido no seeder com ->for($school)
+            // não setamos campos que não existem na tabela
         ];
     }
 }

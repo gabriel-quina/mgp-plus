@@ -1,36 +1,55 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="csrf-token" content="{{ csrf_token() }}">
+<!doctype html>
+<html lang="pt-BR">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+<head>
+    <meta charset="utf-8">
+    <title>@yield('title', 'Sistema Escolar')</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    {{-- Bootstrap 5 (CDN) --}}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-        <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
-    </head>
-    <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
-            @include('layouts.navigation')
+    {{-- Ícones Bootstrap (opcional) --}}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 
-            <!-- Page Heading -->
-            @isset($header)
-                <header class="bg-white dark:bg-gray-800 shadow">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                        {{ $header }}
-                    </div>
-                </header>
-            @endisset
+    @stack('styles')
+</head>
 
-            <!-- Page Content -->
-            <main>
-                {{ $slot }}
-            </main>
-        </div>
-    </body>
+<body>
+    @auth
+        @php
+            $user = auth()->user();
+
+            // Equipe empresa + Master
+            $canSeeMasterNav =
+                $user->is_master ||
+                $user->hasRole('company_coordinator') ||
+                $user->hasRole('company_consultant') ||
+                !empty($user->role); // fallback opcional caso você use users.role
+        @endphp
+        @include('partials.navbar-account')
+        {{-- Navbar MASTER --}}
+        @if ($canSeeMasterNav)
+            @include('partials.navbar-master')
+        @endif
+
+        {{-- Navbar de contexto da ESCOLA --}}
+        @if (isset($schoolNav) && $schoolNav instanceof \App\Models\School)
+            @can('access-school', $schoolNav)
+                @include('partials.navbar-school', ['school' => $schoolNav])
+            @endcan
+        @endif
+    @endauth
+
+    <main class="container py-4">
+        @yield('content')
+    </main>
+
+    {{-- Bootstrap JS --}}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    @stack('scripts')
+</body>
+
 </html>

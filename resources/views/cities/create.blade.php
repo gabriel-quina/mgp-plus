@@ -1,43 +1,28 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <title>Nova Cidade</title>
-</head>
-<body>
-<h1>Nova Cidade</h1>
+@extends('layouts.app')
 
-@if ($errors->any())
-    <div style="color:#b91c1c;">
-        <ul>
-            @foreach ($errors->all() as $erro)
-                <li>{{ $erro }}</li>
-            @endforeach
-        </ul>
-    </div>
-@endif
+@section('content')
+<div class="container">
+    <h1 class="mb-4">🏙️ Nova Cidade</h1>
 
-<form action="{{ route('cities.store') }}" method="POST">
-    @csrf
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
-    <label>Nome da Cidade</label><br>
-    <input type="text" name="name" value="{{ old('name') }}" required><br><br>
+    <form action="{{ route('cities.store') }}" method="POST">
+        @csrf
+        @include('cities._form')
 
-    <label>Estado (UF)</label><br>
-    <select name="state_id" required>
-        <option value="">-- Selecione --</option>
-        @foreach ($states as $state)
-            <option value="{{ $state->id }}" @selected(old('state_id') == $state->id)>
-                {{ $state->name }} ({{ $state->uf }})
-            </option>
-        @endforeach
-    </select><br><br>
-
-    <button type="submit">Salvar</button>
-</form>
-
-<br>
-<a href="{{ route('cities.index') }}">← Voltar para a lista</a>
-</body>
-</html>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Salvar</button>
+            <a href="{{ route('cities.index') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+@endsection
 

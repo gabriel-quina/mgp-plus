@@ -1,47 +1,83 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <title>Escolas</title>
-    <style>
-        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-        th, td { border: 1px solid #e5e7eb; padding: 8px; }
-        th { background: #f3f4f6; text-align: left; }
-    </style>
-</head>
-<body>
-<h1>Escolas</h1>
+@extends('layouts.app')
 
-<a href="{{ route('schools.create') }}">+ Nova Escola</a>
+@section('content')
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h1 class="h3 mb-0">Escolas</h1>
+  <div class="d-flex gap-2">
+    @if (Route::has('schools.create'))
+      <a href="{{ route('schools.create') }}" class="btn btn-primary">Nova Escola</a>
+    @endif
+  </div>
+</div>
 
 @if (session('success'))
-    <div style="color: green; margin: 10px 0;">{{ session('success') }}</div>
+  <div class="alert alert-success">{{ session('success') }}</div>
+@endif
+@if ($errors->any())
+  <div class="alert alert-danger">
+    <ul class="mb-0">@foreach ($errors->all() as $e) <li>{{ $e }}</li> @endforeach</ul>
+  </div>
 @endif
 
-@if ($schools->isEmpty())
-    <p>Nenhuma escola encontrada.</p>
-@else
-    <table>
-        <thead>
-            <tr>
-                <th>Escola</th>
-                <th>Cidade</th>
-                <th>UF</th>
-                <th>CEP</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach ($schools as $school)
-                <tr>
-                    <td>{{ $school->name }}</td>
-                    <td>{{ $school->city->name ?? '-' }}</td>
-                    <td>{{ $school->city->state->uf ?? '-' }}</td>
-                    <td>{{ $school->cep ?? '-' }}</td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
+@php
+  // fallback se o controller não enviar $q
+  $q = isset($q) ? $q : request('q');
+@endphp
+
+<form method="GET" action="{{ route('schools.index') }}" class="row g-2 mb-3">
+  <div class="col-md-6">
+    <input type="text" name="q" class="form-control"
+           placeholder="Buscar por escola, cidade ou UF…" value="{{ $q }}">
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-outline-primary" type="submit">Buscar</button>
+  </div>
+  <div class="col-auto">
+    <a href="{{ route('schools.index') }}" class="btn btn-outline-secondary">Limpar</a>
+  </div>
+</form>
+
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead>
+      <tr>
+        <th style="width: 70px;">#</th>
+        <th>Escola</th>
+        <th>Cidade</th>
+        <th>UF</th>
+        <th style="width: 260px;">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      @forelse ($schools as $school)
+        <tr>
+          <td>{{ $school->id }}</td>
+          <td>{{ $school->name }}</td>
+          <td>{{ optional($school->city)->name ?? '—' }}</td>
+          <td>{{ optional(optional($school->city)->state)->uf ?? '—' }}</td>
+          <td class="d-flex flex-wrap gap-2">
+            @if (Route::has('schools.show'))
+              <a href="{{ route('schools.show', $school) }}" class="btn btn-sm btn-outline-primary">Ver</a>
+            @endif
+            @if (Route::has('schools.edit'))
+              <a href="{{ route('schools.edit', $school) }}" class="btn btn-sm btn-outline-secondary">Editar</a>
+            @endif
+          </td>
+        </tr>
+      @empty
+        <tr>
+          <td colspan="5" class="text-center text-muted py-4">Nenhuma escola encontrada.</td>
+        </tr>
+      @endforelse
+    </tbody>
+  </table>
+</div>
+
+{{-- Paginação (só exibe se o objeto suportar links()) --}}
+@if (is_object($schools) && method_exists($schools, 'links'))
+  <div class="mt-3">
+    {{ $schools->appends(['q' => $q])->links('pagination::bootstrap-5') }}
+  </div>
 @endif
-</body>
-</html>
+@endsection
 

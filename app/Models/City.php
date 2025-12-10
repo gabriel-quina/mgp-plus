@@ -23,5 +23,9 @@ class City extends Model
     {
         return $this->hasMany(School::class);
     }
-}
 
+    public function roleAssignments()
+    {
+        return $this->morphMany(\App\Models\RoleAssignment::class, 'scope');
+    }
+}

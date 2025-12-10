@@ -1,0 +1,157 @@
+<?php
+
+use App\Http\Controllers\CityController;
+use App\Http\Controllers\ClassroomController;
+use App\Http\Controllers\Classrooms\ChildController as ClassroomChildController;
+use App\Http\Controllers\Classrooms\ParentController as ClassroomParentController;
+use App\Http\Controllers\Classrooms\WorkshopClassController;
+use App\Http\Controllers\ClassroomStudentsController;
+use App\Http\Controllers\GradeLevelController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SchoolController;
+use App\Http\Controllers\SchoolWorkshopController;
+use App\Http\Controllers\StudentController;
+use App\Http\Controllers\StudentEnrollmentController;
+use App\Http\Controllers\TeacherCityAccessController;
+use App\Http\Controllers\TeacherController;
+use App\Http\Controllers\TeacherEngagementController;
+use App\Http\Controllers\TeachingAssignmentController;
+use App\Http\Controllers\WorkshopController;
+use App\Http\Controllers\WorkshopDistributionController;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/', [HomeController::class, 'index'])->name('home');
+
+Route::get('/dashboard', function () {
+    return view('dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::get('/api/escolas/buscar', [SchoolController::class, 'search'])
+    ->name('schools.search');
+
+Route::resource('alunos', StudentController::class)
+    ->only(['index', 'create', 'store', 'show', 'edit', 'update'])
+    ->parameters(['alunos' => 'student'])
+    ->names('students');
+
+// Professores (path PT-BR, names em inglês, binding {teacher})
+Route::resource('professores', TeacherController::class)
+    ->names('teachers')                       // teachers.index|create|store|show|edit|update|destroy
+    ->parameters(['professores' => 'teacher']);
+
+Route::resource('professores.vinculos', TeacherEngagementController::class)
+    ->except(['show']) // a página "show" é a do próprio professor
+    ->names('teacher-engagements')
+    ->parameters(['professores' => 'teacher', 'vinculos' => 'teacher_engagement']);
+
+Route::resource('professores.cidades', TeacherCityAccessController::class)
+    ->only(['create', 'store', 'destroy'])
+    ->names('teacher-city-access')
+    ->parameters(['professores' => 'teacher', 'cidades' => 'teacher_city_access']);
+
+Route::resource('professores.alocacoes', TeachingAssignmentController::class)
+    ->except(['index', 'show']) // gerido na página do professor
+    ->names('teaching-assignments')
+    ->parameters(['professores' => 'teacher', 'alocacoes' => 'teaching_assignment']);
+
+// Rotas de Cidades (URL em PT-BR, nomes em inglês)
+Route::resource('cidades', CityController::class)
+    ->names('cities')                    // cities.index, cities.create, ...
+    ->parameters(['cidades' => 'city']); // /cidades/{city}
+
+Route::resource('escolas', SchoolController::class)
+    ->names('schools')                    // cities.index, cities.create, ...
+    ->parameters(['escolas' => 'school']); // /cidades/{city}
+
+Route::resource('anos-escolares', GradeLevelController::class)
+    ->names('grade-levels')                    // cities.index, cities.create, ...
+    ->parameters(['anos-escolares' => 'grade-level']); // /cidades/{city}
+
+Route::resource('matriculas', StudentEnrollmentController::class)
+    ->names('enrollments')                    // cities.index, cities.create, ...
+    ->parameters(['matriculas' => 'enrollment']); // /cidades/{city}
+
+// Turmas (path PT-BR, names em inglês, evitando "classes")
+// Route::resource('turmas', ClassroomController::class)
+//     ->names('classrooms')
+//     ->parameters(['turmas' => 'classroom']);
+
+Route::resource('turmas', ClassroomController::class)
+    ->except(['show'])
+    ->names('classrooms')
+    ->parameters(['turmas' => 'classroom']);
+
+// Turma PAI
+Route::get('/turmas/{classroom}', [ClassroomParentController::class, 'show'])
+    ->whereNumber('classroom')
+    ->name('classrooms.show');
+
+// Subturma (child)
+Route::get('/subturmas/{classroom}', [ClassroomChildController::class, 'show'])
+    ->whereNumber('classroom')
+    ->name('subclassrooms.show');
+
+// Turmas > Alunos (PAI) — listagem DERIVADA (StudentYear)
+Route::get('/turmas/{classroom}/alunos', [ClassroomStudentsController::class, 'index'])
+    ->whereNumber('classroom')
+    ->name('classrooms.students.index');
+
+// Oficina dentro da turma PAI, sem subturma
+Route::get('/turmas/{classroom}/oficinas/{workshop}', [WorkshopClassController::class, 'show'])
+    ->whereNumber('classroom')
+    ->whereNumber('workshop')
+    ->name('classrooms.workshops.show');
+
+// Lista de subturmas de uma oficina da turma PAI
+Route::get('/turmas/{classroom}/oficinas/{workshop}/subturmas', [WorkshopClassController::class, 'indexSubclasses'])
+    ->whereNumber('classroom')
+    ->whereNumber('workshop')
+    ->name('classrooms.workshops.subclasses.index');
+
+// Turmas > Oficina > Subturmas (Preview / Aplicar)
+Route::get('/turmas/{classroom}/oficinas/{workshop}/preview', [WorkshopDistributionController::class, 'preview'])
+    ->whereNumber('classroom')
+    ->whereNumber('workshop')
+    ->name('classrooms.workshops.preview');
+
+Route::post('/turmas/{classroom}/oficinas/{workshop}/aplicar', [WorkshopDistributionController::class, 'apply'])
+    ->whereNumber('classroom')
+    ->whereNumber('workshop')
+    ->name('classrooms.workshops.apply');
+
+// Turmas > Oficina > Subturmas (Aplicar distribuição)
+Route::post('/turmas/{classroom}/oficinas/{workshop}/aplicar', [WorkshopDistributionController::class, 'apply'])
+    ->whereNumber('classroom')
+    ->whereNumber('workshop')
+    ->name('classrooms.workshops.apply');
+
+// Ajustar capacidade da oficina (sem criar subturmas)
+Route::post('/turmas/{classroom}/oficinas/{workshop}/ajustar-capacidade', [WorkshopDistributionController::class, 'adjustCapacity'])
+    ->whereNumber('classroom')
+    ->whereNumber('workshop')
+    ->name('classrooms.workshops.adjust_capacity');
+
+Route::view('/aulas/lancamento', 'classrooms.lessons.create')
+    ->name('classrooms.lessons.create');
+
+//
+// Workshops
+//
+Route::get('/oficinas', [WorkshopController::class, 'index'])->name('workshops.index');
+Route::get('/oficinas/nova', [WorkshopController::class, 'create'])->name('workshops.create');
+Route::post('/oficinas', [WorkshopController::class, 'store'])->name('workshops.store');
+Route::get('/oficinas/{workshop}/editar', [WorkshopController::class, 'edit'])->name('workshops.edit')->whereNumber('workshop');
+Route::put('/oficinas/{workshop}', [WorkshopController::class, 'update'])->name('workshops.update');
+
+// Escolas ↔ Oficinas
+Route::get('/escolas/{school}/workshops', [SchoolWorkshopController::class, 'edit'])->name('schools.workshops.edit');
+Route::post('/escolas/{school}/workshops', [SchoolWorkshopController::class, 'update'])->name('schools.workshops.update');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+require __DIR__.'/auth.php';

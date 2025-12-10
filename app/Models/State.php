@@ -13,5 +13,14 @@ class State extends Model
         'name',
         'uf',
     ];
-}
 
+    public function cities()
+    {
+        return $this->hasMany(City::class);
+    }
+
+    public function roleAssignments()
+    {
+        return $this->morphMany(RoleAssignment::class, 'scope');
+    }
+}
