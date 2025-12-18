@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Assessment;
 use App\Models\AssessmentGrade;
 use App\Models\Classroom;
+use App\Models\School;
 use App\Models\StudentEnrollment;
 use App\Models\Workshop;
 use App\Models\WorkshopAllocation;
@@ -20,11 +21,19 @@ class AssessmentController extends Controller
 
     /**
      * Lista avaliações de um grupo (Turma PAI ou Subturma) + oficina.
+     *
+     * Rota nova:
+     * GET /escolas/{school}/grupos/{classroom}/oficinas/{workshop}/avaliacoes
+     * name: schools.assessments.index
      */
-    public function index(Classroom $classroom, Workshop $workshop)
+    public function index(School $school, Classroom $classroom, Workshop $workshop)
     {
+        // Coerência de escopo: classroom precisa ser da escola da URL
+        abort_unless((int) $classroom->school_id === (int) $school->id, 404);
+
         $classroom->loadMissing('school', 'gradeLevels', 'workshops');
 
+        // Oficina vinculada a ESSA turma (pivot/classroom_workshop)
         $workshopForClass = $classroom->workshops->firstWhere('id', $workshop->id);
         abort_if(! $workshopForClass, 404);
 
@@ -36,28 +45,31 @@ class AssessmentController extends Controller
             ->orderByDesc('id')
             ->paginate(10);
 
-        if ($classroom->parent_classroom_id) {
-            $backUrl = route('subclassrooms.show', [
-                'parent' => $classroom->parent_classroom_id,
-                'classroom' => $classroom->id,
-            ]);
-        } else {
-            $backUrl = route('classrooms.workshops.show', [$classroom, $workshopForClass]);
-        }
+        // Back dentro do escopo escola (limpo e consistente)
+        $backUrl = route('schools.classrooms.show', [
+            'school' => $school->id,
+            'classroom' => $classroom->id,
+        ]);
 
         return view('assessments.index', [
             'classroom' => $classroom,
             'workshop' => $workshopForClass,
             'assessments' => $assessments,
             'backUrl' => $backUrl,
+            'school' => $school,
         ]);
     }
 
     /**
      * Tela de criação + lançamento de notas de uma avaliação.
+     *
+     * GET /escolas/{school}/grupos/{classroom}/oficinas/{workshop}/avaliacoes/criar
+     * name: schools.assessments.create
      */
-    public function create(Classroom $classroom, Workshop $workshop)
+    public function create(School $school, Classroom $classroom, Workshop $workshop)
     {
+        abort_unless((int) $classroom->school_id === (int) $school->id, 404);
+
         $classroom->loadMissing('school', 'gradeLevels', 'workshops');
 
         $workshopForClass = $classroom->workshops->firstWhere('id', $workshop->id);
@@ -69,14 +81,20 @@ class AssessmentController extends Controller
             'classroom' => $classroom,
             'workshop' => $workshopForClass,
             'enrollments' => $enrollments,
+            'school' => $school,
         ]);
     }
 
     /**
      * Salva avaliação + notas.
+     *
+     * POST /escolas/{school}/grupos/{classroom}/oficinas/{workshop}/avaliacoes
+     * name: schools.assessments.store
      */
-    public function store(Request $request, Classroom $classroom, Workshop $workshop)
+    public function store(Request $request, School $school, Classroom $classroom, Workshop $workshop)
     {
+        abort_unless((int) $classroom->school_id === (int) $school->id, 404);
+
         $classroom->loadMissing('school', 'gradeLevels', 'workshops');
 
         $workshopForClass = $classroom->workshops->firstWhere('id', $workshop->id);
@@ -88,7 +106,7 @@ class AssessmentController extends Controller
             'due_at' => ['nullable', 'date'],
             'scale_type' => ['required', 'in:points,concept'],
 
-            // 0–100 agora
+            // 0–100
             'max_points' => ['required', 'numeric', 'min:0', 'max:100'],
 
             'grades_points' => ['nullable', 'array'],
@@ -146,7 +164,7 @@ class AssessmentController extends Controller
                 $rows[] = [
                     'assessment_id' => $assessment->id,
                     'student_enrollment_id' => $enrollment->id,
-                    'score_points' => null, // sem conversão pra pontos
+                    'score_points' => null,
                     'score_concept' => $concept,
                     'notes' => null,
                     'created_at' => $now,
@@ -160,18 +178,33 @@ class AssessmentController extends Controller
         }
 
         return redirect()
-            ->route('classrooms.assessments.show', [$classroom, $workshopForClass, $assessment])
+            ->route('schools.assessments.show', [
+                'school' => $school->id,
+                'classroom' => $classroom->id,
+                'workshop' => $workshopForClass->id,
+                'assessment' => $assessment->id,
+            ])
             ->with('status', 'Avaliação lançada com sucesso!');
     }
 
     /**
      * Mostra os detalhes de uma avaliação (com notas).
+     *
+     * GET /escolas/{school}/grupos/{classroom}/oficinas/{workshop}/avaliacoes/{assessment}
+     * name: schools.assessments.show
      */
-    public function show(Classroom $classroom, Workshop $workshop, Assessment $assessment)
+    public function show(School $school, Classroom $classroom, Workshop $workshop, Assessment $assessment)
     {
+        abort_unless((int) $classroom->school_id === (int) $school->id, 404);
+
+        // Garante que a oficina pertence à turma
+        $classroom->loadMissing('workshops');
+        $workshopForClass = $classroom->workshops->firstWhere('id', $workshop->id);
+        abort_if(! $workshopForClass, 404);
+
         abort_if(
             $assessment->classroom_id !== $classroom->id ||
-            $assessment->workshop_id !== $workshop->id,
+            $assessment->workshop_id !== $workshopForClass->id,
             404
         );
 
@@ -182,23 +215,26 @@ class AssessmentController extends Controller
             'grades.enrollment.gradeLevel',
         ]);
 
-        // Stats via serviço
         $stats = $this->statsService->forAssessment($assessment);
 
-        // Ordena as notas por nome do aluno
         $grades = $assessment->grades
             ->sortBy(fn ($g) => mb_strtolower($g->enrollment->student->name));
 
-        $backUrl = route('classrooms.assessments.index', [$classroom, $workshop]);
+        $backUrl = route('schools.assessments.index', [
+            'school' => $school->id,
+            'classroom' => $classroom->id,
+            'workshop' => $workshopForClass->id,
+        ]);
 
         return view('assessments.show', [
             'assessment' => $assessment,
             'grades' => $grades,
             'classroom' => $classroom,
-            'workshop' => $workshop,
+            'workshop' => $workshopForClass,
             'backUrl' => $backUrl,
             'numericStats' => $stats['numeric'],
             'conceptStats' => $stats['concept'],
+            'school' => $school,
         ]);
     }
 
@@ -241,3 +277,4 @@ class AssessmentController extends Controller
             ->get();
     }
 }
+

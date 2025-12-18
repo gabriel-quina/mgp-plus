@@ -20,7 +20,7 @@
                 </div>
             </div>
 
-            <a href="{{ route('classrooms.assessments.index', [$classroom, $workshop]) }}"
+            <a href="{{ route('schools.assessments.index', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id]) }}"
                 class="btn btn-outline-secondary btn-sm">
                 Voltar
             </a>
@@ -36,7 +36,7 @@
             </div>
         @endif
 
-        <form action="{{ route('classrooms.assessments.store', [$classroom, $workshop]) }}" method="POST">
+        <form action="{{ route('schools.assessments.store', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id]) }}" method="POST">
             @csrf
 
             {{-- Card de dados da avaliação --}}

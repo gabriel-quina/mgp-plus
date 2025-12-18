@@ -13,12 +13,9 @@
             </small>
         </div>
 
-        {{-- Espaço para botão de "Novo aluno" no contexto da escola (futuro) --}}
-        {{--
         <a href="{{ route('schools.students.create', $school) }}" class="btn btn-primary">
             <i class="bi bi-plus-lg"></i> Novo aluno
         </a>
-        --}}
     </div>
 
     {{-- Filtros / busca --}}

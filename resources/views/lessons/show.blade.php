@@ -17,7 +17,7 @@
             </div>
 
             <div class="d-flex gap-2">
-                <a href="{{ route('classrooms.lessons.create', [$classroom, $workshop]) }}"
+                <a href="{{ route('schools.lessons.create', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id]) }}"
                     class="btn btn-outline-secondary btn-sm">
                     Lançar nova aula
                 </a>

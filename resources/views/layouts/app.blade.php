@@ -29,17 +29,6 @@
                 !empty($user->role); // fallback opcional caso você use users.role
         @endphp
         @include('partials.navbar-account')
-        {{-- Navbar MASTER --}}
-        @if ($canSeeMasterNav)
-            @include('partials.navbar-master')
-        @endif
-
-        {{-- Navbar de contexto da ESCOLA --}}
-        @if (isset($schoolNav) && $schoolNav instanceof \App\Models\School)
-            @can('access-school', $schoolNav)
-                @include('partials.navbar-school', ['school' => $schoolNav])
-            @endcan
-        @endif
     @endauth
 
     <main class="container py-4">

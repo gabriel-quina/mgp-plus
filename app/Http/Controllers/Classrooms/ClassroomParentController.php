@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Classroom;
 use App\Models\WorkshopAllocation;
 
-class ParentController extends Controller
+class ClassroomParentController extends Controller
 {
     /**
      * Exibe a TURMA PAI.

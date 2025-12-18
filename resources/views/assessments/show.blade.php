@@ -19,7 +19,7 @@
             </div>
 
             <div class="d-flex gap-2">
-                <a href="{{ route('classrooms.assessments.create', [$classroom, $workshop]) }}"
+                <a href="{{ route('schools.assessments.create', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id]) }}"
                     class="btn btn-outline-secondary btn-sm">
                     Lançar nova avaliação
                 </a>

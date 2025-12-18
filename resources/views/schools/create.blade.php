@@ -1,17 +1,21 @@
 @extends('layouts.app')
 
 @section('content')
-<h1 class="h3 mb-3">Nova Escola</h1>
+    <h1 class="h3 mb-3">
+        Nova Escola</h1>
 
-@if ($errors->any())
-  <div class="alert alert-danger">
-    <ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
-  </div>
-@endif
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                @foreach ($errors->all() as $e)
+                    <li>{{ $e }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
-<form method="POST" action="{{ route('schools.store') }}">
-  @csrf
-  @include('schools._form', ['submitLabel' => 'Criar'])
-</form>
+    <form method="POST" action="{{ route('schools.store') }}">
+        @csrf
+        @include('schools._form', ['submitLabel' => 'Criar'])
+    </form>
 @endsection
-

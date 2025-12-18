@@ -14,12 +14,21 @@ class StoreStudentRequest extends FormRequest
 
     public function rules(): array
     {
+        $ts = (string) $this->input('enrollment.transfer_scope', 'first');
+        $originId = (string) $this->input('enrollment.origin_school_id', '');
+
+        $needsOriginName = fn () => in_array($ts, ['internal', 'external'], true) && $originId === '';
+        $needsExternalCityState = fn () => $ts === 'external' && $originId === '';
+
         return [
-            // STUDENT (vem de student[...])
+            // STUDENT
             'student.name' => ['required', 'string', 'max:120'],
             'student.social_name' => ['nullable', 'string', 'max:120'],
-            'student.cpf' => ['nullable', 'string', 'max:20', 'unique:students,cpf'],
-            'student.email' => ['nullable', 'email', 'max:255', 'unique:students,email'],
+
+            // CPF/email NÃO têm unique aqui: a regra real é “matrícula ativa” (controller) + conflito de email (controller)
+            'student.cpf' => ['nullable', 'string', 'max:20'],
+            'student.email' => ['nullable', 'email', 'max:255'],
+
             'student.birthdate' => ['nullable', 'date'],
             'student.race_color' => ['nullable', 'string', 'max:20'],
             'student.has_disability' => ['nullable', 'boolean'],
@@ -30,7 +39,7 @@ class StoreStudentRequest extends FormRequest
             'student.emergency_contact_name' => ['nullable', 'string', 'max:120'],
             'student.emergency_contact_phone' => ['nullable', 'string', 'max:32'],
 
-            // ENROLLMENT (vem de enrollment[...]) — matrícula inicial
+            // ENROLLMENT
             'enrollment.destination_school_id' => ['required', 'integer', 'exists:schools,id'],
             'enrollment.academic_year' => ['required', 'integer', 'min:1900', 'max:9999'],
             'enrollment.grade_level_id' => ['required', 'integer', 'exists:grade_levels,id'],
@@ -38,11 +47,34 @@ class StoreStudentRequest extends FormRequest
             'enrollment.started_at' => ['nullable', 'date'],
             'enrollment.transfer_scope' => ['required', Rule::in(['first', 'internal', 'external'])],
 
-            // ORIGEM (dependente do escopo)
-            'enrollment.origin_school_id' => ['nullable', 'integer', 'exists:schools,id'],
-            'enrollment.origin_school_name' => ['nullable', 'string', 'max:150'],
-            'enrollment.origin_city_name' => ['nullable', 'string', 'max:120'],
-            'enrollment.origin_state_id' => ['nullable', 'integer', 'exists:states,id'],
+            // ORIGEM (ignora tudo se first)
+            'enrollment.origin_school_id' => ['exclude_if:enrollment.transfer_scope,first', 'nullable', 'integer', 'exists:schools,id'],
+
+            // Se não selecionou escola por ID, precisa informar o nome (para criar histórica se necessário)
+            'enrollment.origin_school_name' => [
+                'exclude_if:enrollment.transfer_scope,first',
+                'nullable',
+                'string',
+                'max:150',
+                Rule::requiredIf($needsOriginName),
+            ],
+
+            // Externa sem ID: precisa cidade/estado para criar a escola histórica corretamente
+            'enrollment.origin_city_name' => [
+                'exclude_if:enrollment.transfer_scope,first',
+                'nullable',
+                'string',
+                'max:120',
+                Rule::requiredIf($needsExternalCityState),
+            ],
+            'enrollment.origin_state_id' => [
+                'exclude_if:enrollment.transfer_scope,first',
+                'nullable',
+                'integer',
+                'exists:states,id',
+                Rule::requiredIf($needsExternalCityState),
+            ],
         ];
     }
 }
+

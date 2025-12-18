@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Classrooms;
 
 use App\Http\Controllers\Controller;
-use App\Models\{Classroom, Workshop, WorkshopAllocation};
+use App\Models\Classroom;
+use App\Models\Workshop;
+use App\Models\WorkshopAllocation;
 
 class WorkshopClassController extends Controller
 {
@@ -40,10 +42,6 @@ class WorkshopClassController extends Controller
         // Capacidade no pivot da turma PAI + oficina
         $max = (int) ($workshopForClass->pivot->max_students ?? 0);
 
-        // ✅ Novo: precisamos do school para montar rotas schools.* (pedagógico agora é por escola)
-        $schoolId = (int) ($classroom->school_id ?? optional($classroom->school)->id);
-        abort_if(! $schoolId, 500); // se isso acontecer, seu Classroom está sem school_id
-
         return view('classrooms.workshops.group', [
             'pageTitle' => 'Oficina — '.$workshopForClass->name,
             'headerTitle' => 'Oficina — '.$workshopForClass->name,
@@ -75,30 +73,28 @@ class WorkshopClassController extends Controller
             'workshop' => $workshopForClass, // IMPORTANTE: com pivot carregado
             'enrollments' => $enrollments,
 
-            // Voltar → Turma PAI (MASTER)
+            // Voltar → Turma PAI
             'backUrl' => route('classrooms.show', $classroom),
 
-            // ✅ Pedagógico agora é no escopo da escola
-            'launchLessonUrl' => route('schools.lessons.create', [
-                'school' => $schoolId,
+            // Lançar aula / presença para a TURMA PAI + oficina
+            'launchLessonUrl' => route('classrooms.lessons.create', [
                 'classroom' => $classroom->id,
                 'workshop' => $workshopForClass->id,
             ]),
 
-            'lessonsIndexUrl' => route('schools.lessons.index', [
-                'school' => $schoolId,
+            // 🔹 Novo: histórico de aulas para esse grupo (PAI) + oficina
+            'lessonsIndexUrl' => route('classrooms.lessons.index', [
                 'classroom' => $classroom->id,
                 'workshop' => $workshopForClass->id,
             ]),
 
-            'launchAssessmentUrl' => route('schools.assessments.create', [
-                'school' => $schoolId,
+            // 🔹 Avaliações (assessments)
+            'launchAssessmentUrl' => route('classrooms.assessments.create', [
                 'classroom' => $classroom->id,
                 'workshop' => $workshopForClass->id,
             ]),
 
-            'assessmentsIndexUrl' => route('schools.assessments.index', [
-                'school' => $schoolId,
+            'assessmentsIndexUrl' => route('classrooms.assessments.index', [
                 'classroom' => $classroom->id,
                 'workshop' => $workshopForClass->id,
             ]),
@@ -107,6 +103,11 @@ class WorkshopClassController extends Controller
 
     /**
      * Lista as SUBTURMAS de uma oficina da TURMA PAI.
+     *
+     * Contexto:
+     * - Classroom PAI (parent_classroom_id = null)
+     * - Workshop vinculada à turma via pivot
+     * - Subturmas (children) com coluna workshop_id apontando para essa oficina
      *
      * Rota:
      * GET /turmas/{classroom}/oficinas/{workshop}/subturmas

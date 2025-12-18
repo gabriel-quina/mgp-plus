@@ -2,14 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreStudentRequest;
-use App\Http\Requests\UpdateStudentRequest;
-use App\Models\City;
-use App\Models\GradeLevel;
-use App\Models\School;
-use App\Models\State;
-use App\Models\Student;
-use App\Models\StudentEnrollment;
+use App\Http\Requests\{StoreStudentRequest, UpdateStudentRequest};
+use App\Models\{City, GradeLevel, School, State, Student, StudentEnrollment};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;

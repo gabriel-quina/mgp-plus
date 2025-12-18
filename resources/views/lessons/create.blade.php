@@ -36,7 +36,7 @@
             </div>
         @endif
 
-        <form action="{{ route('classrooms.lessons.store', [$classroom, $workshop]) }}" method="POST">
+        <form action="{{ route('schools.lessons.store', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id]) }}" method="POST">
             @csrf
 
             {{-- Dados da aula --}}

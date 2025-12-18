@@ -7,7 +7,7 @@ use App\Models\Classroom;
 use App\Models\StudentEnrollment;
 use App\Models\WorkshopAllocation;
 
-class ChildController extends Controller
+class ClassroomChildController extends Controller
 {
     /**
      * Exibe a SUBTURMA (child):

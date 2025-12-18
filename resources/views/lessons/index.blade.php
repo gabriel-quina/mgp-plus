@@ -19,7 +19,11 @@
             </div>
 
             <div class="d-flex gap-2">
-                <a href="{{ route('classrooms.lessons.create', [$classroom, $workshop]) }}"
+<a href="{{ route('schools.lessons.create', [
+    'school' => $school->id,
+    'classroom' => $classroom->id,
+    'workshop' => $workshop->id,
+]) }}"
                     class="btn btn-outline-secondary btn-sm">
                     Lançar nova aula
                 </a>
@@ -99,7 +103,7 @@
                                             @endif
                                         </td>
                                         <td class="text-end">
-                                            <a href="{{ route('classrooms.lessons.show', [$classroom, $workshop, $lesson]) }}"
+                                            <a href="{{ route('schools.lessons.show', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id, 'lesson' => $lesson->id]) }}"
                                                 class="btn btn-outline-primary btn-sm">
                                                 Ver presença
                                             </a>

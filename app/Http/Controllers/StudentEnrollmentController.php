@@ -1,224 +1,211 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Models;
 
-use App\Models\City;
-use App\Models\School;
-use App\Models\Student;
-use App\Models\StudentEnrollment;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
-class StudentEnrollmentController extends Controller
+class StudentEnrollment extends Model
 {
-    /** Listagem global de matrículas (com filtros do index.blade) */
-    public function index(Request $request)
+    use HasFactory;
+
+    protected $table = 'student_enrollments';
+
+    /**
+     * STATUS
+     * - pre_enrolled: pré-matrícula (gerada ao final do ano / renovação)
+     * - enrolled: matrícula efetivada (antes do início das aulas)
+     * - active: cursando (após início real / comparecimento)
+     * - demais: status terminais/administrativos
+     */
+    public const STATUS_PRE_ENROLLED = 'pre_enrolled';
+
+    public const STATUS_ENROLLED = 'enrolled';
+
+    public const STATUS_ACTIVE = 'active';
+
+    public const STATUS_COMPLETED = 'completed';
+
+    public const STATUS_FAILED = 'failed';
+
+    public const STATUS_TRANSFERRED = 'transferred';
+
+    public const STATUS_DROPPED = 'dropped';
+
+    public const STATUS_SUSPENDED = 'suspended';
+
+    /** TRANSFER SCOPE */
+    public const SCOPE_FIRST = 'first';
+
+    public const SCOPE_INTERNAL = 'internal';
+
+    public const SCOPE_EXTERNAL = 'external';
+
+    /** SHIFT */
+    public const SHIFT_MORNING = 'morning';
+
+    public const SHIFT_AFTERNOON = 'afternoon';
+
+    public const SHIFT_EVENING = 'evening';
+
+    protected $fillable = [
+        'student_id',
+        'school_id',          // destino
+        'grade_level_id',
+        'academic_year',
+        'shift',
+        'status',
+        'transfer_scope',
+        'origin_school_id',
+        'started_at',
+        'ended_at',
+    ];
+
+    protected $casts = [
+        'academic_year' => 'integer',
+        'started_at' => 'date',
+        'ended_at' => 'date',
+    ];
+
+    /* ================= Relações ================= */
+
+    public function student()
     {
-        $q = trim((string) $request->query('q', ''));
-        // ano padrão sempre = ano corrente
-        $yrParam = $request->query('year');
-        $yr = is_numeric($yrParam) ? (int) $yrParam : (int) now()->year;
-
-        $sc = $request->integer('school_id') ?: null;
-
-        $sh = $request->query('shift');
-        $sh = in_array($sh, ['morning', 'afternoon', 'evening'], true) ? $sh : null;
-
-        $st = $request->query('status');
-        $st = in_array($st, ['active', 'completed', 'failed', 'transferred', 'dropped', 'suspended'], true) ? $st : null;
-
-        // Vamos ordenar por nomes de tabelas relacionadas: juntamos pra ordenar,
-        // mas selecionamos apenas student_enrollments.* pra hidratar o model certinho.
-        $query = StudentEnrollment::query()
-            ->leftJoin('students', 'students.id', '=', 'student_enrollments.student_id')
-            ->leftJoin('schools', 'schools.id', '=', 'student_enrollments.school_id')
-            ->leftJoin('grade_levels', 'grade_levels.id', '=', 'student_enrollments.grade_level_id')
-            ->select('student_enrollments.*')
-            ->with(['student', 'school', 'gradeLevel']);
-
-        if ($q !== '') {
-            $cpfDigits = preg_replace('/\D+/', '', $q);
-            $query->where(function ($qq) use ($q, $cpfDigits) {
-                $qq->where('students.name', 'like', "%{$q}%")
-                    ->orWhere('students.social_name', 'like', "%{$q}%")
-                    ->orWhere('students.email', 'like', "%{$q}%");
-                if ($cpfDigits !== '') {
-                    $qq->orWhere('students.cpf', 'like', "%{$cpfDigits}%");
-                }
-            });
-        }
-
-        // filtros
-        $query->where('student_enrollments.academic_year', $yr); // sempre aplica ano corrente por padrão
-        if ($sc) {
-            $query->where('student_enrollments.school_id', $sc);
-        }
-        if ($sh) {
-            $query->where('student_enrollments.shift', $sh);
-        }
-        if ($st) {
-            $query->where('student_enrollments.status', $st);
-        }
-
-        // ordenação: Escola → Ano escolar → Nome
-        $query->orderBy('schools.name')
-            ->orderBy('grade_levels.sequence')   // se sua tabela tiver a coluna "order"
-            ->orderBy('grade_levels.name')    // fallback/empate
-            ->orderBy('students.name');
-
-        $enrollments = $query
-            ->paginate(20)
-            ->withQueryString();
-
-        $schoolsForFilter = School::orderBy('name')->pluck('name', 'id');
-
-        return view('enrollments.index', compact(
-            'enrollments',
-            'q', 'yr', 'sc', 'sh', 'st',
-            'schoolsForFilter'
-        ));
+        return $this->belongsTo(Student::class);
     }
 
-    /** Cria novo episódio (transferência / próxima matrícula) — top-level */
-    public function store(Request $request)
+    public function school() // destino
     {
-        $data = $request->validate([
-            'student_id' => ['required', 'integer', 'exists:students,id'],
-            'school_id' => ['required', 'integer', 'exists:schools,id'],        // DESTINO
-            'grade_level_id' => ['required', 'integer', 'exists:grade_levels,id'],
-            'academic_year' => ['required', 'integer', 'min:1900', 'max:9999'],
-            'shift' => ['nullable', Rule::in(['morning', 'afternoon', 'evening'])],
-            'started_at' => ['nullable', 'date'],
-            'transfer_scope' => ['required', Rule::in(['first', 'internal', 'external'])],
-
-            // ORIGEM
-            'origin_school_id' => ['nullable', 'integer', 'exists:schools,id'],
-            'origin_school_name' => ['nullable', 'string', 'max:150'],
-            'origin_city_name' => ['nullable', 'string', 'max:120'],
-            'origin_state_id' => ['nullable', 'integer', 'exists:states,id'], // padrão por ID
-        ]);
-
-        DB::transaction(function () use ($data) {
-            $student = Student::findOrFail($data['student_id']);
-            $dest = School::findOrFail($data['school_id']);
-
-            // Fecha episódio ativo quando não for "first"
-            $current = $student->currentEnrollment()->first();
-            if ($current && ($data['transfer_scope'] !== StudentEnrollment::SCOPE_FIRST)) {
-                $current->update([
-                    'status' => StudentEnrollment::STATUS_TRANSFERRED,
-                    'ended_at' => $data['started_at'] ?? now()->toDateString(),
-                ]);
-            }
-
-            $originId = $this->resolveOriginSchoolId($data['transfer_scope'], $data, $dest);
-
-            StudentEnrollment::create([
-                'student_id' => $student->id,
-                'school_id' => $dest->id,
-                'grade_level_id' => $data['grade_level_id'],
-                'academic_year' => $data['academic_year'],
-                'shift' => $data['shift'] ?? 'morning',
-                'status' => StudentEnrollment::STATUS_ACTIVE,
-                'transfer_scope' => $data['transfer_scope'],
-                'origin_school_id' => $originId,
-                'started_at' => $data['started_at'] ?? now()->toDateString(),
-                'ended_at' => null,
-            ]);
-        });
-
-        return redirect()->route('enrollments.index')->with('success', 'Matrícula criada.');
+        return $this->belongsTo(School::class);
     }
 
-    /** Atualiza status/datas (encerrar, suspender, etc.) */
-    public function update(Request $request, StudentEnrollment $enrollment)
+    public function originSchool()
     {
-        $data = $request->validate([
-            'status' => ['required', Rule::in([
-                StudentEnrollment::STATUS_ACTIVE,
-                StudentEnrollment::STATUS_COMPLETED,
-                StudentEnrollment::STATUS_FAILED,
-                StudentEnrollment::STATUS_TRANSFERRED,
-                StudentEnrollment::STATUS_DROPPED,
-                StudentEnrollment::STATUS_SUSPENDED,
-            ])],
-            'ended_at' => ['nullable', 'date'],
-        ]);
-
-        $enrollment->update($data);
-
-        return back()->with('success', 'Episódio atualizado.');
+        return $this->belongsTo(School::class, 'origin_school_id');
     }
 
-    public function destroy(StudentEnrollment $enrollment)
+    public function gradeLevel()
     {
-        $enrollment->delete();
-
-        return back()->with('success', 'Episódio removido.');
+        return $this->belongsTo(GradeLevel::class, 'grade_level_id');
     }
 
-    /* ================= Privados ================= */
+    /* ================= Scopes ================= */
 
-    protected function resolveOriginSchoolId(string $scope, array $enr, School $destSchool): ?int
+    /**
+     * "Cursando" de verdade.
+     * (Você pediu: cursando só após iniciar e o aluno comparecer.)
+     */
+    public function scopeActive($q)
     {
-        if (! empty($enr['origin_school_id'])) {
-            return (int) $enr['origin_school_id'];
-        }
-        if ($scope === StudentEnrollment::SCOPE_FIRST || $scope === 'first') {
-            return null;
-        }
-
-        $name = trim((string) ($enr['origin_school_name'] ?? ''));
-        if ($name === '') {
-            return null;
-        }
-
-        if ($scope === StudentEnrollment::SCOPE_INTERNAL || $scope === 'internal') {
-            return $this->findOrCreateHistoricalSchool($name, $destSchool->city_id)->id;
-        }
-
-        // EXTERNA: precisa de city + state_id (padronizado)
-        $cityName = trim((string) ($enr['origin_city_name'] ?? ''));
-        $stateId = (int) ($enr['origin_state_id'] ?? 0);
-        if ($cityName === '' || $stateId <= 0) {
-            return null; // validação já cobre, blindagem extra
-        }
-
-        $city = $this->findOrCreateCityByNameStateId($cityName, $stateId);
-
-        return $this->findOrCreateHistoricalSchool($name, $city->id)->id;
+        return $q->where('status', self::STATUS_ACTIVE)
+            ->whereNull('ended_at');
     }
 
-    protected function findOrCreateHistoricalSchool(string $name, int $cityId): School
+    /**
+     * Em andamento "administrativo" (pré/matriculado/cursando).
+     * Útil para listagens do ano atual que consideram pré-matrículas.
+     */
+    public function scopeOngoing($q)
     {
-        $norm = preg_replace('/\s+/', ' ', mb_strtolower(trim($name)));
-
-        $existing = School::query()
-            ->where('city_id', $cityId)
-            ->where('is_historical', true)
-            ->whereRaw('LOWER(TRIM(REPLACE(name, "  ", " "))) = ?', [$norm])
-            ->first();
-
-        return $existing ?: School::create([
-            'city_id' => $cityId,
-            'name' => $name,
-            'is_historical' => true,
-        ]);
+        return $q->whereIn('status', [
+            self::STATUS_PRE_ENROLLED,
+            self::STATUS_ENROLLED,
+            self::STATUS_ACTIVE,
+        ])
+            ->whereNull('ended_at');
     }
 
-    protected function findOrCreateCityByNameStateId(string $cityName, int $stateId): City
+    public function scopeForYear($q, int $year)
     {
-        $name = trim($cityName);
+        return $q->where('academic_year', $year);
+    }
 
-        $city = City::query()
-            ->where('state_id', $stateId)
-            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
-            ->first();
+    public function scopeForSchool($q, int $id)
+    {
+        return $q->where('school_id', $id);
+    }
 
-        return $city ?: City::create([
-            'state_id' => $stateId,
-            'name' => $name,
-        ]);
+    /* ================= Helpers / Accessors ================= */
+
+    public function getIsActiveAttribute(): bool
+    {
+        // Mantém compatibilidade: "is_active" = cursando
+        return $this->status === self::STATUS_ACTIVE && $this->ended_at === null;
+    }
+
+    public function getIsStudyingAttribute(): bool
+    {
+        // alias mais semântico para cursando
+        return $this->getIsActiveAttribute();
+    }
+
+    public function getIsPreEnrolledAttribute(): bool
+    {
+        return $this->status === self::STATUS_PRE_ENROLLED && $this->ended_at === null;
+    }
+
+    public function getIsEnrolledAttribute(): bool
+    {
+        return $this->status === self::STATUS_ENROLLED && $this->ended_at === null;
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return match ($this->status) {
+            self::STATUS_PRE_ENROLLED => 'Pré-matrícula',
+            self::STATUS_ENROLLED => 'Matriculado',
+            self::STATUS_ACTIVE => 'Cursando',
+            self::STATUS_COMPLETED => 'Concluída',
+            self::STATUS_FAILED => 'Reprovado',
+            self::STATUS_TRANSFERRED => 'Transferido',
+            self::STATUS_DROPPED => 'Evasão/Cancelada',
+            self::STATUS_SUSPENDED => 'Trancada',
+            default => ucfirst((string) $this->status),
+        };
+    }
+
+    public function getTransferScopeLabelAttribute(): string
+    {
+        return match ($this->transfer_scope) {
+            self::SCOPE_FIRST => 'Primeira matrícula',
+            self::SCOPE_INTERNAL => 'Transferência interna',
+            self::SCOPE_EXTERNAL => 'Transferência externa',
+            default => ucfirst((string) $this->transfer_scope),
+        };
+    }
+
+    public function getShiftLabelAttribute(): string
+    {
+        return match ($this->shift) {
+            self::SHIFT_MORNING => 'Manhã',
+            self::SHIFT_AFTERNOON => 'Tarde',
+            self::SHIFT_EVENING => 'Noite',
+            default => ucfirst((string) $this->shift),
+        };
+    }
+
+    /* ================= Utilitários ================= */
+
+    public static function allowedStatuses(): array
+    {
+        return [
+            self::STATUS_PRE_ENROLLED,
+            self::STATUS_ENROLLED,
+            self::STATUS_ACTIVE,
+            self::STATUS_COMPLETED,
+            self::STATUS_FAILED,
+            self::STATUS_TRANSFERRED,
+            self::STATUS_DROPPED,
+            self::STATUS_SUSPENDED,
+        ];
+    }
+
+    public static function ongoingStatuses(): array
+    {
+        return [
+            self::STATUS_PRE_ENROLLED,
+            self::STATUS_ENROLLED,
+            self::STATUS_ACTIVE,
+        ];
     }
 }
