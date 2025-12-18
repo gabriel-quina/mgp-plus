@@ -9,6 +9,8 @@
 
     /**
      * UI-only: escopo “em atuação”.
+     * Persistimos em sessão via middleware (acting_scope / acting_school_id / acting_role),
+     * mas mantemos compatibilidade com querystring (?scope=...&school_id=...&acting_role=...).
      * Persistimos em sessão via middleware (acting_scope / acting_school_id).
      */
 
@@ -25,6 +27,23 @@
     }
 
     // 2) Querystring para alternar escopo: ?scope=company ou ?scope=school:ID
+    $scopeFromQuery = request('scope'); // ex.: 'company' | 'school:12' | 'school' | null
+    $schoolIdFromQuery = request('school_id');
+    $roleFromQuery = request('acting_role');
+
+    // Compatibilidade: aceita tanto ?scope=school:ID quanto ?scope=school&school_id=ID
+    $parsedScopeFromQuery = $scopeFromQuery;
+    $parsedSchoolIdFromQuery = $schoolIdFromQuery;
+
+    if (is_string($scopeFromQuery) && str_starts_with($scopeFromQuery, 'school:')) {
+        $parsedScopeFromQuery = 'school';
+        $parsedSchoolIdFromQuery = str_replace('school:', '', $scopeFromQuery);
+    }
+
+    // 3) Sessão (persistida pelo middleware).
+    $actingScope = $actingScope ?? session('acting_scope');        // 'company' | 'school' | null
+    $actingSchoolId = $actingSchoolId ?? session('acting_school_id'); // int|null
+    $actingRole = $actingRole ?? session('acting_role');          // string|null
     $scopeFromQuery = request('scope'); // ex.: 'company' | 'school:12' | null
     $schoolIdFromQuery = request('school_id');
 
@@ -42,6 +61,10 @@
         $resolvedScope = 'school';
     } elseif ($actingScope === 'company') {
         $resolvedScope = 'company';
+    } elseif ($parsedScopeFromQuery === 'school') {
+        $resolvedScope = 'school';
+        $actingSchoolId = (int) $parsedSchoolIdFromQuery;
+    } elseif ($parsedScopeFromQuery === 'company') {
     } elseif (is_string($scopeFromQuery) && str_starts_with($scopeFromQuery, 'school:')) {
         $resolvedScope = 'school';
         $actingSchoolId = (int) str_replace('school:', '', $scopeFromQuery);
@@ -62,6 +85,12 @@
         $resolvedScope = 'company';
     }
 
+    // Resolve o acting_role (prioridade: sessão > querystring)
+    if (!$actingRole && $roleFromQuery) {
+        $actingRole = $roleFromQuery;
+    }
+
+    // Valor selecionado e normalização de escola (apenas para exibir nome quando só temos o id)
     // Valor selecionado no select (para o master já abrir marcado)
     $selectedScopeValue = $resolvedScope === 'school' || $resolvedScope === 'company' ? $resolvedScope : '';
     $selectedSchoolId = $actingSchoolId;
@@ -84,6 +113,7 @@
         return [$sid, $sname];
     };
 
+    if (!$schoolName && $selectedSchoolId) {
     if (! $schoolName && $selectedSchoolId) {
         foreach ($scopeSchools as $key => $s) {
             [$sid, $sname] = $normalizeSchoolOption($s, $key);
@@ -219,7 +249,7 @@
                 @endif
             </ul>
 
-            {{-- Direita: seletor de escopo (MASTER) + menu do usuário --}}
+            {{-- Direita: indicador de escopo + menu do usuário --}}
             <div class="d-flex align-items-center gap-2">
                 {{-- Seletor de escopo (MASTER) - placeholder via GET (?scope=...) --}}
                 @if ($isMaster)
@@ -301,6 +331,10 @@
                         Escola{{ $schoolName ? " — {$schoolName}" : ($actingSchoolId ? " — #{$actingSchoolId}" : '') }}
                     @else
                         —
+                    @endif
+
+                    @if ($actingRole)
+                        <span class="ms-1">— {{ $actingRole }}</span>
                     @endif
                 </span>
 
