@@ -9,9 +9,8 @@
 
     /**
      * UI-only: escopo “em atuação”.
-     * Persistimos em sessão via middleware (acting_scope / acting_school_id / acting_role),
-     * mas mantemos compatibilidade com querystring (?scope=...&school_id=...&acting_role=...).
-     * Persistimos em sessão via middleware (acting_scope / acting_school_id).
+     * Persistimos em sessão via middleware (acting_scope / acting_school_id),
+     * mas mantemos compatibilidade com querystring (?scope=...&school_id=...).
      */
 
     // 1) Se estiver dentro de /escolas/{school}/..., isso define o escopo como escola.
@@ -29,7 +28,6 @@
     // 2) Querystring para alternar escopo: ?scope=company ou ?scope=school:ID
     $scopeFromQuery = request('scope'); // ex.: 'company' | 'school:12' | 'school' | null
     $schoolIdFromQuery = request('school_id');
-    $roleFromQuery = request('acting_role');
 
     // Compatibilidade: aceita tanto ?scope=school:ID quanto ?scope=school&school_id=ID
     $parsedScopeFromQuery = $scopeFromQuery;
@@ -39,13 +37,6 @@
         $parsedScopeFromQuery = 'school';
         $parsedSchoolIdFromQuery = str_replace('school:', '', $scopeFromQuery);
     }
-
-    // 3) Sessão (persistida pelo middleware).
-    $actingScope = $actingScope ?? session('acting_scope');        // 'company' | 'school' | null
-    $actingSchoolId = $actingSchoolId ?? session('acting_school_id'); // int|null
-    $actingRole = $actingRole ?? session('acting_role');          // string|null
-    $scopeFromQuery = request('scope'); // ex.: 'company' | 'school:12' | null
-    $schoolIdFromQuery = request('school_id');
 
     // 3) Sessão (persistida pelo middleware).
     $actingScope = $actingScope ?? session('acting_scope');        // 'company' | 'school' | null
@@ -64,7 +55,6 @@
     } elseif ($parsedScopeFromQuery === 'school') {
         $resolvedScope = 'school';
         $actingSchoolId = (int) $parsedSchoolIdFromQuery;
-    } elseif ($parsedScopeFromQuery === 'company') {
     } elseif (is_string($scopeFromQuery) && str_starts_with($scopeFromQuery, 'school:')) {
         $resolvedScope = 'school';
         $actingSchoolId = (int) str_replace('school:', '', $scopeFromQuery);
@@ -85,14 +75,7 @@
         $resolvedScope = 'company';
     }
 
-    // Resolve o acting_role (prioridade: sessão > querystring)
-    if (!$actingRole && $roleFromQuery) {
-        $actingRole = $roleFromQuery;
-    }
-
-    // Valor selecionado e normalização de escola (apenas para exibir nome quando só temos o id)
-    // Valor selecionado no select (para o master já abrir marcado)
-    $selectedScopeValue = $resolvedScope === 'school' || $resolvedScope === 'company' ? $resolvedScope : '';
+    // Normalização de escola (apenas para exibir nome quando só temos o id)
     $selectedSchoolId = $actingSchoolId;
 
     $normalizeSchoolOption = function ($schoolOption, $key) {
@@ -113,7 +96,6 @@
         return [$sid, $sname];
     };
 
-    if (!$schoolName && $selectedSchoolId) {
     if (! $schoolName && $selectedSchoolId) {
         foreach ($scopeSchools as $key => $s) {
             [$sid, $sname] = $normalizeSchoolOption($s, $key);
@@ -251,78 +233,6 @@
 
             {{-- Direita: indicador de escopo + menu do usuário --}}
             <div class="d-flex align-items-center gap-2">
-                {{-- Seletor de escopo (MASTER) - placeholder via GET (?scope=...) --}}
-                @if ($isMaster)
-                    <form method="GET" action="{{ route('dashboard') }}" class="d-flex align-items-center gap-2"
-                          id="acting-scope-form">
-                        <select name="scope" class="form-select form-select-sm" id="scope-select">
-                            <option value="company" @selected($selectedScopeValue === 'company')>
-                                Empresa (Rede)
-                            </option>
-                            <option value="school" @selected($selectedScopeValue === 'school')>
-                                Escola
-                            </option>
-                        </select>
-
-                        <select name="school_id" class="form-select form-select-sm {{ $selectedScopeValue === 'school' ? '' : 'd-none' }}"
-                                id="scope-school-select" @if ($selectedScopeValue !== 'school') disabled @endif>
-                            <option value="">Selecione a escola…</option>
-                            @foreach ($scopeSchools as $key => $s)
-                                @php [$sid, $sname] = $normalizeSchoolOption($s, $key); @endphp
-                                @if ($sid)
-                                    <option value="{{ $sid }}" @selected($selectedSchoolId === $sid)>
-                                        {{ $sname ?? "#{$sid}" }}
-                                    </option>
-                                @endif
-                            @endforeach
-                        </select>
-                    </form>
-
-                    <script>
-                        (() => {
-                            const form = document.getElementById('acting-scope-form');
-                            if (!form) return;
-
-                            const scopeSelect = document.getElementById('scope-select');
-                            const schoolSelect = document.getElementById('scope-school-select');
-
-                            const toggleSchoolSelect = () => {
-                                const showSchool = scopeSelect.value === 'school';
-                                schoolSelect.classList.toggle('d-none', !showSchool);
-                                schoolSelect.disabled = !showSchool;
-                            };
-
-                            const submitIfReady = (trigger) => {
-                                if (scopeSelect.value === 'company') {
-                                    form.submit();
-                                    return;
-                                }
-
-                                if (scopeSelect.value === 'school' && schoolSelect.value) {
-                                    form.submit();
-                                } else if (trigger === 'scope') {
-                                    schoolSelect.focus();
-                                }
-                            };
-
-                            toggleSchoolSelect();
-
-                            scopeSelect.addEventListener('change', () => {
-                                toggleSchoolSelect();
-                                submitIfReady('scope');
-                            });
-
-                            schoolSelect.addEventListener('change', () => {
-                                if (!schoolSelect.value) {
-                                    return;
-                                }
-
-                                submitIfReady('school');
-                            });
-                        })();
-                    </script>
-                @endif
-
                 {{-- Indicador de escopo --}}
                 <span class="badge bg-secondary">
                     @if ($resolvedScope === 'company')
@@ -331,10 +241,6 @@
                         Escola{{ $schoolName ? " — {$schoolName}" : ($actingSchoolId ? " — #{$actingSchoolId}" : '') }}
                     @else
                         —
-                    @endif
-
-                    @if ($actingRole)
-                        <span class="ms-1">— {{ $actingRole }}</span>
                     @endif
                 </span>
 

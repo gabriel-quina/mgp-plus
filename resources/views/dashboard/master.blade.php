@@ -7,6 +7,10 @@
         $selectedScope = old('scope', request('scope', 'company'));
         $selectedSchoolId = old('school_id', request('school_id'));
         $selectedRole = old('acting_role', request('acting_role'));
+        $actingRoles = [
+            'gestor_rede' => 'Gestor da rede',
+            'gestor_escola' => 'Gestor da escola',
+        ];
     @endphp
 
     <h1 class="h3 mb-2">Dashboard Master</h1>
@@ -47,9 +51,15 @@
 
                 <div class="col-md-4">
                     <label for="acting_role" class="form-label">Role em atuação</label>
-                    <input type="text" id="acting_role" name="acting_role" class="form-control"
-                           placeholder="gestor_escola" value="{{ $selectedRole }}">
-                    <div class="form-text">Exemplo: gestor_escola.</div>
+                    <select id="acting_role" name="acting_role" class="form-select">
+                        <option value="">Selecione a role</option>
+                        @foreach ($actingRoles as $roleValue => $roleLabel)
+                            <option value="{{ $roleValue }}" @selected($selectedRole === $roleValue)>
+                                {{ $roleLabel }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <div class="form-text">As duas opções têm o mesmo acesso no momento.</div>
                 </div>
 
                 <div class="col-12 d-flex justify-content-end">
