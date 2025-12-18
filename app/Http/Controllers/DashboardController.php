@@ -13,7 +13,11 @@ class DashboardController extends Controller
 
         // 1) Master
         if ($user->is_master) {
-            return view('dashboard.master', compact('user'));
+            $schools = School::query()
+                ->orderBy('name')
+                ->get();
+
+            return view('dashboard.master', compact('user', 'schools'));
         }
 
         // 2) Empresa (somente por roles globais reais)

@@ -8,8 +8,8 @@
 
     /**
      * UI-only: escopo “em atuação”.
-     * Por enquanto NÃO existe rota POST nem persistência em sessão: usamos querystring (?scope=...).
-     * Quando você implementar, basta trocar a origem para session('acting_scope') / session('acting_school_id').
+     * Por enquanto NÃO existe rota POST nem persistência em sessão: usamos querystring (?scope=...&school_id=...&acting_role=...).
+     * Quando você implementar, basta trocar a origem para session('acting_scope') / session('acting_school_id') / session('acting_role').
      */
 
     // 1) Se estiver dentro de /escolas/{school}/..., isso define o escopo como escola.
@@ -25,11 +25,14 @@
     }
 
     // 2) Querystring (placeholder) para alternar escopo: ?scope=company ou ?scope=school:ID
-    $scopeFromQuery = request('scope'); // ex.: 'company' | 'school:12' | null
+    $scopeFromQuery = request('scope'); // ex.: 'company' | 'school' | null
+    $schoolIdFromQuery = request('school_id');
+    $roleFromQuery = request('acting_role');
 
     // 3) Sessão (futuro): deixo aqui já pronto, mas você não precisa ter implementado ainda.
     $actingScope = session('acting_scope');        // 'company' | 'school' | null
     $actingSchoolId = session('acting_school_id'); // int|null
+    $actingRole = session('acting_role');          // string|null
 
     // Resolve o escopo atual (prioridade: rota escola > sessão > query > default master/company)
     $resolvedScope = null;
@@ -39,9 +42,9 @@
         $actingSchoolId = (int) $schoolId;
     } elseif ($actingScope) {
         $resolvedScope = $actingScope;
-    } elseif (is_string($scopeFromQuery) && str_starts_with($scopeFromQuery, 'school:')) {
+    } elseif ($scopeFromQuery === 'school') {
         $resolvedScope = 'school';
-        $actingSchoolId = (int) str_replace('school:', '', $scopeFromQuery);
+        $actingSchoolId = (int) $schoolIdFromQuery;
     } elseif ($scopeFromQuery === 'company') {
         $resolvedScope = 'company';
     }
@@ -56,10 +59,10 @@
         $resolvedScope = 'company';
     }
 
-    // Valor selecionado no select (para o master já abrir marcado)
-    $selectedScopeValue =
-        $resolvedScope === 'school' && $actingSchoolId ? "school:{$actingSchoolId}" :
-        ($resolvedScope === 'company' ? 'company' : '');
+    // Resolve o acting_role (prioridade: sessão > querystring)
+    if (!$actingRole && $roleFromQuery) {
+        $actingRole = $roleFromQuery;
+    }
 @endphp
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -185,44 +188,8 @@
                 @endif
             </ul>
 
-            {{-- Direita: seletor de escopo (MASTER) + menu do usuário --}}
+            {{-- Direita: indicador de escopo + menu do usuário --}}
             <div class="d-flex align-items-center gap-2">
-                {{-- Seletor de escopo (MASTER) - placeholder via GET (?scope=...) --}}
-                @if ($isMaster)
-                    <form method="GET" action="{{ route('dashboard') }}" class="d-flex align-items-center">
-                        <select name="scope" class="form-select form-select-sm" onchange="this.form.submit()">
-                            <option value="company" @selected($selectedScopeValue === 'company')>
-                                Empresa (Rede)
-                            </option>
-
-                            {{-- FIX: suporta $schools como Collection de Models OU pluck(id=>name) --}}
-                            @foreach (($schools ?? []) as $key => $s)
-                                @php
-                                    $sid = null;
-                                    $sname = null;
-
-                                    if (is_object($s)) {
-                                        $sid = $s->id ?? null;
-                                        $sname = $s->name ?? null;
-                                    } elseif (is_array($s)) {
-                                        $sid = $s['id'] ?? (is_numeric($key) ? (int) $key : null);
-                                        $sname = $s['name'] ?? ($s['label'] ?? null);
-                                    } else { // string (provável: pluck name,id => [id => name])
-                                        $sid = (is_numeric($key) && (int) $key > 0) ? (int) $key : null;
-                                        $sname = is_string($s) ? $s : null;
-                                    }
-                                @endphp
-
-                                @if ($sid)
-                                    <option value="school:{{ $sid }}" @selected($selectedScopeValue === "school:{$sid}")>
-                                        Escola — {{ $sname ?? "#{$sid}" }}
-                                    </option>
-                                @endif
-                            @endforeach
-                        </select>
-                    </form>
-                @endif
-
                 {{-- Indicador de escopo --}}
                 <span class="badge bg-secondary">
                     @if ($resolvedScope === 'company')
@@ -231,6 +198,10 @@
                         Escola{{ $schoolName ? " — {$schoolName}" : ($actingSchoolId ? " — #{$actingSchoolId}" : '') }}
                     @else
                         —
+                    @endif
+
+                    @if ($actingRole)
+                        <span class="ms-1">— {{ $actingRole }}</span>
                     @endif
                 </span>
 
@@ -264,4 +235,3 @@
         </div>
     </div>
 </nav>
-
