@@ -24,8 +24,18 @@ class StoreClassroomRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        $schoolFromRoute = $this->route('school');
+        $schoolId = $this->input('school_id');
+
+        if ($schoolFromRoute instanceof \App\Models\School) {
+            $schoolId = $schoolFromRoute->id;
+        } elseif (is_numeric($schoolFromRoute)) {
+            $schoolId = (int) $schoolFromRoute;
+        }
+
         $year = $this->input('academic_year');
         $this->merge([
+            'school_id'        => $schoolId,
             'academic_year'   => $year !== null && $year !== '' ? (int) $year : (int) date('Y'),
             'is_active'       => $this->boolean('is_active'),
             'grade_level_key' => $this->makeGradeLevelKey((array) $this->input('grade_level_ids', [])),
