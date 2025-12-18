@@ -16,8 +16,13 @@
             </div>
         </div>
 
-        {{-- Espaço futuro: botão do planner de grupos --}}
-        {{-- <a class="btn btn-outline-primary" href="#">Planejar grupos</a> --}}
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn btn-primary" href="{{ route('schools.classrooms.create', $school) }}">
+                Novo grupo
+            </a>
+            {{-- Espaço futuro: botão do planner de grupos --}}
+            {{-- <a class="btn btn-outline-primary" href="#">Planejar grupos</a> --}}
+        </div>
     </div>
 
     <form method="GET" class="card card-body mb-3">
