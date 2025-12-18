@@ -6,17 +6,29 @@
 <div class="card mb-3">
   <div class="card-header">Dados da Turma</div>
   <div class="card-body">
-    <div class="mb-3">
-      <label class="form-label">Escola</label>
-      <select name="school_id" class="form-select @error('school_id') is-invalid @enderror" required>
-        <option value="">-- Selecione --</option>
-        @foreach($schools as $id => $name)
-          <option value="{{ $id }}"
-            @selected(old('school_id', isset($classroom) ? $classroom->school_id : null) == $id)>{{ $name }}</option>
-        @endforeach
-      </select>
-      @error('school_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
-    </div>
+    @php
+      $showSchoolSelect = $showSchoolSelect ?? true;
+      $schoolInputValue = old('school_id', $fixedSchoolId ?? (isset($classroom) ? $classroom->school_id : null));
+    @endphp
+    @if($showSchoolSelect)
+      <div class="mb-3">
+        <label class="form-label">Escola</label>
+        <select name="school_id" class="form-select @error('school_id') is-invalid @enderror" required>
+          <option value="">-- Selecione --</option>
+          @foreach($schools as $id => $name)
+            <option value="{{ $id }}"
+              @selected($schoolInputValue == $id)>{{ $name }}</option>
+          @endforeach
+        </select>
+        @error('school_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+      </div>
+    @else
+      <input type="hidden" name="school_id" value="{{ $schoolInputValue }}">
+      <div class="mb-3">
+        <label class="form-label">Escola</label>
+        <div class="form-control-plaintext">{{ $schoolName ?? ($schools[$schoolInputValue] ?? 'Escola selecionada') }}</div>
+      </div>
+    @endif
 
     <div class="mb-3">
       <label class="form-label">Turma Pai</label>
