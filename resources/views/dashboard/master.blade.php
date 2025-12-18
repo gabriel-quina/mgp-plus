@@ -70,6 +70,11 @@
                     const isSchool = scopeSelect.value === 'school';
                     schoolField.classList.toggle('d-none', !isSchool);
                     schoolSelect.toggleAttribute('disabled', !isSchool);
+                    schoolSelect.toggleAttribute('required', isSchool);
+
+                    if (!isSchool) {
+                        schoolSelect.value = '';
+                    }
                 };
 
                 scopeSelect.addEventListener('change', toggleSchoolField);

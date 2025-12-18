@@ -25,9 +25,18 @@
     }
 
     // 2) Querystring (placeholder) para alternar escopo: ?scope=company ou ?scope=school:ID
-    $scopeFromQuery = request('scope'); // ex.: 'company' | 'school' | null
+    $scopeFromQuery = request('scope'); // ex.: 'company' | 'school' | 'school:12' | null
     $schoolIdFromQuery = request('school_id');
     $roleFromQuery = request('acting_role');
+
+    // Compatibilidade: aceita tanto ?scope=school:ID quanto ?scope=school&school_id=ID
+    $parsedScopeFromQuery = $scopeFromQuery;
+    $parsedSchoolIdFromQuery = $schoolIdFromQuery;
+
+    if (is_string($scopeFromQuery) && str_starts_with($scopeFromQuery, 'school:')) {
+        $parsedScopeFromQuery = 'school';
+        $parsedSchoolIdFromQuery = str_replace('school:', '', $scopeFromQuery);
+    }
 
     // 3) Sessão (futuro): deixo aqui já pronto, mas você não precisa ter implementado ainda.
     $actingScope = session('acting_scope');        // 'company' | 'school' | null
@@ -42,10 +51,10 @@
         $actingSchoolId = (int) $schoolId;
     } elseif ($actingScope) {
         $resolvedScope = $actingScope;
-    } elseif ($scopeFromQuery === 'school') {
+    } elseif ($parsedScopeFromQuery === 'school') {
         $resolvedScope = 'school';
-        $actingSchoolId = (int) $schoolIdFromQuery;
-    } elseif ($scopeFromQuery === 'company') {
+        $actingSchoolId = (int) $parsedSchoolIdFromQuery;
+    } elseif ($parsedScopeFromQuery === 'company') {
         $resolvedScope = 'company';
     }
 
