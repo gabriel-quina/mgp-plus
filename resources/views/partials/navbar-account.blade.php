@@ -5,11 +5,12 @@
 
     $isMaster = (bool) ($user?->is_master ?? false);
     $isCompany = $user && ($user->hasRole('company_coordinator') || $user->hasRole('company_consultant'));
+    $scopeSchools = collect($scopeSchools ?? ($schools ?? []));
 
     /**
      * UI-only: escopo “em atuação”.
-     * Por enquanto NÃO existe rota POST nem persistência em sessão: usamos querystring (?scope=...&school_id=...&acting_role=...).
-     * Quando você implementar, basta trocar a origem para session('acting_scope') / session('acting_school_id') / session('acting_role').
+     * Persistimos em sessão via middleware (acting_scope / acting_school_id / acting_role),
+     * mas mantemos compatibilidade com querystring (?scope=...&school_id=...&acting_role=...).
      */
 
     // 1) Se estiver dentro de /escolas/{school}/..., isso define o escopo como escola.
@@ -24,8 +25,8 @@
         $schoolName = is_object($school) ? ($school->name ?? null) : null;
     }
 
-    // 2) Querystring (placeholder) para alternar escopo: ?scope=company ou ?scope=school:ID
-    $scopeFromQuery = request('scope'); // ex.: 'company' | 'school' | 'school:12' | null
+    // 2) Querystring para alternar escopo: ?scope=company ou ?scope=school:ID
+    $scopeFromQuery = request('scope'); // ex.: 'company' | 'school:12' | 'school' | null
     $schoolIdFromQuery = request('school_id');
     $roleFromQuery = request('acting_role');
 
@@ -38,10 +39,10 @@
         $parsedSchoolIdFromQuery = str_replace('school:', '', $scopeFromQuery);
     }
 
-    // 3) Sessão (futuro): deixo aqui já pronto, mas você não precisa ter implementado ainda.
-    $actingScope = session('acting_scope');        // 'company' | 'school' | null
-    $actingSchoolId = session('acting_school_id'); // int|null
-    $actingRole = session('acting_role');          // string|null
+    // 3) Sessão (persistida pelo middleware).
+    $actingScope = $actingScope ?? session('acting_scope');        // 'company' | 'school' | null
+    $actingSchoolId = $actingSchoolId ?? session('acting_school_id'); // int|null
+    $actingRole = $actingRole ?? session('acting_role');          // string|null
 
     // Resolve o escopo atual (prioridade: rota escola > sessão > query > default master/company)
     $resolvedScope = null;
@@ -49,8 +50,10 @@
     if ($schoolId) {
         $resolvedScope = 'school';
         $actingSchoolId = (int) $schoolId;
-    } elseif ($actingScope) {
-        $resolvedScope = $actingScope;
+    } elseif ($actingScope === 'school' && $actingSchoolId) {
+        $resolvedScope = 'school';
+    } elseif ($actingScope === 'company') {
+        $resolvedScope = 'company';
     } elseif ($parsedScopeFromQuery === 'school') {
         $resolvedScope = 'school';
         $actingSchoolId = (int) $parsedSchoolIdFromQuery;
@@ -71,6 +74,39 @@
     // Resolve o acting_role (prioridade: sessão > querystring)
     if (!$actingRole && $roleFromQuery) {
         $actingRole = $roleFromQuery;
+    }
+
+    // Valor selecionado e normalização de escola (apenas para exibir nome quando só temos o id)
+    $selectedScopeValue = $resolvedScope === 'school' || $resolvedScope === 'company' ? $resolvedScope : '';
+    $selectedSchoolId = $actingSchoolId;
+
+    $normalizeSchoolOption = function ($schoolOption, $key) {
+        if (is_object($schoolOption)) {
+            return [$schoolOption->id ?? null, $schoolOption->name ?? null];
+        }
+
+        if (is_array($schoolOption)) {
+            $sid = $schoolOption['id'] ?? (is_numeric($key) ? (int) $key : null);
+            $sname = $schoolOption['name'] ?? ($schoolOption['label'] ?? null);
+
+            return [$sid, $sname];
+        }
+
+        $sid = (is_numeric($key) && (int) $key > 0) ? (int) $key : null;
+        $sname = is_string($schoolOption) ? $schoolOption : null;
+
+        return [$sid, $sname];
+    };
+
+    if (!$schoolName && $selectedSchoolId) {
+        foreach ($scopeSchools as $key => $s) {
+            [$sid, $sname] = $normalizeSchoolOption($s, $key);
+
+            if ($sid === $selectedSchoolId) {
+                $schoolName = $sname;
+                break;
+            }
+        }
     }
 @endphp
 
