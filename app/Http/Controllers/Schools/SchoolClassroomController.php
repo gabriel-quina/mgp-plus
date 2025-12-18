@@ -90,7 +90,10 @@ class SchoolClassroomController extends Controller
                 ->orderBy('name')
                 ->pluck('name', 'id'),
             'gradeLevels' => $this->gradeLevelsWithEnrollments($school),
-            'workshops' => $school->workshops()->orderBy('name')->pluck('name', 'id'),
+            'workshops' => $school->workshops()
+                ->select('workshops.id', 'workshops.name')
+                ->orderBy('workshops.name')
+                ->pluck('workshops.name', 'workshops.id'),
             'defaultYear' => (int) date('Y'),
         ]);
     }
@@ -115,7 +118,10 @@ class SchoolClassroomController extends Controller
 
         $classroom->gradeLevels()->sync($data['grade_level_ids']);
 
-        $allowedWorkshopIds = $school->workshops()->pluck('workshops.id')->all();
+        $allowedWorkshopIds = $school->workshops()
+            ->select('workshops.id')
+            ->pluck('workshops.id')
+            ->all();
         $workshopsPayload = collect($data['workshops'] ?? [])
             ->filter(fn ($row) => empty($row['id']) || in_array((int) $row['id'], $allowedWorkshopIds, true))
             ->values()
