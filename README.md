@@ -1,57 +1,77 @@
 # 🎓 MGP+ – Módulo de Gestão Pedagógica Plus
 
-**MGP+** é um sistema interno da **Uptake Education** desenvolvido para gerenciar oficinas pedagógicas aplicadas em escolas públicas. Ele permite organizar e acompanhar atividades como Robótica, Teatro, Inglês, Xadrez, entre outras, realizadas por professores capacitados em diferentes regiões do estado.
+**MGP+** é um sistema interno da **Uptake Education** para organizar oficinas pedagógicas em redes públicas: cadastro de cidades, escolas, turmas, professores, coordenações e alunos; criação e distribuição de oficinas; lançamento de presença e desempenho; acompanhamento descentralizado por coordenadores.
 
 ---
 
 ## 📚 Sobre o projeto
 
-MGP+ (Módulo de Gestão Pedagógica Plus) é uma aplicação web com foco em:
+A aplicação é um monolito Laravel focado em operações pedagógicas e administrativas:
 
-- Cadastro de cidades, escolas, professores, coordenadores e alunos
-- Organização de oficinas por região e escola
-- Lançamento de presença e desempenho dos alunos
-- Formação de turmas
-- Acompanhamento pedagógico descentralizado por coordenadores
-
-Este repositório é utilizado para fins internos e demonstração técnica da arquitetura do sistema.
+- Catálogos de cidades, escolas, professores, coordenadores e alunos.
+- Organização de oficinas por região/escola, alocação de professores e formação de turmas.
+- Matrículas e distribuição de alunos em oficinas, com acompanhamento de presenças e resultados.
+- Interfaces web renderizadas em Blade com navegação por papéis (master/rede e escola).
 
 ---
 
-## 🛠️ Tecnologias utilizadas
+## 🛠️ Tecnologias
 
 - PHP 8.2+
-- Laravel 11
+- **Laravel 12**
 - Laravel Breeze (Blade)
-- SQLite (para prototipagem)
-- Tailwind CSS
-- Vite
-- Composer & Artisan
-- Node.js
+- Blade + Bootstrap 5 (CDN) para UI; toolchain Vite/Tailwind disponível para assets
+- SQLite para prototipagem (suporta outros bancos configurando o `.env`)
+- Composer, Artisan, Node.js (Vite)
+- Pest para testes
 
 ---
 
-## ⚙️ Rodando localmente
+## ⚙️ Como rodar localmente
 
-> Requisitos: PHP, Composer, Node.js, SQLite
+> Requisitos: PHP 8.2+, Composer, Node.js 18+, SQLite 3 (ou outro banco configurado no `.env`).
 
 ```bash
 # Clonar o repositório
 git clone git@github.com:gabriel-quina/mgp-plus.git
 cd mgp-plus
 
-# Instalar dependências
+# Instalar dependências de back-end e front-end
 composer install
-npm install && npm run dev
+npm install
 
-# Configurar ambiente
+# Configurar variáveis de ambiente
 cp .env.example .env
 php artisan key:generate
-touch database/database.sqlite
 
-# Rodar as migrations
+# Banco SQLite para desenvolvimento rápido
+mkdir -p database
+touch database/database.sqlite
 php artisan migrate
 
-# Iniciar o servidor local
-php artisan serve
+# Servidores de aplicação e Vite (dois terminais). Use portas diferentes
+# para evitar conflito (o script do Vite está configurado para 8000).
+php artisan serve --port=8001
+npm run dev -- --port=8000
+# ou use o helper em um terminal para mudar apenas o backend:
+# ./start-dev.sh 0.0.0.0 8001
+```
+
+---
+
+## 🧪 Testes
+
+```bash
+php artisan test
+```
+
+---
+
+## 🧭 Estrutura de pastas (resumo)
+
+- `routes/web.php` e subpastas em `routes/web/*`: agrupamento de rotas por escopo (master e escola).
+- `app/Http/Controllers`: controllers REST e formulários (Requests) para recursos pedagógicos.
+- `app/Services`: regras de negócio mais ricas (distribuição de oficinas, alocações, etc.).
+- `resources/views`: Blade + Bootstrap 5 para dashboards, cadastros e formulários.
+- `database/migrations`: esquema relacional (turmas, oficinas, matrículas, presenças, etc.).
 
