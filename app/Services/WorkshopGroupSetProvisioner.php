@@ -219,9 +219,6 @@ class WorkshopGroupSetProvisioner
                 'child_classroom_id' => $group->id,
                 'workshop_id' => $workshop->id,
                 'student_enrollment_id' => $enrollment->id,
-            ], [
-                'is_locked' => false,
-                'note' => null,
             ]);
         }
     }
