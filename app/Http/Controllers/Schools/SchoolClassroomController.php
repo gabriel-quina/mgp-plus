@@ -20,7 +20,7 @@ class SchoolClassroomController extends Controller
         $sh = $request->get('shift');
 
         $classroomsQuery = Classroom::query()
-            ->with(['gradeLevels']) // segue o padrão do seu index MASTER
+            ->with(['gradeLevels', 'groupSet.gradeLevels']) // segue o padrão do seu index MASTER
             ->where('school_id', $school->id);
 
         if ($q !== '') {
