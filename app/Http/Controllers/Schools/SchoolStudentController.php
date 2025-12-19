@@ -14,13 +14,20 @@ class SchoolStudentController extends Controller
     {
         $search = request('q');
 
-        $enrollments = StudentEnrollment::query()
+        $baseQuery = StudentEnrollment::query()
             ->where('school_id', $school->id)
-            ->with(['student', 'gradeLevel'])
             ->when($search, function ($q) use ($search) {
                 $q->whereHas('student', fn ($qq) => $qq->where('name', 'like', "%{$search}%"));
-            })
-            ->latest('id')
+            });
+
+        $latestEnrollmentIds = (clone $baseQuery)
+            ->selectRaw('MAX(id) as id')
+            ->groupBy('student_id');
+
+        $enrollments = StudentEnrollment::query()
+            ->whereIn('id', $latestEnrollmentIds)
+            ->with(['student', 'gradeLevel'])
+            ->orderByDesc('id')
             ->paginate(20)
             ->withQueryString();
 

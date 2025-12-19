@@ -12,11 +12,16 @@ class Classroom extends Model
     protected $fillable = [
         'school_id',
         'parent_classroom_id',
+        'workshop_id',
+        'workshop_group_set_id',
+        'group_number',
         'name',
         'shift',
         'is_active',
         'academic_year',
         'grade_level_key',
+        'status',
+        'locked_at',
     ];
 
     protected $casts = [
@@ -28,6 +33,18 @@ class Classroom extends Model
     public function school()
     {
         return $this->belongsTo(School::class);
+    }
+
+    /** Oficina associada diretamente ao grupo (novo modelo explícito) */
+    public function workshop()
+    {
+        return $this->belongsTo(Workshop::class);
+    }
+
+    /** Conjunto de grupos de oficina (novo modelo explícito) */
+    public function groupSet()
+    {
+        return $this->belongsTo(WorkshopGroupSet::class, 'workshop_group_set_id');
     }
 
     /** Turma ↔ Anos (pivot: classroom_grade_level) */
@@ -127,5 +144,35 @@ class Classroom extends Model
         $base->when(! empty($outIds), fn ($q) => $q->whereNotIn('id', $outIds));
 
         return $base->when(! empty($inIds), fn ($q) => $q->orWhereIn('id', $inIds));
+    }
+
+    /**
+     * Verifica se há dados acadêmicos vinculados à turma (aulas ou avaliações).
+     */
+    public function hasAcademicData(): bool
+    {
+        return Lesson::query()->where('classroom_id', $this->id)->exists()
+            || Assessment::query()->where('classroom_id', $this->id)->exists();
+    }
+
+    /**
+     * Define locked_at quando existem dados acadêmicos.
+     * Retorna true se a turma foi (ou já estava) bloqueada.
+     */
+    public function lockIfHasAcademicData(): bool
+    {
+        if ($this->locked_at !== null) {
+            return true;
+        }
+
+        if (! $this->hasAcademicData()) {
+            return false;
+        }
+
+        $this->forceFill([
+            'locked_at' => now(),
+        ])->save();
+
+        return true;
     }
 }
