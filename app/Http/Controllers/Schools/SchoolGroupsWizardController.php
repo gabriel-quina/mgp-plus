@@ -181,8 +181,6 @@ class SchoolGroupsWizardController extends Controller
 
         $totalStudents = StudentEnrollment::query()
             ->where('school_id', $school->id)
-            ->where('academic_year', $academicYear)
-            ->where('shift', $shift)
             ->whereIn('grade_level_id', $normalizedIds->all())
             ->whereIn('status', StudentEnrollment::ongoingStatuses())
             ->whereNull('ended_at')
