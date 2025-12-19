@@ -91,9 +91,14 @@
     <div class="card mb-3">
         <div class="card-header d-flex align-items-center justify-content-between">
             <span><strong>Turmas da escola</strong></span>
-            <a href="{{ route('classrooms.create', ['school_id' => $school->id]) }}" class="btn btn-sm btn-primary">
-                Nova turma
-            </a>
+            <div class="d-flex gap-2">
+                <a href="{{ route('schools.groups-wizard.create', $school) }}" class="btn btn-sm btn-outline-primary">
+                    Novo grupo (helper)
+                </a>
+                <a href="{{ route('classrooms.create', ['school_id' => $school->id]) }}" class="btn btn-sm btn-primary">
+                    Nova turma
+                </a>
+            </div>
         </div>
         <div class="card-body p-0">
             @if ($school->classrooms->isEmpty())
