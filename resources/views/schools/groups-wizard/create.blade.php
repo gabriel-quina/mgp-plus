@@ -2,7 +2,9 @@
 
 @php
     $preview = $preview ?? null;
-    $selectedGrades = (array) request('grade_level_ids', []);
+    $selectedGrades = collect(request('grade_level_ids', []))
+        ->map(fn ($id) => (int) $id)
+        ->all();
     $selectedWorkshop = request('workshop_id', $input['workshop_id'] ?? null);
     $selectedYear = request('academic_year', $input['academic_year'] ?? $defaultYear);
     $selectedShift = request('shift', $input['shift'] ?? '');
