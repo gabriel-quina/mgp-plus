@@ -17,6 +17,9 @@
         </div>
 
         <div class="d-flex gap-2 flex-wrap">
+            <a class="btn btn-primary" href="{{ route('schools.groups-wizard.create', $school) }}">
+                Novo grupo (helper)
+            </a>
             <a class="btn btn-primary" href="{{ route('schools.classrooms.create', $school) }}">
                 Novo grupo
             </a>
