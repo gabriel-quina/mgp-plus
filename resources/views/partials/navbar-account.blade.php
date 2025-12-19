@@ -193,6 +193,15 @@
                 @elseif ($resolvedScope === 'school')
                     {{-- Links do escopo ESCOLA (somente se tiver school id) --}}
                     @if ($actingSchoolId)
+                        @if (isset($schoolNav))
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('schools.show') ? 'active' : '' }}"
+                                   href="{{ route('schools.show', $schoolNav) }}">
+                                    Resumo da escola
+                                </a>
+                            </li>
+                        @endif
+
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('schools.students.*') ? 'active' : '' }}"
                                href="{{ route('schools.students.index', ['school' => $actingSchoolId]) }}">
