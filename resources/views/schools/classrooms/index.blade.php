@@ -17,6 +17,9 @@
         </div>
 
         <div class="d-flex gap-2 flex-wrap">
+            <a class="btn btn-primary" href="{{ route('schools.groups-wizard.create', $school) }}">
+                Novo grupo (helper)
+            </a>
             <a class="btn btn-primary" href="{{ route('schools.classrooms.create', $school) }}">
                 Novo grupo
             </a>
@@ -74,7 +77,19 @@
                 <tbody>
                     @forelse ($classrooms as $classroom)
                         @php
-                            $isGroup = !is_null($classroom->parent_classroom_id);
+                            $isGroup = !is_null($classroom->workshop_id ?? null);
+                            $gradeLevels = null;
+
+                            if ($classroom->relationLoaded('gradeLevels') && $classroom->gradeLevels?->count()) {
+                                $gradeLevels = $classroom->gradeLevels;
+                            } elseif (
+                                !empty($classroom->workshop_group_set_id)
+                                && isset($classroom->groupSet)
+                                && optional($classroom->groupSet)->relationLoaded('gradeLevels')
+                                && optional($classroom->groupSet)->gradeLevels?->count()
+                            ) {
+                                $gradeLevels = $classroom->groupSet->gradeLevels;
+                            }
                         @endphp
                         <tr>
                             <td class="fw-semibold">
@@ -85,7 +100,7 @@
                                 @if ($isGroup)
                                     <span class="badge text-bg-primary">Grupo</span>
                                 @else
-                                    <span class="badge text-bg-secondary">Base</span>
+                                    <span class="badge text-bg-secondary">Base (legado)</span>
                                 @endif
                             </td>
 
@@ -98,9 +113,9 @@
                             </td>
 
                             <td>
-                                @if ($classroom->relationLoaded('gradeLevels') && $classroom->gradeLevels?->count())
+                                @if ($gradeLevels?->count())
                                     <div class="d-flex flex-wrap gap-1">
-                                        @foreach ($classroom->gradeLevels as $gl)
+                                        @foreach ($gradeLevels as $gl)
                                             <span class="badge text-bg-light border">
                                                 {{ $gl->short_name ?? $gl->name }}
                                             </span>
