@@ -1,9 +1,12 @@
 @extends('layouts.app')
 
 @php
-    $input = $input ?? [];
     $preview = $preview ?? null;
-    $selectedGrades = $input['grade_level_ids'] ?? [];
+    $selectedGrades = (array) request('grade_level_ids', []);
+    $selectedWorkshop = request('workshop_id', $input['workshop_id'] ?? null);
+    $selectedYear = request('academic_year', $input['academic_year'] ?? $defaultYear);
+    $selectedShift = request('shift', $input['shift'] ?? '');
+    $selectedMax = request('max_students', $input['max_students'] ?? '');
 @endphp
 
 @section('content')
@@ -27,7 +30,7 @@
                                 <select name="workshop_id" class="form-select">
                                     <option value="">-- Selecione --</option>
                                     @foreach ($workshops as $wk)
-                                        <option value="{{ $wk->id }}" @selected(($input['workshop_id'] ?? null) == $wk->id)>
+                                        <option value="{{ $wk->id }}" @selected($selectedWorkshop == $wk->id)>
                                             {{ $wk->name }}
                                         </option>
                                     @endforeach
@@ -48,23 +51,23 @@
                             <div class="col-md-6">
                                 <label class="form-label">Ano letivo</label>
                                 <input type="number" name="academic_year" class="form-control"
-                                    value="{{ $input['academic_year'] ?? $defaultYear }}" min="2000" max="2100">
+                                    value="{{ $selectedYear }}" min="2000" max="2100">
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label">Turno</label>
                                 <select name="shift" class="form-select">
                                     <option value="">-- Selecione --</option>
-                                    <option value="morning" @selected(($input['shift'] ?? '') === 'morning')>Manhã</option>
-                                    <option value="afternoon" @selected(($input['shift'] ?? '') === 'afternoon')>Tarde</option>
-                                    <option value="evening" @selected(($input['shift'] ?? '') === 'evening')>Noite</option>
+                                    <option value="morning" @selected($selectedShift === 'morning')>Manhã</option>
+                                    <option value="afternoon" @selected($selectedShift === 'afternoon')>Tarde</option>
+                                    <option value="evening" @selected($selectedShift === 'evening')>Noite</option>
                                 </select>
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label">Capacidade por grupo</label>
                                 <input type="number" name="max_students" class="form-control" min="1"
-                                    value="{{ $input['max_students'] ?? '' }}" placeholder="Ex.: 20">
+                                    value="{{ $selectedMax }}" placeholder="Ex.: 20">
                             </div>
 
                             <div class="col-12 d-flex gap-2">
@@ -77,13 +80,13 @@
 
                     <form method="POST" action="{{ route('schools.groups-wizard.store', $school) }}">
                         @csrf
-                        <input type="hidden" name="workshop_id" value="{{ $input['workshop_id'] ?? '' }}">
+                        <input type="hidden" name="workshop_id" value="{{ $selectedWorkshop }}">
                         @foreach ($selectedGrades as $id)
                             <input type="hidden" name="grade_level_ids[]" value="{{ $id }}">
                         @endforeach
-                        <input type="hidden" name="academic_year" value="{{ $input['academic_year'] ?? $defaultYear }}">
-                        <input type="hidden" name="shift" value="{{ $input['shift'] ?? '' }}">
-                        <input type="hidden" name="max_students" value="{{ $input['max_students'] ?? '' }}">
+                        <input type="hidden" name="academic_year" value="{{ $selectedYear }}">
+                        <input type="hidden" name="shift" value="{{ $selectedShift }}">
+                        <input type="hidden" name="max_students" value="{{ $selectedMax }}">
 
                         <button class="btn btn-primary" @disabled($preview && $preview['conflict'])>
                             Criar/Adicionar grupos
