@@ -118,7 +118,7 @@
                         @endif
 
                         <dl class="row mb-0">
-                            <dt class="col-7">Total de alunos</dt>
+                            <dt class="col-7">Elegíveis</dt>
                             <dd class="col-5 text-end">{{ $preview['total_students'] ?? '—' }}</dd>
 
                             <dt class="col-7">Capacidade por grupo</dt>
@@ -129,6 +129,11 @@
 
                             <dt class="col-7">Grupos existentes</dt>
                             <dd class="col-5 text-end">{{ $preview['existing_groups'] ?? 0 }}</dd>
+
+                            @if ($preview['allocated_students'] !== null)
+                                <dt class="col-7">Alocados</dt>
+                                <dd class="col-5 text-end">{{ $preview['allocated_students'] }}</dd>
+                            @endif
                         </dl>
                     @endif
                 </div>

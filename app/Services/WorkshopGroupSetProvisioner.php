@@ -42,6 +42,13 @@ class WorkshopGroupSetProvisioner
 
         $signature = $normalizedIds->implode(',');
         $maxStudents = ($maxStudents === null || $maxStudents <= 0) ? 9999 : $maxStudents;
+        $gradeLevels = \App\Models\GradeLevel::query()
+            ->whereIn('id', $normalizedIds->all())
+            ->orderBy('sequence')
+            ->orderBy('name')
+            ->get();
+        $label = $this->buildGradeLevelLabel($gradeLevels);
+        $shiftLabel = $this->shiftLabel($shift);
 
         $sets = WorkshopGroupSet::query()
             ->where('school_id', $school->id)
@@ -91,6 +98,8 @@ class WorkshopGroupSetProvisioner
 
         $totalStudents = StudentEnrollment::query()
             ->where('school_id', $school->id)
+            ->where('academic_year', $academicYear)
+            ->where('shift', $shift)
             ->whereIn('grade_level_id', $normalizedIds->all())
             ->whereIn('status', StudentEnrollment::ongoingStatuses())
             ->whereNull('ended_at')
@@ -106,7 +115,7 @@ class WorkshopGroupSetProvisioner
 
         if ($existingGroups < $requiredGroups) {
             for ($n = $existingGroups + 1; $n <= $requiredGroups; $n++) {
-                $createdGroups->push(Classroom::create([
+                $classroom = Classroom::create([
                     'school_id' => $school->id,
                     'academic_year' => $academicYear,
                     'shift' => $shift,
@@ -118,14 +127,26 @@ class WorkshopGroupSetProvisioner
                     'name' => sprintf(
                         '%s — %s — %s — %d — Grupo #%d',
                         $workshop->name,
-                        $signature,
-                        $shift,
+                        $label ?: $signature,
+                        $shiftLabel,
                         $academicYear,
                         $n
                     ),
-                ]));
+                ]);
+
+                $classroom->gradeLevels()->sync($normalizedIds->all());
+
+                $createdGroups->push($classroom);
             }
         }
+
+        $this->autoAllocateIfSingleGroup(
+            $set,
+            $workshop,
+            $normalizedIds,
+            $academicYear,
+            $shift
+        );
 
         return [
             'set' => $set,
@@ -135,5 +156,73 @@ class WorkshopGroupSetProvisioner
             'total_students' => $totalStudents,
             'signature' => $signature,
         ];
+    }
+
+    private function buildGradeLevelLabel(Collection $gradeLevels): string
+    {
+        $short = $gradeLevels->pluck('short_name')->filter()->all();
+        if (! empty($short)) {
+            return implode('+', $short);
+        }
+
+        $names = $gradeLevels->pluck('name')->filter()->all();
+
+        return ! empty($names) ? implode('+', $names) : '';
+    }
+
+    private function shiftLabel(string $shift): string
+    {
+        return match ($shift) {
+            'morning' => 'Manhã',
+            'afternoon' => 'Tarde',
+            'evening' => 'Noite',
+            default => $shift,
+        };
+    }
+
+    private function autoAllocateIfSingleGroup(
+        WorkshopGroupSet $set,
+        Workshop $workshop,
+        Collection $gradeLevelIds,
+        int $academicYear,
+        string $shift
+    ): void {
+        $group = Classroom::query()
+            ->where('workshop_group_set_id', $set->id)
+            ->where('group_number', 1)
+            ->first();
+
+        if (! $group) {
+            return;
+        }
+
+        $hasAllocations = \App\Models\WorkshopAllocation::query()
+            ->where('child_classroom_id', $group->id)
+            ->where('workshop_id', $workshop->id)
+            ->exists();
+
+        if ($hasAllocations) {
+            return;
+        }
+
+        $enrollments = StudentEnrollment::query()
+            ->where('school_id', $set->school_id)
+            ->where('academic_year', $academicYear)
+            ->where('shift', $shift)
+            ->whereIn('grade_level_id', $gradeLevelIds->all())
+            ->whereIn('status', StudentEnrollment::ongoingStatuses())
+            ->whereNull('ended_at')
+            ->get(['id']);
+
+        foreach ($enrollments as $enrollment) {
+            \App\Models\WorkshopAllocation::firstOrCreate([
+                'child_classroom_id' => $group->id,
+                'workshop_id' => $workshop->id,
+                'student_enrollment_id' => $enrollment->id,
+            ], [
+                'is_locked' => false,
+                'note' => null,
+            ]);
+        }
     }
 }

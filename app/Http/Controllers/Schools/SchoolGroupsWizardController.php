@@ -191,10 +191,26 @@ class SchoolGroupsWizardController extends Controller
         $existingGroups = $preview['set']
             ? Classroom::query()->where('workshop_group_set_id', $preview['set']->id)->count()
             : 0;
+        $allocatedStudents = null;
+
+        if ($preview['set']) {
+            $groupIds = Classroom::query()
+                ->where('workshop_group_set_id', $preview['set']->id)
+                ->pluck('id');
+
+            $allocatedStudents = $groupIds->isEmpty()
+                ? 0
+                : \App\Models\WorkshopAllocation::query()
+                    ->where('workshop_id', $workshop->id)
+                    ->whereIn('child_classroom_id', $groupIds)
+                    ->distinct('student_enrollment_id')
+                    ->count('student_enrollment_id');
+        }
 
         $preview['total_students'] = $totalStudents;
         $preview['required_groups'] = $requiredGroups;
         $preview['existing_groups'] = $existingGroups;
+        $preview['allocated_students'] = $allocatedStudents;
 
         if ($preview['set'] && Route::has('schools.workshop-group-sets.show')) {
             $preview['set_url'] = route('schools.workshop-group-sets.show', [
