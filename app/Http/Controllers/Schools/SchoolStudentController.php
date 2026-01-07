@@ -152,12 +152,27 @@ class SchoolStudentController extends Controller
 
     public function show(School $school, Student $student)
     {
-        abort_unless(
-            $student->enrollments()->where('school_id', $school->id)->exists(),
-            404
-        );
+        $enrollments = $student->enrollments()
+            ->where('school_id', $school->id)
+            ->with(['gradeLevel', 'originSchool'])
+            ->orderByDesc('academic_year')
+            ->orderByDesc('id')
+            ->get();
 
-        return redirect()->route('students.show', $student);
+        abort_if($enrollments->isEmpty(), 404);
+
+        $currentEnrollment = $enrollments->firstWhere('status', StudentEnrollment::STATUS_ACTIVE)
+            ?? $enrollments->firstWhere('status', StudentEnrollment::STATUS_ENROLLED)
+            ?? $enrollments->firstWhere('status', StudentEnrollment::STATUS_PRE_ENROLLED)
+            ?? $enrollments->first();
+
+        return view('schools.students.show', [
+            'school' => $school,
+            'schoolNav' => $school,
+            'student' => $student,
+            'enrollments' => $enrollments,
+            'currentEnrollment' => $currentEnrollment,
+        ]);
     }
 
     public function edit(School $school, Student $student)
