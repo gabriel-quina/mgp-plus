@@ -31,7 +31,9 @@ class SchoolStudentController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return view('schools.students.index', compact('school', 'enrollments', 'search'));
+        return view('schools.students.index', [
+            'schoolNav' => $school],
+            compact('school', 'enrollments', 'search'));
     }
 
     public function create(School $school)
@@ -41,7 +43,8 @@ class SchoolStudentController extends Controller
         // IMPORTANTE: precisa ser Collection de Models para o Blade usar $st->id / $st->uf
         $states = State::orderBy('name')->get(['id', 'name', 'uf']);
 
-        return view('schools.students.create', compact('school', 'gradeLevels', 'states'));
+        return view('schools.students.create', [ 'schoolNav' => $school],
+            compact('school', 'gradeLevels', 'states'));
     }
 
     public function store(StoreStudentRequest $request, School $school)

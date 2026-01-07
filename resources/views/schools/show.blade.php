@@ -48,7 +48,7 @@
                 <div class="card-body">
                     <div class="row g-3 mb-3">
                         <div class="col-4">
-                            <div class="text-muted small">Turmas (PAI)</div>
+                            <div class="text-muted small">Turmas</div>
                             <div class="h3 mb-0">
                                 {{ $school->classrooms_count ?? $school->classrooms->count() }}
                             </div>
