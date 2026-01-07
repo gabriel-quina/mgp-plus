@@ -58,14 +58,11 @@
                                 {{ $enrollment->gradeLevel->name ?? '—' }}
                             </td>
                             <td>
-                                {{-- Ajuste o campo abaixo conforme seu modelo de StudentEnrollment --}}
-                                {{ $enrollment->school_year ?? ($enrollment->year ?? '—') }}
+                                {{ $enrollment->academic_year ?? '—' }}
                             </td>
                             <td>
-                                {{-- Por enquanto, linka para o show global do aluno.
-                                     Depois você pode ter um "show da escola" para o aluno. --}}
                                 @if ($enrollment->student)
-                                    <a href="{{ route('students.show', $enrollment->student) }}"
+                                    <a href="{{ route('schools.students.show', [$school, $enrollment->student]) }}"
                                         class="btn btn-sm btn-outline-secondary">
                                         Ver aluno
                                     </a>
