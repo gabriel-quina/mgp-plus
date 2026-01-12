@@ -60,33 +60,54 @@
                             </div>
                         </div>
                         <div class="col-4">
-                            <div class="text-muted small">Alunos (matrículas)</div>
+                            <div class="text-muted small">Alunos matriculados</div>
                             <div class="h3 mb-0">
                                 {{ $school->enrollments_count ?? $school->enrollments->count() }}
                             </div>
                         </div>
-                    </div>
-
-                    {{-- Anos escolares com alunos matriculados --}}
-                    <div class="mt-2">
-                        <div class="text-muted small mb-1">Anos escolares com alunos</div>
-
-                        @if (isset($gradeLevelsWithStudents) && $gradeLevelsWithStudents->isNotEmpty())
-                            @foreach ($gradeLevelsWithStudents as $gl)
-                                <a href="{{ route('schools.grade-level-students.index', [$school, $gl]) }}"
-                                    class="badge text-bg-secondary me-1 mb-1 text-decoration-none">
-                                    {{ $gl->short_name ?? $gl->name }}
-                                </a>
-                            @endforeach
-                        @else
-                            <span class="text-muted">Nenhum aluno matriculado.</span>
-                        @endif
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    {{-- Anos escolares com alunos matriculados (apenas dessa escola) --}}
+    <div class="card mb-3">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <span><strong>Anos escolares</strong></span>
+        </div>
+        <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nome</th>
+                                <th style="width: 300px;">Qtd de turmas</th>
+                                <th style="width: 220px;">Alunos Matriculados</th>
+                                <th style="width: 150px;" class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (isset($gradeLevelsWithStudents) && $gradeLevelsWithStudents->isNotEmpty())
+                            @foreach ($gradeLevelsWithStudents as $gl)
+                                <tr>
+                                    <td>{{ $gl->name }}</td>
+                                    <td>10</td>
+                                    <td>10</td>
+                                    <td class="text-end">
+                                        <a href="{{ route('schools.grade-level-students.index', [$school, $gl]) }}"
+                                            class="btn btn-sm btn-outline-secondary">Ver</a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @else
+                            <span class="text-muted">Nenhum aluno matriculado.</span>
+                        @endif
+                        </tbody>
+                    </table>
+                </div>
+        </div>
+    </div>
     {{-- Turmas da escola (apenas dessa escola) --}}
     <div class="card mb-3">
         <div class="card-header d-flex align-items-center justify-content-between">
@@ -109,8 +130,8 @@
                         <thead class="table-light">
                             <tr>
                                 <th>Nome</th>
-                                <th style="width: 110px;">Ano letivo</th>
-                                <th style="width: 110px;">Turno</th>
+                                <th style="width: 150px;">Ano letivo</th>
+                                <th style="width: 150px;">Turno</th>
                                 <th>Anos atendidos</th>
                                 <th style="width: 150px;" class="text-end">Ações</th>
                             </tr>
