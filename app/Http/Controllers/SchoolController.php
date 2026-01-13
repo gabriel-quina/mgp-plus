@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\City;
+use App\Models\GradeLevel;
 use App\Models\School;
 use App\Models\Workshop;
 use Illuminate\Database\QueryException;
@@ -81,13 +82,22 @@ class SchoolController extends Controller
         ]);
 
         // Anos escolares que têm pelo menos um aluno matriculado nessa escola
-        $gradeLevelsWithStudents = $school->enrollments
-            ->pluck('gradeLevel')     // pega o GradeLevel de cada matrícula
-            ->filter()                // remove null
-            ->unique('id')            // deixa só um de cada
-            ->sortBy(function ($gl) { // ordena bonitinho
-                return $gl->ordering ?? $gl->short_name ?? $gl->name;
-            });
+        $gradeLevelsWithStudents = GradeLevel::query()
+            ->whereHas('studentEnrollments', function ($q) use ($school) {
+                $q->where('school_id', $school->id);
+            })
+            ->withCount([
+                'studentEnrollments as enrollments_count' => function ($q) use ($school) {
+                    $q->where('school_id', $school->id);
+                },
+                'classrooms as classrooms_count' => function ($q) use ($school) {
+                    $q->where('school_id', $school->id)
+                        ->whereNull('parent_classroom_id');
+                },
+            ])
+            ->orderBy('sequence')
+            ->orderBy('name')
+            ->get();
 
         // Se você tiver relação de matrículas na escola, pode somar aqui depois:
         // ->loadCount('enrollments as enrollments_count');

@@ -92,8 +92,8 @@
                             @foreach ($gradeLevelsWithStudents as $gl)
                                 <tr>
                                     <td>{{ $gl->name }}</td>
-                                    <td>10</td>
-                                    <td>10</td>
+                                    <td>{{ $gl->classrooms_count }}</td>
+                                    <td>{{ $gl->enrollments_count }}</td>
                                     <td class="text-end">
                                         <a href="{{ route('schools.grade-level-students.index', [$school, $gl]) }}"
                                             class="btn btn-sm btn-outline-secondary">Ver</a>
@@ -101,7 +101,9 @@
                                 </tr>
                             @endforeach
                         @else
-                            <span class="text-muted">Nenhum aluno matriculado.</span>
+                            <tr>
+                                <td colspan="4" class="text-muted">Nenhum aluno matriculado.</td>
+                            </tr>
                         @endif
                         </tbody>
                     </table>
