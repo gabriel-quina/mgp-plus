@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\City;
 use App\Models\GradeLevel;
 use App\Models\School;
+use App\Models\StudentEnrollment;
 use App\Models\Workshop;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class SchoolController extends Controller
@@ -84,11 +86,24 @@ class SchoolController extends Controller
         // Anos escolares que têm pelo menos um aluno matriculado nessa escola
         $gradeLevelsWithStudents = GradeLevel::query()
             ->whereHas('studentEnrollments', function ($q) use ($school) {
-                $q->where('school_id', $school->id);
+                $q->where('school_id', $school->id)
+                    ->where('academic_year', 2026)
+                    ->whereIn('status', [
+                        StudentEnrollment::STATUS_ENROLLED,
+                        StudentEnrollment::STATUS_ACTIVE,
+                    ])
+                    ->whereNull('ended_at');
             })
             ->withCount([
                 'studentEnrollments as enrollments_count' => function ($q) use ($school) {
                     $q->where('school_id', $school->id);
+                    $q->select(DB::raw('count(distinct student_id)'))
+                        ->where('academic_year', 2026)
+                        ->whereIn('status', [
+                            StudentEnrollment::STATUS_ENROLLED,
+                            StudentEnrollment::STATUS_ACTIVE,
+                        ])
+                        ->whereNull('ended_at');
                 },
                 'classrooms as classrooms_count' => function ($q) use ($school) {
                     $q->where('school_id', $school->id)
