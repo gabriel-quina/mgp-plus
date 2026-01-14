@@ -5,11 +5,14 @@ namespace App\Services\Schools\Queries;
 use App\Models\GradeLevel;
 use App\Models\School;
 use App\Models\StudentEnrollment;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class GetSchoolGradeLevelCounts
 {
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\GradeLevel>
+     */
     public function execute(School $school): Collection
     {
         // Ano letivo vigente: seguimos o padrão do sistema (ano corrente).
