@@ -27,7 +27,8 @@ class GradeLevelStudentReportService
         $currentAcademicYear = (int) now()->year;
 
         // 1) Matrículas dessa escola + ano escolar
-        $enrollments = StudentEnrollment::with('student')
+        $latestEnrollmentIds = StudentEnrollment::query()
+            ->selectRaw('MAX(id) as id')
             ->where('school_id', $school->id)
             ->where('grade_level_id', $gradeLevel->id)
             ->where('academic_year', $currentAcademicYear)
@@ -36,12 +37,11 @@ class GradeLevelStudentReportService
                 StudentEnrollment::STATUS_ACTIVE,
             ])
             ->whereNull('ended_at')
-            ->orderBy('student_id')
-            ->orderByDesc('started_at')
-            ->orderByDesc('id')
-            ->get()
-            ->unique('student_id')
-            ->values();
+            ->groupBy('student_id');
+
+        $enrollments = StudentEnrollment::with('student')
+            ->whereIn('id', $latestEnrollmentIds)
+            ->get();
 
         if ($enrollments->isEmpty()) {
             return collect();
