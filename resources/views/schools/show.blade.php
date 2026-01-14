@@ -48,7 +48,7 @@
                 <div class="card-body">
                     <div class="row g-3 mb-3">
                         <div class="col-4">
-                            <div class="text-muted small">Turmas</div>
+                            <div class="text-muted small">Turmas ativas (ano letivo vigente)</div>
                             <div class="h3 mb-0">
                                 {{ $school->classrooms_count }}
                             </div>
@@ -60,7 +60,7 @@
                             </div>
                         </div>
                         <div class="col-4">
-                            <div class="text-muted small">Alunos matriculados</div>
+                            <div class="text-muted small">Alunos matriculados (ano letivo vigente)</div>
                             <div class="h3 mb-0">
                                 {{ $school->enrollments_count }}
                             </div>
