@@ -13,18 +13,16 @@ class GetSchoolGradeLevelCounts
     /**
      * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\GradeLevel>
      */
-    public function execute(School $school): Collection
+    public function execute(School $school, int $academicYear): Collection
     {
-        // Ano letivo vigente: seguimos o padrão do sistema (ano corrente).
-        $currentAcademicYear = (int) now()->year;
         // "Matriculado aguardando início" + "Cursando" (não inclui pré-matrícula nem históricos).
         $eligibleStatuses = [
             StudentEnrollment::STATUS_ENROLLED,
             StudentEnrollment::STATUS_ACTIVE,
         ];
-        $applyEnrollmentFilters = function ($q) use ($school, $currentAcademicYear, $eligibleStatuses) {
+        $applyEnrollmentFilters = function ($q) use ($school, $academicYear, $eligibleStatuses) {
             $q->where('school_id', $school->id)
-                ->where('academic_year', $currentAcademicYear)
+                ->where('academic_year', $academicYear)
                 ->whereIn('status', $eligibleStatuses)
                 ->whereNull('ended_at');
         };
@@ -37,9 +35,9 @@ class GetSchoolGradeLevelCounts
                     $applyEnrollmentFilters($q);
                     $q->select(DB::raw('count(distinct student_id)'));
                 },
-                'classrooms as classrooms_count' => function ($q) use ($school, $currentAcademicYear) {
+                'classrooms as classrooms_count' => function ($q) use ($school, $academicYear) {
                     $q->where('school_id', $school->id)
-                        ->where('academic_year', $currentAcademicYear)
+                        ->where('academic_year', $academicYear)
                         ->where('is_active', true)
                         ->whereNull('parent_classroom_id');
                 },

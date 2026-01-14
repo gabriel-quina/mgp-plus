@@ -96,7 +96,7 @@ class SchoolController extends Controller
             },
         ]);
 
-        $gradeLevelsWithStudents = (new GetSchoolGradeLevelCounts())->execute($school);
+        $gradeLevelsWithStudents = (new GetSchoolGradeLevelCounts())->execute($school, $currentAcademicYear);
 
         // Se você tiver relação de matrículas na escola, pode somar aqui depois:
         // ->loadCount('enrollments as enrollments_count');
