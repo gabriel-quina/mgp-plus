@@ -3,13 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\City;
-use App\Models\GradeLevel;
 use App\Models\School;
-use App\Models\StudentEnrollment;
+use App\Services\Schools\Queries\GetSchoolGradeLevelCounts;
 use App\Models\Workshop;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class SchoolController extends Controller
@@ -83,37 +81,7 @@ class SchoolController extends Controller
             'enrollments as enrollments_count',
         ]);
 
-        // Ano letivo vigente: seguimos o padrão do sistema (ano corrente).
-        $currentAcademicYear = (int) now()->year;
-        // "Matriculado aguardando início" + "Cursando" (não inclui pré-matrícula nem históricos).
-        $eligibleStatuses = [
-            StudentEnrollment::STATUS_ENROLLED,
-            StudentEnrollment::STATUS_ACTIVE,
-        ];
-        $applyEnrollmentFilters = function ($q) use ($school, $currentAcademicYear, $eligibleStatuses) {
-            $q->where('school_id', $school->id)
-                ->where('academic_year', $currentAcademicYear)
-                ->whereIn('status', $eligibleStatuses)
-                ->whereNull('ended_at');
-        };
-
-        // Anos escolares que têm pelo menos um aluno matriculado nessa escola
-        $gradeLevelsWithStudents = GradeLevel::query()
-            ->whereHas('studentEnrollments', $applyEnrollmentFilters)
-            ->withCount([
-                'studentEnrollments as enrollments_count' => function ($q) use ($applyEnrollmentFilters) {
-                    $applyEnrollmentFilters($q);
-                    $q->select(DB::raw('count(distinct student_id)'));
-                },
-                'classrooms as classrooms_count' => function ($q) use ($school, $currentAcademicYear) {
-                    $q->where('school_id', $school->id)
-                        ->where('academic_year', $currentAcademicYear)
-                        ->whereNull('parent_classroom_id');
-                },
-            ])
-            ->orderBy('sequence')
-            ->orderBy('name')
-            ->get();
+        $gradeLevelsWithStudents = (new GetSchoolGradeLevelCounts())->execute($school);
 
         // Se você tiver relação de matrículas na escola, pode somar aqui depois:
         // ->loadCount('enrollments as enrollments_count');
