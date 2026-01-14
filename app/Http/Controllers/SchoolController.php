@@ -83,27 +83,27 @@ class SchoolController extends Controller
             'enrollments as enrollments_count',
         ]);
 
+        // Ano letivo vigente: seguimos o padrão do sistema (ano corrente).
+        $currentAcademicYear = (int) now()->year;
+        // "Matriculado aguardando início" + "Cursando" (não inclui pré-matrícula nem históricos).
+        $eligibleStatuses = [
+            StudentEnrollment::STATUS_ENROLLED,
+            StudentEnrollment::STATUS_ACTIVE,
+        ];
+        $applyEnrollmentFilters = function ($q) use ($school, $currentAcademicYear, $eligibleStatuses) {
+            $q->where('school_id', $school->id)
+                ->where('academic_year', $currentAcademicYear)
+                ->whereIn('status', $eligibleStatuses)
+                ->whereNull('ended_at');
+        };
+
         // Anos escolares que têm pelo menos um aluno matriculado nessa escola
         $gradeLevelsWithStudents = GradeLevel::query()
-            ->whereHas('studentEnrollments', function ($q) use ($school) {
-                $q->where('school_id', $school->id)
-                    ->where('academic_year', 2026)
-                    ->whereIn('status', [
-                        StudentEnrollment::STATUS_ENROLLED,
-                        StudentEnrollment::STATUS_ACTIVE,
-                    ])
-                    ->whereNull('ended_at');
-            })
+            ->whereHas('studentEnrollments', $applyEnrollmentFilters)
             ->withCount([
-                'studentEnrollments as enrollments_count' => function ($q) use ($school) {
-                    $q->where('school_id', $school->id);
-                    $q->select(DB::raw('count(distinct student_id)'))
-                        ->where('academic_year', 2026)
-                        ->whereIn('status', [
-                            StudentEnrollment::STATUS_ENROLLED,
-                            StudentEnrollment::STATUS_ACTIVE,
-                        ])
-                        ->whereNull('ended_at');
+                'studentEnrollments as enrollments_count' => function ($q) use ($applyEnrollmentFilters) {
+                    $applyEnrollmentFilters($q);
+                    $q->select(DB::raw('count(distinct student_id)'));
                 },
                 'classrooms as classrooms_count' => function ($q) use ($school) {
                     $q->where('school_id', $school->id)
