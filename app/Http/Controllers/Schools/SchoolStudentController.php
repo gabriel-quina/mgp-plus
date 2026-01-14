@@ -14,17 +14,26 @@ class SchoolStudentController extends Controller
     {
         $search = request('q');
 
-        $enrollments = StudentEnrollment::query()
+        $baseQuery = StudentEnrollment::query()
             ->where('school_id', $school->id)
-            ->with(['student', 'gradeLevel'])
             ->when($search, function ($q) use ($search) {
                 $q->whereHas('student', fn ($qq) => $qq->where('name', 'like', "%{$search}%"));
-            })
-            ->latest('id')
+            });
+
+        $latestEnrollmentIds = (clone $baseQuery)
+            ->selectRaw('MAX(id) as id')
+            ->groupBy('student_id');
+
+        $enrollments = StudentEnrollment::query()
+            ->whereIn('id', $latestEnrollmentIds)
+            ->with(['student', 'gradeLevel'])
+            ->orderByDesc('id')
             ->paginate(20)
             ->withQueryString();
 
-        return view('schools.students.index', compact('school', 'enrollments', 'search'));
+        return view('schools.students.index', [
+            'schoolNav' => $school],
+            compact('school', 'enrollments', 'search'));
     }
 
     public function create(School $school)
@@ -34,7 +43,8 @@ class SchoolStudentController extends Controller
         // IMPORTANTE: precisa ser Collection de Models para o Blade usar $st->id / $st->uf
         $states = State::orderBy('name')->get(['id', 'name', 'uf']);
 
-        return view('schools.students.create', compact('school', 'gradeLevels', 'states'));
+        return view('schools.students.create', [ 'schoolNav' => $school],
+            compact('school', 'gradeLevels', 'states'));
     }
 
     public function store(StoreStudentRequest $request, School $school)
@@ -145,12 +155,27 @@ class SchoolStudentController extends Controller
 
     public function show(School $school, Student $student)
     {
-        abort_unless(
-            $student->enrollments()->where('school_id', $school->id)->exists(),
-            404
-        );
+        $enrollments = $student->enrollments()
+            ->where('school_id', $school->id)
+            ->with(['gradeLevel', 'originSchool'])
+            ->orderByDesc('academic_year')
+            ->orderByDesc('id')
+            ->get();
 
-        return redirect()->route('students.show', $student);
+        abort_if($enrollments->isEmpty(), 404);
+
+        $currentEnrollment = $enrollments->firstWhere('status', StudentEnrollment::STATUS_ACTIVE)
+            ?? $enrollments->firstWhere('status', StudentEnrollment::STATUS_ENROLLED)
+            ?? $enrollments->firstWhere('status', StudentEnrollment::STATUS_PRE_ENROLLED)
+            ?? $enrollments->first();
+
+        return view('schools.students.show', [
+            'school' => $school,
+            'schoolNav' => $school,
+            'student' => $student,
+            'enrollments' => $enrollments,
+            'currentEnrollment' => $currentEnrollment,
+        ]);
     }
 
     public function edit(School $school, Student $student)

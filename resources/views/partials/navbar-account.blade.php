@@ -15,14 +15,14 @@
 
     // 1) Se estiver dentro de /escolas/{school}/..., isso define o escopo como escola.
     $routeSchool = request()->route('school'); // pode ser Model ou id
-    $school = $routeSchool ?: ($schoolNav['school'] ?? null); // se você já usa $schoolNav em algumas telas
+    $school = $routeSchool ?: $schoolNav['school'] ?? null; // se você já usa $schoolNav em algumas telas
 
     $schoolId = null;
     $schoolName = null;
 
     if ($school) {
-        $schoolId = is_object($school) ? ($school->id ?? null) : $school;
-        $schoolName = is_object($school) ? ($school->name ?? null) : null;
+        $schoolId = is_object($school) ? $school->id ?? null : $school;
+        $schoolName = is_object($school) ? $school->name ?? null : null;
     }
 
     // 2) Querystring para alternar escopo: ?scope=company ou ?scope=school:ID
@@ -39,7 +39,7 @@
     }
 
     // 3) Sessão (persistida pelo middleware).
-    $actingScope = $actingScope ?? session('acting_scope');        // 'company' | 'school' | null
+    $actingScope = $actingScope ?? session('acting_scope'); // 'company' | 'school' | null
     $actingSchoolId = $actingSchoolId ?? session('acting_school_id'); // int|null
 
     // Resolve o escopo atual (prioridade: rota escola > sessão > query > default master/company)
@@ -90,13 +90,13 @@
             return [$sid, $sname];
         }
 
-        $sid = (is_numeric($key) && (int) $key > 0) ? (int) $key : null;
+        $sid = is_numeric($key) && (int) $key > 0 ? (int) $key : null;
         $sname = is_string($schoolOption) ? $schoolOption : null;
 
         return [$sid, $sname];
     };
 
-    if (! $schoolName && $selectedSchoolId) {
+    if (!$schoolName && $selectedSchoolId) {
         foreach ($scopeSchools as $key => $s) {
             [$sid, $sname] = $normalizeSchoolOption($s, $key);
 
@@ -133,14 +133,14 @@
                     @if ($isMaster)
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('grade-levels.*') ? 'active' : '' }}"
-                               href="{{ route('grade-levels.index') }}">
+                                href="{{ route('grade-levels.index') }}">
                                 Anos Escolares
                             </a>
                         </li>
 
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('cities.*') ? 'active' : '' }}"
-                               href="{{ route('cities.index') }}">
+                                href="{{ route('cities.index') }}">
                                 Cidades
                             </a>
                         </li>
@@ -149,84 +149,92 @@
                     @if ($isMaster || $isCompany)
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('schools.*') ? 'active' : '' }}"
-                               href="{{ route('schools.index') }}">
+                                href="{{ route('schools.index') }}">
                                 Escolas
                             </a>
                         </li>
 
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('workshops.*') ? 'active' : '' }}"
-                               href="{{ route('workshops.index') }}">
+                                href="{{ route('workshops.index') }}">
                                 Oficinas
                             </a>
                         </li>
 
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('teachers.*') ? 'active' : '' }}"
-                               href="{{ route('teachers.index') }}">
+                                href="{{ route('teachers.index') }}">
                                 Professores
                             </a>
                         </li>
 
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('students.*') ? 'active' : '' }}"
-                               href="{{ route('students.index') }}">
+                                href="{{ route('students.index') }}">
                                 Alunos
                             </a>
                         </li>
 
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('enrollments.*') ? 'active' : '' }}"
-                               href="{{ route('enrollments.index') }}">
+                                href="{{ route('enrollments.index') }}">
                                 Matrículas
                             </a>
                         </li>
 
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('classrooms.*') || request()->routeIs('subclassrooms.*') ? 'active' : '' }}"
-                               href="{{ route('classrooms.index') }}">
+                                href="{{ route('classrooms.index') }}">
                                 Turmas
                             </a>
                         </li>
                     @endif
-
                 @elseif ($resolvedScope === 'school')
                     {{-- Links do escopo ESCOLA (somente se tiver school id) --}}
                     @if ($actingSchoolId)
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('schools.students.*') ? 'active' : '' }}"
-                               href="{{ route('schools.students.index', ['school' => $actingSchoolId]) }}">
-                                Alunos
-                            </a>
-                        </li>
+                        @if (isset($schoolNav))
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('schools.show') ? 'active' : '' }}"
+                                    href="{{ route('schools.show', $schoolNav) }}">
+                                    Resumo da escola
+                                </a>
+                            </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('schools.enrollments.*') ? 'active' : '' }}"
-                               href="{{ route('schools.enrollments.index', ['school' => $actingSchoolId]) }}">
-                                Matrículas
-                            </a>
-                        </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('schools.students.*') ? 'active' : '' }}"
+                                    href="{{ route('schools.students.index', ['school' => $actingSchoolId]) }}">
+                                    Alunos
+                                </a>
+                            </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('schools.teachers.*') ? 'active' : '' }}"
-                               href="{{ route('schools.teachers.index', ['school' => $actingSchoolId]) }}">
-                                Professores
-                            </a>
-                        </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('schools.enrollments.*') ? 'active' : '' }}"
+                                    href="{{ route('schools.enrollments.index', ['school' => $actingSchoolId]) }}">
+                                    Matrículas
+                                </a>
+                            </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('schools.classrooms.*') ? 'active' : '' }}"
-                               href="{{ route('schools.classrooms.index', ['school' => $actingSchoolId]) }}">
-                                Grupos
-                            </a>
-                        </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('schools.teachers.*') ? 'active' : '' }}"
+                                    href="{{ route('schools.teachers.index', ['school' => $actingSchoolId]) }}">
+                                    Professores
+                                </a>
+                            </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('schools.reports.*') ? 'active' : '' }}"
-                               href="{{ route('schools.reports.index', ['school' => $actingSchoolId]) }}">
-                                Relatórios
-                            </a>
-                        </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('schools.classrooms.*') ? 'active' : '' }}"
+                                    href="{{ route('schools.classrooms.index', ['school' => $actingSchoolId]) }}">
+                                    Grupos
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('schools.reports.*') ? 'active' : '' }}"
+                                    href="{{ route('schools.reports.index', ['school' => $actingSchoolId]) }}">
+                                    Relatórios
+                                </a>
+                            </li>
+                        @endif
                     @endif
                 @endif
             </ul>
@@ -247,7 +255,7 @@
                 {{-- Dropdown do usuário --}}
                 <div class="dropdown">
                     <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button"
-                            data-bs-toggle="dropdown" aria-expanded="false">
+                        data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-person-circle"></i> {{ $user->name }}
                     </button>
 
@@ -258,7 +266,9 @@
                             </a>
                         </li>
 
-                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
 
                         <li>
                             <form method="POST" action="{{ route('logout') }}">

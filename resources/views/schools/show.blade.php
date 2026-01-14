@@ -48,52 +48,80 @@
                 <div class="card-body">
                     <div class="row g-3 mb-3">
                         <div class="col-4">
-                            <div class="text-muted small">Turmas (PAI)</div>
+                            <div class="text-muted small">Turmas ativas (ano letivo vigente)</div>
                             <div class="h3 mb-0">
-                                {{ $school->classrooms_count ?? $school->classrooms->count() }}
+                                {{ $school->classrooms_count }}
                             </div>
                         </div>
                         <div class="col-4">
                             <div class="text-muted small">Oficinas vinculadas</div>
                             <div class="h3 mb-0">
-                                {{ $school->workshops_count ?? $school->workshops->count() }}
+                                {{ $school->workshops_count }}
                             </div>
                         </div>
                         <div class="col-4">
-                            <div class="text-muted small">Alunos (matrículas)</div>
+                            <div class="text-muted small">Alunos matriculados (ano letivo vigente)</div>
                             <div class="h3 mb-0">
-                                {{ $school->enrollments_count ?? $school->enrollments->count() }}
+                                {{ $school->enrollments_count }}
                             </div>
                         </div>
-                    </div>
-
-                    {{-- Anos escolares com alunos matriculados --}}
-                    <div class="mt-2">
-                        <div class="text-muted small mb-1">Anos escolares com alunos</div>
-
-                        @if (isset($gradeLevelsWithStudents) && $gradeLevelsWithStudents->isNotEmpty())
-                            @foreach ($gradeLevelsWithStudents as $gl)
-                                <a href="{{ route('schools.grade-level-students.index', [$school, $gl]) }}"
-                                    class="badge text-bg-secondary me-1 mb-1 text-decoration-none">
-                                    {{ $gl->short_name ?? $gl->name }}
-                                </a>
-                            @endforeach
-                        @else
-                            <span class="text-muted">Nenhum aluno matriculado.</span>
-                        @endif
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    {{-- Anos escolares com alunos matriculados (apenas dessa escola) --}}
+    <div class="card mb-3">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <span><strong>Anos escolares</strong></span>
+        </div>
+        <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nome</th>
+                                <th style="width: 300px;">Qtd de turmas</th>
+                                <th style="width: 220px;">Alunos Matriculados</th>
+                                <th style="width: 150px;" class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (isset($gradeLevelsWithStudents) && $gradeLevelsWithStudents->isNotEmpty())
+                            @foreach ($gradeLevelsWithStudents as $gl)
+                                <tr>
+                                    <td>{{ $gl->name }}</td>
+                                    <td>{{ $gl->classrooms_count }}</td>
+                                    <td>{{ $gl->enrollments_count }}</td>
+                                    <td class="text-end">
+                                        <a href="{{ route('schools.grade-level-students.index', [$school, $gl]) }}"
+                                            class="btn btn-sm btn-outline-secondary">Ver</a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @else
+                            <tr>
+                                <td colspan="4" class="text-muted">Nenhum aluno matriculado.</td>
+                            </tr>
+                        @endif
+                        </tbody>
+                    </table>
+                </div>
+        </div>
+    </div>
     {{-- Turmas da escola (apenas dessa escola) --}}
     <div class="card mb-3">
         <div class="card-header d-flex align-items-center justify-content-between">
             <span><strong>Turmas da escola</strong></span>
-            <a href="{{ route('classrooms.create', ['school_id' => $school->id]) }}" class="btn btn-sm btn-primary">
-                Nova turma
-            </a>
+            <div class="d-flex gap-2">
+                <a href="{{ route('schools.groups-wizard.create', $school) }}" class="btn btn-sm btn-outline-primary">
+                    Novo grupo (helper)
+                </a>
+                <a href="{{ route('classrooms.create', ['school_id' => $school->id]) }}" class="btn btn-sm btn-primary">
+                    Nova turma
+                </a>
+            </div>
         </div>
         <div class="card-body p-0">
             @if ($school->classrooms->isEmpty())
@@ -104,8 +132,8 @@
                         <thead class="table-light">
                             <tr>
                                 <th>Nome</th>
-                                <th style="width: 110px;">Ano letivo</th>
-                                <th style="width: 110px;">Turno</th>
+                                <th style="width: 150px;">Ano letivo</th>
+                                <th style="width: 150px;">Turno</th>
                                 <th>Anos atendidos</th>
                                 <th style="width: 150px;" class="text-end">Ações</th>
                             </tr>
