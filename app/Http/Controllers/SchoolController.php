@@ -68,10 +68,11 @@ class SchoolController extends Controller
         $school->load([
             'city.state',
             // Turmas PAI da escola (sem subturmas)
-            'classrooms' => function ($q) {
+            'classrooms' => function ($q) use ($currentAcademicYear) {
                 $q->whereNull('parent_classroom_id')
+                    ->where('academic_year', $currentAcademicYear)
+                    ->where('is_active', true)
                     ->with(['gradeLevels'])
-                    ->orderByDesc('academic_year')
                     ->orderBy('name');
             },
             // Oficinas vinculadas à escola
@@ -80,7 +81,8 @@ class SchoolController extends Controller
             // counts prontos pra usar nos cards
             'classrooms as classrooms_count' => function ($q) use ($currentAcademicYear) {
                 $q->whereNull('parent_classroom_id')
-                    ->where('academic_year', $currentAcademicYear);
+                    ->where('academic_year', $currentAcademicYear)
+                    ->where('is_active', true);
             },
             'workshops as workshops_count',
             'enrollments as enrollments_count' => function ($q) use ($currentAcademicYear) {
