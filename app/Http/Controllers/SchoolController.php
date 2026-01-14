@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\City;
 use App\Models\School;
+use App\Models\StudentEnrollment;
 use App\Services\Schools\Queries\GetSchoolGradeLevelCounts;
 use App\Models\Workshop;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class SchoolController extends Controller
@@ -61,6 +63,8 @@ class SchoolController extends Controller
     public function show(School $school)
     {
         // Carrega tudo que interessa pra uma visão segmentada dessa escola
+        $currentAcademicYear = (int) now()->year;
+
         $school->load([
             'city.state',
             // Turmas PAI da escola (sem subturmas)
@@ -74,11 +78,20 @@ class SchoolController extends Controller
             'workshops',
         ])->loadCount([
             // counts prontos pra usar nos cards
-            'classrooms as classrooms_count' => function ($q) {
-                $q->whereNull('parent_classroom_id');
+            'classrooms as classrooms_count' => function ($q) use ($currentAcademicYear) {
+                $q->whereNull('parent_classroom_id')
+                    ->where('academic_year', $currentAcademicYear);
             },
             'workshops as workshops_count',
-            'enrollments as enrollments_count',
+            'enrollments as enrollments_count' => function ($q) use ($currentAcademicYear) {
+                $q->select(DB::raw('count(distinct student_id)'))
+                    ->where('academic_year', $currentAcademicYear)
+                    ->whereIn('status', [
+                        StudentEnrollment::STATUS_ENROLLED,
+                        StudentEnrollment::STATUS_ACTIVE,
+                    ])
+                    ->whereNull('ended_at');
+            },
         ]);
 
         $gradeLevelsWithStudents = (new GetSchoolGradeLevelCounts())->execute($school);
