@@ -40,6 +40,7 @@ class GetSchoolGradeLevelCounts
                 'classrooms as classrooms_count' => function ($q) use ($school, $currentAcademicYear) {
                     $q->where('school_id', $school->id)
                         ->where('academic_year', $currentAcademicYear)
+                        ->where('is_active', true)
                         ->whereNull('parent_classroom_id');
                 },
             ])
