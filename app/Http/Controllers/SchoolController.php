@@ -105,8 +105,9 @@ class SchoolController extends Controller
                     $applyEnrollmentFilters($q);
                     $q->select(DB::raw('count(distinct student_id)'));
                 },
-                'classrooms as classrooms_count' => function ($q) use ($school) {
+                'classrooms as classrooms_count' => function ($q) use ($school, $currentAcademicYear) {
                     $q->where('school_id', $school->id)
+                        ->where('academic_year', $currentAcademicYear)
                         ->whereNull('parent_classroom_id');
                 },
             ])
