@@ -50,19 +50,19 @@
                         <div class="col-4">
                             <div class="text-muted small">Turmas</div>
                             <div class="h3 mb-0">
-                                {{ $school->classrooms_count ?? $school->classrooms->count() }}
+                                {{ $school->classrooms_count }}
                             </div>
                         </div>
                         <div class="col-4">
                             <div class="text-muted small">Oficinas vinculadas</div>
                             <div class="h3 mb-0">
-                                {{ $school->workshops_count ?? $school->workshops->count() }}
+                                {{ $school->workshops_count }}
                             </div>
                         </div>
                         <div class="col-4">
                             <div class="text-muted small">Alunos matriculados</div>
                             <div class="h3 mb-0">
-                                {{ $school->enrollments_count ?? $school->enrollments->count() }}
+                                {{ $school->enrollments_count }}
                             </div>
                         </div>
                     </div>
