@@ -11,6 +11,7 @@ use App\Models\School;
 use App\Models\StudentEnrollment; // ajuste se seu model tiver outro nome
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class GradeLevelStudentReportService
 {
@@ -27,7 +28,7 @@ class GradeLevelStudentReportService
         $currentAcademicYear = (int) now()->year;
 
         // 1) Matrículas dessa escola + ano escolar
-        $latestEnrollmentIds = StudentEnrollment::query()
+        $latestEnrollmentIdsSubquery = StudentEnrollment::query()
             ->selectRaw('MAX(id) as id')
             ->where('school_id', $school->id)
             ->where('grade_level_id', $gradeLevel->id)
@@ -40,8 +41,10 @@ class GradeLevelStudentReportService
             ->groupBy('student_id');
 
         $enrollments = StudentEnrollment::with('student')
-            ->whereIn('id', $latestEnrollmentIds)
-            ->get();
+            ->whereIn('id', $latestEnrollmentIdsSubquery)
+            ->get()
+            ->sortBy(fn ($enrollment) => Str::lower(optional($enrollment->student)->name ?? ''))
+            ->values();
 
         if ($enrollments->isEmpty()) {
             return collect();
@@ -117,6 +120,6 @@ class GradeLevelStudentReportService
             ]);
         }
 
-        return $rows->sortBy(fn ($row) => $row['student']->name ?? '');
+        return $rows;
     }
 }
