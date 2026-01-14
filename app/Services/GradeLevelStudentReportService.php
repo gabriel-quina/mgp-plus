@@ -24,10 +24,23 @@ class GradeLevelStudentReportService
         ?Carbon $start = null,
         ?Carbon $end = null
     ): Collection {
+        $currentAcademicYear = (int) now()->year;
+
         // 1) Matrículas dessa escola + ano escolar
-        $enrollments = StudentEnrollment::with('student')
+        $latestEnrollmentIds = StudentEnrollment::query()
+            ->selectRaw('MAX(id) as id')
             ->where('school_id', $school->id)
             ->where('grade_level_id', $gradeLevel->id)
+            ->where('academic_year', $currentAcademicYear)
+            ->whereIn('status', [
+                StudentEnrollment::STATUS_ENROLLED,
+                StudentEnrollment::STATUS_ACTIVE,
+            ])
+            ->whereNull('ended_at')
+            ->groupBy('student_id');
+
+        $enrollments = StudentEnrollment::with('student')
+            ->whereIn('id', $latestEnrollmentIds)
             ->get();
 
         if ($enrollments->isEmpty()) {
