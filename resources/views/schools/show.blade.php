@@ -48,21 +48,21 @@
                 <div class="card-body">
                     <div class="row g-3 mb-3">
                         <div class="col-4">
-                            <div class="text-muted small">Turmas</div>
+                            <div class="text-muted small">Turmas ativas (ano letivo vigente)</div>
                             <div class="h3 mb-0">
-                                {{ $school->classrooms_count ?? $school->classrooms->count() }}
+                                {{ $school->classrooms_count }}
                             </div>
                         </div>
                         <div class="col-4">
                             <div class="text-muted small">Oficinas vinculadas</div>
                             <div class="h3 mb-0">
-                                {{ $school->workshops_count ?? $school->workshops->count() }}
+                                {{ $school->workshops_count }}
                             </div>
                         </div>
                         <div class="col-4">
-                            <div class="text-muted small">Alunos matriculados</div>
+                            <div class="text-muted small">Alunos matriculados (ano letivo vigente)</div>
                             <div class="h3 mb-0">
-                                {{ $school->enrollments_count ?? $school->enrollments->count() }}
+                                {{ $school->enrollments_count }}
                             </div>
                         </div>
                     </div>
@@ -92,8 +92,8 @@
                             @foreach ($gradeLevelsWithStudents as $gl)
                                 <tr>
                                     <td>{{ $gl->name }}</td>
-                                    <td>10</td>
-                                    <td>10</td>
+                                    <td>{{ $gl->classrooms_count }}</td>
+                                    <td>{{ $gl->enrollments_count }}</td>
                                     <td class="text-end">
                                         <a href="{{ route('schools.grade-level-students.index', [$school, $gl]) }}"
                                             class="btn btn-sm btn-outline-secondary">Ver</a>
@@ -101,7 +101,9 @@
                                 </tr>
                             @endforeach
                         @else
-                            <span class="text-muted">Nenhum aluno matriculado.</span>
+                            <tr>
+                                <td colspan="4" class="text-muted">Nenhum aluno matriculado.</td>
+                            </tr>
                         @endif
                         </tbody>
                     </table>
