@@ -17,7 +17,7 @@ class DashboardController extends Controller
                 ->orderBy('name')
                 ->get();
 
-            return view('dashboard.master', compact('user', 'schools'));
+            return view('master', compact('user', 'schools'));
         }
 
         // 2) Empresa (somente por roles globais reais)

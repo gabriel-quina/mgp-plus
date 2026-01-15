@@ -8,6 +8,7 @@ Route::prefix('escolas/{school}')
     ->name('schools.')
     ->middleware(SubstituteBindings::class)
     ->group(function () {
+        require __DIR__.'/dashboard.php';
         require __DIR__.'/students.php';
         require __DIR__.'/enrollments.php';
         require __DIR__.'/teachers.php';
