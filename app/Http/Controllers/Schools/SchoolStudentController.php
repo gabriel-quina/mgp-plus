@@ -46,8 +46,8 @@ class SchoolStudentController extends Controller
             $reportService = app(GradeLevelStudentReportService::class);
             $report = $reportService->forSchoolAndGrade($school, $gradeLevelFilter);
             $studentMetrics = $report->mapWithKeys(function ($row) {
-                $student = $row['student'] ?? null;
-                $enrollment = $row['enrollment'] ?? null;
+                $student = is_array($row) ? ($row['student'] ?? null) : ($row->student ?? null);
+                $enrollment = is_array($row) ? ($row['enrollment'] ?? null) : ($row->enrollment ?? null);
                 $studentId = $student?->id ?? $enrollment?->student_id;
 
                 if (! $studentId) {
@@ -56,11 +56,16 @@ class SchoolStudentController extends Controller
 
                 return [
                     $studentId => [
-                        'avg' => $row['avg_points'] ?? null,
-                        'att' => $row['freq_pct'] ?? null,
+                        'avg' => is_array($row) ? ($row['avg_points'] ?? null) : ($row->avg_points ?? null),
+                        'att' => is_array($row) ? ($row['freq_pct'] ?? null) : ($row->freq_pct ?? null),
                     ],
                 ];
             });
+
+            $pageStudentIds = $enrollments->pluck('student_id')->filter()->all();
+            if (! empty($pageStudentIds)) {
+                $studentMetrics = $studentMetrics->only($pageStudentIds);
+            }
         }
 
         $clearFilterUrl = route('schools.students.index', $school);

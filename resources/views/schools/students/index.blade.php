@@ -100,7 +100,8 @@
                             @if ($gradeLevelId && $showAvg)
                                 <td>
                                     @php
-                                        $avg = $studentMetrics[$enrollment->student_id]['avg'] ?? null;
+                                        $metrics = $studentMetrics->get($enrollment->student_id, []);
+                                        $avg = $metrics['avg'] ?? null;
                                     @endphp
                                     @if ($avg !== null)
                                         {{ number_format($avg, 2, ',', '.') }}
@@ -112,7 +113,8 @@
                             @if ($gradeLevelId && $showAtt)
                                 <td>
                                     @php
-                                        $att = $studentMetrics[$enrollment->student_id]['att'] ?? null;
+                                        $metrics = $studentMetrics->get($enrollment->student_id, []);
+                                        $att = $metrics['att'] ?? null;
                                     @endphp
                                     @if ($att !== null)
                                         {{ number_format($att, 1, ',', '.') }}%
