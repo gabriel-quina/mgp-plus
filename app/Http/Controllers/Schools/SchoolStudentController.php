@@ -37,9 +37,20 @@ class SchoolStudentController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        $clearFilterUrl = route('schools.students.index', $school);
+        if (! empty($search)) {
+            $clearFilterUrl .= '?' . http_build_query(['q' => $search]);
+        }
+
         return view('schools.students.index', [
-            'schoolNav' => $school],
-            compact('school', 'enrollments', 'search', 'gradeLevelFilter', 'gradeLevelId'));
+            'schoolNav' => $school,
+            'school' => $school,
+            'enrollments' => $enrollments,
+            'search' => $search,
+            'gradeLevelFilter' => $gradeLevelFilter,
+            'gradeLevelId' => $gradeLevelId,
+            'clearFilterUrl' => $clearFilterUrl,
+        ]);
     }
 
     public function create(School $school)

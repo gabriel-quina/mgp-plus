@@ -37,12 +37,6 @@
     </form>
 
     @if ($gradeLevelFilter)
-        @php
-            $clearFilterUrl = route('schools.students.index', $school);
-            if (! empty($search)) {
-                $clearFilterUrl .= '?' . http_build_query(['q' => $search]);
-            }
-        @endphp
         <div class="alert alert-info d-flex justify-content-between align-items-center">
             <div>
                 <strong>Filtro:</strong> Ano escolar {{ $gradeLevelFilter->name ?? $gradeLevelFilter->short_name }}
