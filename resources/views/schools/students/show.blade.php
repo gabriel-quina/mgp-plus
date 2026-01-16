@@ -5,15 +5,15 @@
 
 @section('content')
     @php
-        $tenantBase = url("/escola/{$school->id}");
-        $returnTo = request('return_to');
-        $previousUrl = url()->previous();
         $backUrl = route('schools.students.index', $school);
 
-        if ($returnTo && str_starts_with($returnTo, $tenantBase)) {
-            $backUrl = $returnTo;
-        } elseif ($previousUrl && str_starts_with($previousUrl, $tenantBase)) {
-            $backUrl = $previousUrl;
+        if (request('back') === 'students') {
+            $query = array_filter([
+                'grade_level' => request('grade_level'),
+                'q' => request('q'),
+            ], fn ($value) => ! is_null($value) && $value !== '');
+
+            $backUrl = route('schools.students.index', [$school, $query]);
         }
     @endphp
 

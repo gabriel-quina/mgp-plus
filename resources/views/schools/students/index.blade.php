@@ -74,7 +74,13 @@
                             </td>
                             <td>
                                 @if ($enrollment->student)
-                                    <a href="{{ route('schools.students.show', [$school, $enrollment->student, 'return_to' => url()->full()]) }}"
+                                    <a href="{{ route('schools.students.show', array_filter([
+                                        $school,
+                                        $enrollment->student,
+                                        'back' => 'students',
+                                        'grade_level' => request('grade_level'),
+                                        'q' => request('q'),
+                                    ], fn ($value) => ! is_null($value) && $value !== '')) }}"
                                         class="btn btn-sm btn-outline-secondary">
                                         Ver aluno
                                     </a>
