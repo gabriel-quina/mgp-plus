@@ -1,10 +1,10 @@
 <?php
 
-use App\Http\Controllers\{
+use App\Http\Controllers\Company\{
     CityController,
-    GradeLevelController
+    GradeLevelController,
+    SchoolController
 };
-use App\Http\Controllers\Company\SchoolController;
 use Illuminate\Support\Facades\Route;
 
 Route::resource('cidades', CityController::class)

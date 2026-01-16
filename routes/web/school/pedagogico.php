@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Classrooms\{AssessmentController, LessonController};
+use App\Http\Controllers\Schools\Classrooms\{AssessmentController, LessonController};
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('grupos/{classroom}/oficinas/{workshop}')

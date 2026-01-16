@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Classrooms;
+namespace App\Http\Controllers\Schools\Classrooms;
 
 use App\Http\Controllers\Controller;
 use App\Models\Assessment;
@@ -277,4 +277,3 @@ class AssessmentController extends Controller
             ->get();
     }
 }
-

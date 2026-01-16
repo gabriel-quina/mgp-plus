@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\{ClassroomController, WorkshopDistributionController};
-use App\Http\Controllers\Classrooms\{
+use App\Http\Controllers\Company\{ClassroomController, WorkshopDistributionController};
+use App\Http\Controllers\Company\Classrooms\{
     ClassroomChildController,
     ClassroomParentController,
     WorkshopClassController

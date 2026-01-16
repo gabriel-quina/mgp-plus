@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Company;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\School;
 use App\Models\Workshop;
@@ -31,4 +33,3 @@ class SchoolWorkshopController extends Controller
             ->with('success', 'Oficinas da escola atualizadas.');
     }
 }
-
