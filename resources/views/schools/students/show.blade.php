@@ -10,7 +10,6 @@
             <small class="text-muted">{{ $school->name }}</small>
         </div>
         <div class="d-flex gap-2">
-            <a class="btn btn-outline-primary" href="{{ route('students.show', $student) }}">Ver cadastro global</a>
             <a class="btn btn-link" href="{{ route('schools.students.index', $school) }}">← Voltar</a>
         </div>
     </div>
