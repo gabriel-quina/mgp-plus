@@ -11,7 +11,7 @@
             </div>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('schools.show', $school) }}" class="btn btn-outline-dark">
+            <a href="{{ route('schools.dashboard', $school) }}" class="btn btn-outline-dark">
                 Voltar para escola
             </a>
         </div>

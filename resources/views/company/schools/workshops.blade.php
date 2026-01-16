@@ -12,7 +12,7 @@
         </small>
     </div>
     <div class="d-flex gap-2">
-        <a href="{{ route('schools.show', $school) }}" class="btn btn-outline-secondary">Voltar</a>
+        <a href="{{ route('schools.dashboard', $school) }}" class="btn btn-outline-secondary">Voltar</a>
     </div>
 </header>
 
@@ -64,9 +64,8 @@
 
         <div class="card-footer d-flex gap-2">
             <button type="submit" class="btn btn-primary">Salvar</button>
-            <a href="{{ route('schools.show', $school) }}" class="btn btn-outline-secondary">Voltar</a>
+            <a href="{{ route('schools.dashboard', $school) }}" class="btn btn-outline-secondary">Voltar</a>
         </div>
     </div>
 </form>
 @endsection
-

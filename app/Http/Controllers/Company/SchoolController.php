@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers\Schools\
+namespace App\Http\Controllers\Company;
 
+use App\Http\Controllers\Controller;
 use App\Models\City;
 use App\Models\School;
 use App\Models\StudentEnrollment;

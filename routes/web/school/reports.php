@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Reports\{
+use App\Http\Controllers\Schools\Reports\{
     SchoolGradeLevelStudentsController,
     SchoolGroupsOverviewReportController,
     SchoolReportsController,

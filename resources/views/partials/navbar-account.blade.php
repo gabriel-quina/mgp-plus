@@ -194,8 +194,8 @@
                     @if ($actingSchoolId)
                         @if (isset($schoolNav))
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('schools.show') ? 'active' : '' }}"
-                                    href="{{ route('schools.show', $schoolNav) }}">
+                                <a class="nav-link {{ request()->routeIs('schools.dashboard') ? 'active' : '' }}"
+                                    href="{{ route('schools.dashboard', ['school' => $actingSchoolId]) }}">
                                     Resumo da escola
                                 </a>
                             </li>

@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\WorkshopController;
+use App\Http\Controllers\Company\WorkshopController;
 use Illuminate\Support\Facades\Route;
 
 Route::controller(WorkshopController::class)->group(function () {

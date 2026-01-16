@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Company;
+
+use App\Http\Controllers\Controller;
 
 use App\Http\Requests\{StoreStudentRequest, UpdateStudentRequest};
 use App\Models\{City, GradeLevel, School, State, Student, StudentEnrollment};

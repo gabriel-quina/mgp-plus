@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{
+use App\Http\Controllers\Company\{
     CityController,
     GradeLevelController,
     SchoolController

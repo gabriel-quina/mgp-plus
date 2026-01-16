@@ -1,12 +1,21 @@
 <?php
 
+use App\Models\School;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 
-Route::prefix('escolas/{school}')
+Route::get('escolas/{school:id}', function (School $school) {
+    return redirect()->route('schools.dashboard', $school, 301);
+})
+    ->whereNumber('school')
+    ->middleware(SubstituteBindings::class)
+    ->middleware('can:access-school,school');
+
+Route::prefix('escola/{school:id}')
     ->whereNumber('school')
     ->name('schools.')
     ->middleware(SubstituteBindings::class)
+    ->middleware('can:access-school,school')
     ->group(function () {
         require __DIR__.'/dashboard.php';
         require __DIR__.'/students.php';
