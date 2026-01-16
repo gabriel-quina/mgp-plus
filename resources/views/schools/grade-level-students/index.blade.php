@@ -70,8 +70,8 @@
                                 </td>
 
                                 <td class="text-end">
-                                    @if (Route::has('students.show'))
-                                        <a href="{{ route('students.show', $student) }}"
+                                    @if (Route::has('schools.students.show'))
+                                        <a href="{{ route('schools.students.show', [$school, $student]) }}"
                                             class="btn btn-sm btn-outline-primary">
                                             Ver aluno
                                         </a>
