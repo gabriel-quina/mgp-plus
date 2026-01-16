@@ -85,12 +85,13 @@
                             <tr>
                                 <th>Oficina</th>
                                 <th style="width: 25%;">Capacidade máxima</th>
+                                <th style="width: 30%;">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
                             @if ($workshopSummaries->isEmpty())
                                 <tr>
-                                    <td colspan="2" class="text-muted text-center py-3">
+                                    <td colspan="3" class="text-muted text-center py-3">
                                         Nenhuma oficina vinculada à turma.
                                     </td>
                                 </tr>
@@ -125,6 +126,26 @@
                                             @else
                                                 <span class="text-muted">Sem capacidade máxima</span>
                                             @endif
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="d-flex flex-wrap gap-2 justify-content-end">
+                                                <a class="btn btn-sm btn-outline-secondary"
+                                                    href="{{ route('schools.lessons.index', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $wk->id]) }}">
+                                                    Aulas
+                                                </a>
+                                                <a class="btn btn-sm btn-outline-primary"
+                                                    href="{{ route('schools.lessons.create', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $wk->id]) }}">
+                                                    Lançar aula
+                                                </a>
+                                                <a class="btn btn-sm btn-outline-secondary"
+                                                    href="{{ route('schools.assessments.index', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $wk->id]) }}">
+                                                    Avaliações
+                                                </a>
+                                                <a class="btn btn-sm btn-outline-primary"
+                                                    href="{{ route('schools.assessments.create', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $wk->id]) }}">
+                                                    Lançar avaliação
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach
