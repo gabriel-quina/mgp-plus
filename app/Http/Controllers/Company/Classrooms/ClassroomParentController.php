@@ -144,7 +144,7 @@ class ClassroomParentController extends Controller
             ];
         });
 
-        return view('classrooms.show-parent', [
+        return view('company.classrooms.show-parent', [
             'classroom' => $classroom,
             'enrollments' => $enrollments,
             'children' => $children,
