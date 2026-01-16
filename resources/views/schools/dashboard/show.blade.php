@@ -155,8 +155,6 @@
                                     <td class="text-end">
                                         <a href="{{ route('classrooms.show', $classroom) }}"
                                             class="btn btn-sm btn-outline-secondary">Ver</a>
-                                        <a href="{{ route('classrooms.edit', $classroom) }}"
-                                            class="btn btn-sm btn-outline-primary">Editar</a>
                                     </td>
                                 </tr>
                             @endforeach
