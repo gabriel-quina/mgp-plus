@@ -11,7 +11,3 @@ Route::resource('alunos', SchoolStudentController::class)
 Route::get('aluno/{student}', [SchoolStudentController::class, 'show'])
     ->whereNumber('student')
     ->name('students.show');
-
-Route::get('alunos/{student}', [SchoolStudentController::class, 'show'])
-    ->whereNumber('student')
-    ->name('students.show.legacy');
