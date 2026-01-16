@@ -10,7 +10,7 @@
 @section('content')
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div>
-            <h1 class="h3 mb-1">Grupos da Escola</h1>
+            <h1 class="h3 mb-1">Turmas da Escola</h1>
             <div class="text-muted">
                 {{ $school->short_name ?? $school->name }}
             </div>
@@ -18,13 +18,13 @@
 
         <div class="d-flex gap-2 flex-wrap">
             <a class="btn btn-primary" href="{{ route('schools.groups-wizard.create', $school) }}">
-                Novo grupo (helper)
+                Nova turma (helper)
             </a>
             <a class="btn btn-primary" href="{{ route('schools.classrooms.create', $school) }}">
-                Novo grupo
+                Nova turma
             </a>
-            {{-- Espaço futuro: botão do planner de grupos --}}
-            {{-- <a class="btn btn-outline-primary" href="#">Planejar grupos</a> --}}
+            {{-- Espaço futuro: botão do planner de turmas --}}
+            {{-- <a class="btn btn-outline-primary" href="#">Planejar turmas</a> --}}
         </div>
     </div>
 
@@ -32,7 +32,7 @@
         <div class="row g-2 align-items-end">
             <div class="col-12 col-md-5">
                 <label class="form-label mb-1">Buscar por nome</label>
-                <input type="text" name="q" class="form-control" placeholder="Ex.: 5º A / Grupo Inglês 4º+5º"
+                <input type="text" name="q" class="form-control" placeholder="Ex.: 5º A / Turma Inglês 4º+5º"
                     value="{{ $q }}">
             </div>
 
@@ -98,7 +98,7 @@
 
                             <td class="text-nowrap">
                                 @if ($isGroup)
-                                    <span class="badge text-bg-primary">Grupo</span>
+                                    <span class="badge text-bg-primary">Turma</span>
                                 @else
                                     <span class="badge text-bg-secondary">Base (legado)</span>
                                 @endif
@@ -143,7 +143,7 @@
                     @empty
                         <tr>
                             <td colspan="7" class="text-center text-muted py-4">
-                                Nenhum grupo encontrado para esta escola.
+                                Nenhuma turma encontrada para esta escola.
                             </td>
                         </tr>
                     @endforelse

@@ -3,7 +3,7 @@
 @section('content')
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h1 class="h4 mb-1">Relatório — Grupos</h1>
+            <h1 class="h4 mb-1">Relatório — Turmas</h1>
             <div class="text-muted">{{ $school->short_name ?? $school->name }}</div>
         </div>
         <a href="{{ route('schools.reports.index', $school) }}" class="btn btn-sm btn-outline-secondary">Voltar</a>
@@ -46,7 +46,7 @@
                             <td class="fw-semibold">{{ $c->name }}</td>
                             <td>
                                 @if ($c->parent_classroom_id)
-                                    <span class="badge text-bg-primary">Grupo</span>
+                                    <span class="badge text-bg-primary">Turma</span>
                                 @else
                                     <span class="badge text-bg-secondary">Base</span>
                                 @endif

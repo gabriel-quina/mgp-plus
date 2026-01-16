@@ -14,7 +14,7 @@
 @section('content')
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div>
-            <h1 class="h3 mb-1">Novo grupo (helper)</h1>
+            <h1 class="h3 mb-1">Nova turma (helper)</h1>
             <div class="text-muted">{{ $school->short_name ?? $school->name }}</div>
         </div>
         <a class="btn btn-outline-secondary" href="{{ route('schools.classrooms.index', $school) }}">Voltar</a>
@@ -67,7 +67,7 @@
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label">Capacidade por grupo</label>
+                                <label class="form-label">Capacidade por turma</label>
                                 <input type="number" name="max_students" class="form-control" min="1"
                                     value="{{ $selectedMax }}" placeholder="Ex.: 20">
                             </div>
@@ -91,7 +91,7 @@
                         <input type="hidden" name="max_students" value="{{ $selectedMax }}">
 
                         <button class="btn btn-primary" @disabled($preview && $preview['conflict'])>
-                            Criar/Adicionar grupos
+                            Criar/Adicionar turmas
                         </button>
                     </form>
                 </div>
@@ -126,13 +126,13 @@
                             <dt class="col-7">Elegíveis</dt>
                             <dd class="col-5 text-end">{{ $preview['total_students'] ?? '—' }}</dd>
 
-                            <dt class="col-7">Capacidade por grupo</dt>
+                            <dt class="col-7">Capacidade por turma</dt>
                             <dd class="col-5 text-end">{{ $preview['max_students'] ?? '—' }}</dd>
 
-                            <dt class="col-7">Grupos necessários</dt>
+                            <dt class="col-7">Turmas necessárias</dt>
                             <dd class="col-5 text-end">{{ $preview['required_groups'] ?? '—' }}</dd>
 
-                            <dt class="col-7">Grupos existentes</dt>
+                            <dt class="col-7">Turmas existentes</dt>
                             <dd class="col-5 text-end">{{ $preview['existing_groups'] ?? 0 }}</dd>
 
                             @if ($preview['allocated_students'] !== null)

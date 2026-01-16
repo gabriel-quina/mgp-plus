@@ -130,7 +130,7 @@ class SchoolClassroomController extends Controller
 
         return redirect()
             ->route('schools.classrooms.show', [$school, $classroom])
-            ->with('success', 'Grupo criado com sucesso.');
+            ->with('success', 'Turma criada com sucesso.');
     }
 
     private function gradeLevelsWithEnrollments(School $school)

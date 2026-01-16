@@ -82,11 +82,11 @@
                     </li>
                 @endcan
 
-                {{-- Grupos da escola --}}
+                {{-- Turmas da escola --}}
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('schools.classrooms.*') ? 'active' : '' }}"
                         href="{{ route('schools.classrooms.index', $school) }}">
-                        Grupos
+                        Turmas
                     </a>
                 </li>
 

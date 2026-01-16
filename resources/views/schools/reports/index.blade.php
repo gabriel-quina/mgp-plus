@@ -15,16 +15,16 @@
         <div class="col-12 col-lg-6">
             <div class="card h-100">
                 <div class="card-header">
-                    <strong>Oficinas e Grupos</strong>
+                    <strong>Oficinas e Turmas</strong>
                     <div class="text-muted small">
-                        Diagnóstico de distribuição e estrutura dos grupos
+                        Diagnóstico de distribuição e estrutura das turmas
                     </div>
                 </div>
 
                 <div class="list-group list-group-flush">
                     <a class="list-group-item list-group-item-action"
                         href="{{ route('schools.reports.groups.index', $school) }}">
-                        Visão geral de Grupos
+                        Visão geral de Turmas
                     </a>
 
                     <a class="list-group-item list-group-item-action"

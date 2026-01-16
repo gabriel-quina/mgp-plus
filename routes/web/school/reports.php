@@ -7,12 +7,19 @@ use App\Http\Controllers\Schools\Reports\{
     SchoolWorkshopCapacityReportController,
     SchoolWorkshopsOverviewReportController
 };
+use App\Models\School;
 use Illuminate\Support\Facades\Route;
 
 Route::get('relatorios', [SchoolReportsController::class, 'index'])->name('reports.index');
 
-Route::get('relatorios/grupos', [SchoolGroupsOverviewReportController::class, 'index'])
+Route::get('relatorios/turmas', [SchoolGroupsOverviewReportController::class, 'index'])
     ->name('reports.groups.index');
+
+Route::get('relatorios/grupos', function (School $school) {
+    return redirect()->route('schools.reports.groups.index', array_merge([
+        'school' => $school->id,
+    ], request()->query()), 301);
+});
 
 Route::get('relatorios/oficinas', [SchoolWorkshopsOverviewReportController::class, 'index'])
     ->name('reports.workshops.index');
