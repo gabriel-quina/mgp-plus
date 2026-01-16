@@ -75,7 +75,7 @@ class SchoolClassroomController extends Controller
             ]);
         }
 
-        $classroom->loadMissing('school', 'gradeLevels', 'workshops');
+        $classroom->loadMissing('school', 'gradeLevels', 'workshop');
 
         $allEnrollments = method_exists($classroom, 'eligibleEnrollments')
             ? $classroom->eligibleEnrollments()->with(['student', 'gradeLevel'])->get()
@@ -113,48 +113,17 @@ class SchoolClassroomController extends Controller
             'alloc_count_by_child' => $allocCountByChild,
         ];
 
-        $totalAll = $stats['total_all'];
+        $explicitWorkshop = $classroom->workshop()->first();
+        $pivotWorkshops = $classroom->workshops()
+            ->orderBy('workshops.name')
+            ->orderBy('workshops.id')
+            ->get();
 
-        $workshopIdsWithChildren = $children
-            ->flatMap(fn ($child) => $child->workshops->pluck('id'))
-            ->unique()
-            ->values();
-
-        $workshopSummaries = $classroom->workshops->map(function ($wk) use (
-            $totalAll,
-            $allocatedPerWorkshop,
-            $workshopIdsWithChildren
-        ) {
-            $limit = data_get($wk->pivot, 'max_students');
-            $hasLimit = ! is_null($limit) && $limit > 0;
-
-            $allocated = (int) $allocatedPerWorkshop->get($wk->id, 0);
-
-            $status = 'ok';
-            $notAllocated = null;
-
-            if ($hasLimit && $limit < $totalAll) {
-                $hasChildrenForThisWorkshop = $workshopIdsWithChildren->contains($wk->id);
-
-                if (! $hasChildrenForThisWorkshop) {
-                    $status = 'danger';
-                    $notAllocated = $totalAll;
-                } else {
-                    $notAllocated = max(0, $totalAll - $allocated);
-
-                    $status = $notAllocated > 0 ? 'warning' : 'ok';
-                }
-            }
-
-            return (object) [
-                'id' => $wk->id,
-                'name' => $wk->name,
-                'limit' => $limit,
-                'has_limit' => $hasLimit,
-                'status' => $status,
-                'not_allocated' => $notAllocated,
-            ];
-        });
+        $workshop = $explicitWorkshop ?? $pivotWorkshops->first();
+        $hasMultipleWorkshops = $pivotWorkshops->count() > 1;
+        $hasMismatch = $explicitWorkshop
+            && $pivotWorkshops->isNotEmpty()
+            && ! $pivotWorkshops->contains('id', $explicitWorkshop->id);
 
         return view('schools.classrooms.show', [
             'school' => $school,
@@ -163,7 +132,9 @@ class SchoolClassroomController extends Controller
             'enrollments' => $enrollments,
             'children' => $children,
             'stats' => $stats,
-            'workshopSummaries' => $workshopSummaries,
+            'workshop' => $workshop,
+            'hasMultipleWorkshops' => $hasMultipleWorkshops,
+            'hasWorkshopMismatch' => $hasMismatch,
         ]);
     }
 
