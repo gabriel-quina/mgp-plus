@@ -4,7 +4,7 @@ use App\Http\Controllers\{
     CityController,
     GradeLevelController
 };
-use App\Http\Controllers\Admin\Schools\SchoolController;
+use App\Http\Controllers\Company\SchoolController;
 use Illuminate\Support\Facades\Route;
 
 Route::resource('cidades', CityController::class)
