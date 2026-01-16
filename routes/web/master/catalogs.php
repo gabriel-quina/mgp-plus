@@ -2,9 +2,9 @@
 
 use App\Http\Controllers\{
     CityController,
-    GradeLevelController,
-    SchoolController
+    GradeLevelController
 };
+use App\Http\Controllers\Admin\Schools\SchoolController;
 use Illuminate\Support\Facades\Route;
 
 Route::resource('cidades', CityController::class)
