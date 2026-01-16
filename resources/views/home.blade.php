@@ -65,7 +65,7 @@
               <td>{{ optional($school->city)->name ?? '—' }}</td>
               <td>{{ optional(optional($school->city)->state)->uf ?? '—' }}</td>
               <td class="text-end">
-                <a href="{{ route('schools.show', $school) }}" class="btn btn-sm btn-outline-primary">Ver</a>
+                <a href="{{ route('schools.dashboard', $school) }}" class="btn btn-sm btn-outline-primary">Ver</a>
                 <a href="{{ route('schools.edit', $school) }}" class="btn btn-sm btn-outline-secondary">Editar</a>
               </td>
             </tr>
@@ -78,4 +78,3 @@
   </div>
 </div>
 @endsection
-

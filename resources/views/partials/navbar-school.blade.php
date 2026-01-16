@@ -13,7 +13,7 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
         {{-- Marca: nome da escola (home do contexto escola) --}}
-        <a class="navbar-brand" href="{{ route('schools.show', $school) }}">
+        <a class="navbar-brand" href="{{ route('schools.dashboard', $school) }}">
             <i class="bi bi-mortarboard"></i>
             {{ $school->short_name ?? $school->name }}
         </a>
@@ -29,8 +29,8 @@
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 {{-- Início (visão geral da escola) --}}
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('schools.show') ? 'active' : '' }}"
-                        href="{{ route('schools.show', $school) }}">
+                    <a class="nav-link {{ request()->routeIs('schools.dashboard') ? 'active' : '' }}"
+                        href="{{ route('schools.dashboard', $school) }}">
                         Início
                     </a>
                 </li>

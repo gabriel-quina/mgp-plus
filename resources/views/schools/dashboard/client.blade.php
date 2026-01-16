@@ -28,7 +28,7 @@
                 <div class="list-group">
                     @foreach ($schools as $school)
                         <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                            href="{{ route('schools.show', $school) }}">
+                            href="{{ route('schools.dashboard', $school) }}">
                             <span>
                                 {{ $school->short_name ?? $school->name }}
                                 @if ($school->city?->name)
