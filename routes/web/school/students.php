@@ -8,6 +8,6 @@ Route::resource('alunos', SchoolStudentController::class)
     ->names('students')
     ->parameters(['alunos' => 'student']);
 
-Route::get('alunos/{student}', [SchoolStudentController::class, 'show'])
+Route::get('aluno/{student}', [SchoolStudentController::class, 'show'])
     ->whereNumber('student')
     ->name('students.show');

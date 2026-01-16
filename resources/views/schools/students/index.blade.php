@@ -25,6 +25,9 @@
             <input type="text" name="q" id="q" value="{{ $search }}" class="form-control"
                 placeholder="Digite parte do nome do aluno">
         </div>
+        @if ($gradeLevelId)
+            <input type="hidden" name="grade_level" value="{{ $gradeLevelId }}">
+        @endif
 
         <div class="col-md-2">
             <button type="submit" class="btn btn-outline-primary w-100">
@@ -32,6 +35,40 @@
             </button>
         </div>
     </form>
+
+    @if ($gradeLevelFilter)
+        <div class="alert alert-info d-flex justify-content-between align-items-center">
+            <div>
+                <strong>Filtro:</strong> Ano escolar {{ $gradeLevelFilter->name ?? $gradeLevelFilter->short_name }}
+            </div>
+            <a class="btn btn-sm btn-outline-secondary" href="{{ $clearFilterUrl }}">Limpar filtro</a>
+        </div>
+    @endif
+
+    @if ($gradeLevelId)
+        <details class="mb-3">
+            <summary class="text-muted">Colunas</summary>
+            <form method="GET" action="{{ route('schools.students.index', $school) }}" class="mt-2">
+                <input type="hidden" name="grade_level" value="{{ $gradeLevelId }}">
+                @if ($search)
+                    <input type="hidden" name="q" value="{{ $search }}">
+                @endif
+                <div class="d-flex flex-wrap gap-3 align-items-center">
+                    <label class="form-check-label d-flex align-items-center gap-2">
+                        <input class="form-check-input" type="checkbox" name="cols[]" value="avg"
+                            @checked($showAvg)>
+                        Média de notas
+                    </label>
+                    <label class="form-check-label d-flex align-items-center gap-2">
+                        <input class="form-check-input" type="checkbox" name="cols[]" value="att"
+                            @checked($showAtt)>
+                        Frequência
+                    </label>
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Aplicar</button>
+                </div>
+            </form>
+        </details>
+    @endif
 
     @if ($enrollments->isEmpty())
         <div class="alert alert-info">
@@ -43,6 +80,12 @@
                 <thead>
                     <tr>
                         <th>Aluno</th>
+                        @if ($gradeLevelId && $showAvg)
+                            <th style="width: 140px;">Média de notas</th>
+                        @endif
+                        @if ($gradeLevelId && $showAtt)
+                            <th style="width: 140px;">Frequência</th>
+                        @endif
                         <th>Ano escolar</th>
                         <th>Ano letivo</th>
                         <th>Detalhes</th>
@@ -54,6 +97,32 @@
                             <td>
                                 {{ $enrollment->student->name ?? '—' }}
                             </td>
+                            @if ($gradeLevelId && $showAvg)
+                                <td>
+                                    @php
+                                        $metrics = $studentMetrics->get($enrollment->student_id, []);
+                                        $avg = $metrics['avg'] ?? null;
+                                    @endphp
+                                    @if ($avg !== null)
+                                        {{ number_format($avg, 2, ',', '.') }}
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
+                            @endif
+                            @if ($gradeLevelId && $showAtt)
+                                <td>
+                                    @php
+                                        $metrics = $studentMetrics->get($enrollment->student_id, []);
+                                        $att = $metrics['att'] ?? null;
+                                    @endphp
+                                    @if ($att !== null)
+                                        {{ number_format($att, 1, ',', '.') }}%
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
+                            @endif
                             <td>
                                 {{ $enrollment->gradeLevel->name ?? '—' }}
                             </td>
@@ -62,7 +131,13 @@
                             </td>
                             <td>
                                 @if ($enrollment->student)
-                                    <a href="{{ route('schools.students.show', [$school, $enrollment->student]) }}"
+                                    <a href="{{ route('schools.students.show', array_filter([
+                                        $school,
+                                        $enrollment->student,
+                                        'back' => 'students',
+                                        'grade_level' => request('grade_level'),
+                                        'q' => request('q'),
+                                    ], fn ($value) => ! is_null($value) && $value !== '')) }}"
                                         class="btn btn-sm btn-outline-secondary">
                                         Ver aluno
                                     </a>

@@ -4,14 +4,28 @@
 @section('title', 'Aluno — ' . ($student->display_name ?? $student->name ?? 'Aluno'))
 
 @section('content')
+    @php
+        $backUrl = route('schools.students.index', $school);
+
+        if (request('back') === 'students') {
+            $query = array_filter([
+                'grade_level' => request('grade_level'),
+                'q' => request('q'),
+            ], fn ($value) => ! is_null($value) && $value !== '');
+
+            if (! empty($query)) {
+                $backUrl .= '?' . http_build_query($query);
+            }
+        }
+    @endphp
+
     <div class="d-flex justify-content-between align-items-start mb-3">
         <div>
             <h1 class="mb-0">👤 {{ $student->display_name }}</h1>
             <small class="text-muted">{{ $school->name }}</small>
         </div>
         <div class="d-flex gap-2">
-            <a class="btn btn-outline-primary" href="{{ route('students.show', $student) }}">Ver cadastro global</a>
-            <a class="btn btn-link" href="{{ route('schools.students.index', $school) }}">← Voltar</a>
+            <a class="btn btn-link" href="{{ $backUrl }}">← Voltar</a>
         </div>
     </div>
 

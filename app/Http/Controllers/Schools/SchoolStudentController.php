@@ -3,21 +3,31 @@
 namespace App\Http\Controllers\Schools;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Schools\SchoolStudentIndexRequest;
 use App\Http\Requests\{StoreStudentRequest, UpdateStudentRequest};
 use App\Models\{City, GradeLevel, School, State, Student, StudentEnrollment};
+use App\Services\GradeLevelStudentReportService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class SchoolStudentController extends Controller
 {
-    public function index(School $school)
+    public function index(SchoolStudentIndexRequest $request, School $school)
     {
-        $search = request('q');
+        $search = $request->input('q');
+        $gradeLevelId = $request->integer('grade_level');
+        $gradeLevelFilter = $gradeLevelId ? GradeLevel::query()->find($gradeLevelId) : null;
+        $cols = $request->input('cols');
+        $showAvg = $gradeLevelId ? (is_array($cols) ? in_array('avg', $cols, true) : true) : false;
+        $showAtt = $gradeLevelId ? (is_array($cols) ? in_array('att', $cols, true) : true) : false;
 
         $baseQuery = StudentEnrollment::query()
             ->where('school_id', $school->id)
             ->when($search, function ($q) use ($search) {
                 $q->whereHas('student', fn ($qq) => $qq->where('name', 'like', "%{$search}%"));
+            })
+            ->when($gradeLevelId, function ($q) use ($gradeLevelId) {
+                $q->where('grade_level_id', $gradeLevelId);
             });
 
         $latestEnrollmentIds = (clone $baseQuery)
@@ -31,9 +41,50 @@ class SchoolStudentController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        $studentMetrics = collect();
+        if ($gradeLevelFilter && ($showAvg || $showAtt)) {
+            $reportService = app(GradeLevelStudentReportService::class);
+            $report = $reportService->forSchoolAndGrade($school, $gradeLevelFilter);
+            $studentMetrics = $report->mapWithKeys(function ($row) {
+                $student = is_array($row) ? ($row['student'] ?? null) : ($row->student ?? null);
+                $enrollment = is_array($row) ? ($row['enrollment'] ?? null) : ($row->enrollment ?? null);
+                $studentId = $student?->id ?? $enrollment?->student_id;
+
+                if (! $studentId) {
+                    return [];
+                }
+
+                return [
+                    $studentId => [
+                        'avg' => is_array($row) ? ($row['avg_points'] ?? null) : ($row->avg_points ?? null),
+                        'att' => is_array($row) ? ($row['freq_pct'] ?? null) : ($row->freq_pct ?? null),
+                    ],
+                ];
+            });
+
+            $pageStudentIds = $enrollments->pluck('student_id')->filter()->all();
+            if (! empty($pageStudentIds)) {
+                $studentMetrics = $studentMetrics->only($pageStudentIds);
+            }
+        }
+
+        $clearFilterUrl = route('schools.students.index', $school);
+        if (! empty($search)) {
+            $clearFilterUrl .= '?' . http_build_query(['q' => $search]);
+        }
+
         return view('schools.students.index', [
-            'schoolNav' => $school],
-            compact('school', 'enrollments', 'search'));
+            'schoolNav' => $school,
+            'school' => $school,
+            'enrollments' => $enrollments,
+            'search' => $search,
+            'gradeLevelFilter' => $gradeLevelFilter,
+            'gradeLevelId' => $gradeLevelId,
+            'showAvg' => $showAvg,
+            'showAtt' => $showAtt,
+            'studentMetrics' => $studentMetrics,
+            'clearFilterUrl' => $clearFilterUrl,
+        ]);
     }
 
     public function create(School $school)
