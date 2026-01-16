@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Schools;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Schools\SchoolStudentIndexRequest;
 use App\Http\Requests\{StoreStudentRequest, UpdateStudentRequest};
 use App\Models\{City, GradeLevel, School, State, Student, StudentEnrollment};
 use Illuminate\Support\Facades\DB;
@@ -10,14 +11,19 @@ use Illuminate\Validation\ValidationException;
 
 class SchoolStudentController extends Controller
 {
-    public function index(School $school)
+    public function index(SchoolStudentIndexRequest $request, School $school)
     {
-        $search = request('q');
+        $search = $request->input('q');
+        $gradeLevelId = $request->integer('grade_level');
+        $gradeLevelFilter = $gradeLevelId ? GradeLevel::query()->find($gradeLevelId) : null;
 
         $baseQuery = StudentEnrollment::query()
             ->where('school_id', $school->id)
             ->when($search, function ($q) use ($search) {
                 $q->whereHas('student', fn ($qq) => $qq->where('name', 'like', "%{$search}%"));
+            })
+            ->when($gradeLevelId, function ($q) use ($gradeLevelId) {
+                $q->where('grade_level_id', $gradeLevelId);
             });
 
         $latestEnrollmentIds = (clone $baseQuery)
@@ -33,7 +39,7 @@ class SchoolStudentController extends Controller
 
         return view('schools.students.index', [
             'schoolNav' => $school],
-            compact('school', 'enrollments', 'search'));
+            compact('school', 'enrollments', 'search', 'gradeLevelFilter', 'gradeLevelId'));
     }
 
     public function create(School $school)

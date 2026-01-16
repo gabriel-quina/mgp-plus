@@ -25,6 +25,9 @@
             <input type="text" name="q" id="q" value="{{ $search }}" class="form-control"
                 placeholder="Digite parte do nome do aluno">
         </div>
+        @if ($gradeLevelId)
+            <input type="hidden" name="grade_level" value="{{ $gradeLevelId }}">
+        @endif
 
         <div class="col-md-2">
             <button type="submit" class="btn btn-outline-primary w-100">
@@ -32,6 +35,21 @@
             </button>
         </div>
     </form>
+
+    @if ($gradeLevelFilter)
+        @php
+            $clearFilterUrl = route('schools.students.index', $school);
+            if (! empty($search)) {
+                $clearFilterUrl .= '?' . http_build_query(['q' => $search]);
+            }
+        @endphp
+        <div class="alert alert-info d-flex justify-content-between align-items-center">
+            <div>
+                <strong>Filtro:</strong> Ano escolar {{ $gradeLevelFilter->name ?? $gradeLevelFilter->short_name }}
+            </div>
+            <a class="btn btn-sm btn-outline-secondary" href="{{ $clearFilterUrl }}">Limpar filtro</a>
+        </div>
+    @endif
 
     @if ($enrollments->isEmpty())
         <div class="alert alert-info">
@@ -62,7 +80,7 @@
                             </td>
                             <td>
                                 @if ($enrollment->student)
-                                    <a href="{{ route('schools.students.show', [$school, $enrollment->student]) }}"
+                                    <a href="{{ route('schools.students.show', [$school, $enrollment->student, 'return_to' => url()->full()]) }}"
                                         class="btn btn-sm btn-outline-secondary">
                                         Ver aluno
                                     </a>

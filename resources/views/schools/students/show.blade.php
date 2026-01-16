@@ -4,13 +4,26 @@
 @section('title', 'Aluno — ' . ($student->display_name ?? $student->name ?? 'Aluno'))
 
 @section('content')
+    @php
+        $tenantBase = url("/escola/{$school->id}");
+        $returnTo = request('return_to');
+        $previousUrl = url()->previous();
+        $backUrl = route('schools.students.index', $school);
+
+        if ($returnTo && str_starts_with($returnTo, $tenantBase)) {
+            $backUrl = $returnTo;
+        } elseif ($previousUrl && str_starts_with($previousUrl, $tenantBase)) {
+            $backUrl = $previousUrl;
+        }
+    @endphp
+
     <div class="d-flex justify-content-between align-items-start mb-3">
         <div>
             <h1 class="mb-0">👤 {{ $student->display_name }}</h1>
             <small class="text-muted">{{ $school->name }}</small>
         </div>
         <div class="d-flex gap-2">
-            <a class="btn btn-link" href="{{ route('schools.students.index', $school) }}">← Voltar</a>
+            <a class="btn btn-link" href="{{ $backUrl }}">← Voltar</a>
         </div>
     </div>
 
