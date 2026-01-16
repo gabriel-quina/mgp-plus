@@ -13,7 +13,9 @@
                 'q' => request('q'),
             ], fn ($value) => ! is_null($value) && $value !== '');
 
-            $backUrl = route('schools.students.index', [$school, $query]);
+            if (! empty($query)) {
+                $backUrl .= '?' . http_build_query($query);
+            }
         }
     @endphp
 
