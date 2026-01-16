@@ -16,6 +16,8 @@ class SchoolStudentIndexRequest extends FormRequest
         return [
             'q' => ['nullable', 'string', 'max:255'],
             'grade_level' => ['nullable', 'integer', 'exists:grade_levels,id'],
+            'cols' => ['nullable', 'array'],
+            'cols.*' => ['string', 'in:avg,att'],
         ];
     }
 }

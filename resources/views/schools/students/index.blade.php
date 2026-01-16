@@ -45,6 +45,31 @@
         </div>
     @endif
 
+    @if ($gradeLevelId)
+        <details class="mb-3">
+            <summary class="text-muted">Colunas</summary>
+            <form method="GET" action="{{ route('schools.students.index', $school) }}" class="mt-2">
+                <input type="hidden" name="grade_level" value="{{ $gradeLevelId }}">
+                @if ($search)
+                    <input type="hidden" name="q" value="{{ $search }}">
+                @endif
+                <div class="d-flex flex-wrap gap-3 align-items-center">
+                    <label class="form-check-label d-flex align-items-center gap-2">
+                        <input class="form-check-input" type="checkbox" name="cols[]" value="avg"
+                            @checked($showAvg)>
+                        Média de notas
+                    </label>
+                    <label class="form-check-label d-flex align-items-center gap-2">
+                        <input class="form-check-input" type="checkbox" name="cols[]" value="att"
+                            @checked($showAtt)>
+                        Frequência
+                    </label>
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Aplicar</button>
+                </div>
+            </form>
+        </details>
+    @endif
+
     @if ($enrollments->isEmpty())
         <div class="alert alert-info">
             Nenhum aluno encontrado para esta escola.
@@ -55,6 +80,12 @@
                 <thead>
                     <tr>
                         <th>Aluno</th>
+                        @if ($gradeLevelId && $showAvg)
+                            <th style="width: 140px;">Média de notas</th>
+                        @endif
+                        @if ($gradeLevelId && $showAtt)
+                            <th style="width: 140px;">Frequência</th>
+                        @endif
                         <th>Ano escolar</th>
                         <th>Ano letivo</th>
                         <th>Detalhes</th>
@@ -66,6 +97,30 @@
                             <td>
                                 {{ $enrollment->student->name ?? '—' }}
                             </td>
+                            @if ($gradeLevelId && $showAvg)
+                                <td>
+                                    @php
+                                        $avg = $studentMetrics[$enrollment->student_id]['avg'] ?? null;
+                                    @endphp
+                                    @if ($avg !== null)
+                                        {{ number_format($avg, 2, ',', '.') }}
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
+                            @endif
+                            @if ($gradeLevelId && $showAtt)
+                                <td>
+                                    @php
+                                        $att = $studentMetrics[$enrollment->student_id]['att'] ?? null;
+                                    @endphp
+                                    @if ($att !== null)
+                                        {{ number_format($att, 1, ',', '.') }}%
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
+                            @endif
                             <td>
                                 {{ $enrollment->gradeLevel->name ?? '—' }}
                             </td>

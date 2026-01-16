@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Schools\SchoolStudentIndexRequest;
 use App\Http\Requests\{StoreStudentRequest, UpdateStudentRequest};
 use App\Models\{City, GradeLevel, School, State, Student, StudentEnrollment};
+use App\Services\GradeLevelStudentReportService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -16,6 +17,9 @@ class SchoolStudentController extends Controller
         $search = $request->input('q');
         $gradeLevelId = $request->integer('grade_level');
         $gradeLevelFilter = $gradeLevelId ? GradeLevel::query()->find($gradeLevelId) : null;
+        $cols = $request->input('cols');
+        $showAvg = $gradeLevelId ? (is_array($cols) ? in_array('avg', $cols, true) : true) : false;
+        $showAtt = $gradeLevelId ? (is_array($cols) ? in_array('att', $cols, true) : true) : false;
 
         $baseQuery = StudentEnrollment::query()
             ->where('school_id', $school->id)
@@ -37,6 +41,28 @@ class SchoolStudentController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        $studentMetrics = collect();
+        if ($gradeLevelFilter && ($showAvg || $showAtt)) {
+            $reportService = app(GradeLevelStudentReportService::class);
+            $report = $reportService->forSchoolAndGrade($school, $gradeLevelFilter);
+            $studentMetrics = $report->mapWithKeys(function ($row) {
+                $student = $row['student'] ?? null;
+                $enrollment = $row['enrollment'] ?? null;
+                $studentId = $student?->id ?? $enrollment?->student_id;
+
+                if (! $studentId) {
+                    return [];
+                }
+
+                return [
+                    $studentId => [
+                        'avg' => $row['avg_points'] ?? null,
+                        'att' => $row['freq_pct'] ?? null,
+                    ],
+                ];
+            });
+        }
+
         $clearFilterUrl = route('schools.students.index', $school);
         if (! empty($search)) {
             $clearFilterUrl .= '?' . http_build_query(['q' => $search]);
@@ -49,6 +75,9 @@ class SchoolStudentController extends Controller
             'search' => $search,
             'gradeLevelFilter' => $gradeLevelFilter,
             'gradeLevelId' => $gradeLevelId,
+            'showAvg' => $showAvg,
+            'showAtt' => $showAtt,
+            'studentMetrics' => $studentMetrics,
             'clearFilterUrl' => $clearFilterUrl,
         ]);
     }
