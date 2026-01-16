@@ -9,19 +9,6 @@
             <small class="text-muted">{{ $school->name }}</small>
         </div>
 
-        <div class="d-flex gap-2">
-            <a href="{{ route('schools.enrollments.create', $school) }}" class="btn btn-primary">
-                Nova matrícula
-            </a>
-
-            <form method="POST" action="{{ route('schools.enrollments.generate-pre', $school) }}">
-                @csrf
-                <input type="hidden" name="from_year" value="{{ $yr }}">
-                <button class="btn btn-outline-secondary" type="submit" title="Gera pré-matrículas para o ano seguinte">
-                    Gerar pré-matrículas ({{ $yr + 1 }})
-                </button>
-            </form>
-        </div>
     </div>
 
     {{-- Filtros --}}
