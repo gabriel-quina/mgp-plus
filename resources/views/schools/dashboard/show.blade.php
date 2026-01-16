@@ -118,14 +118,6 @@
     <div class="card mb-3">
         <div class="card-header d-flex align-items-center justify-content-between">
             <span><strong>Turmas da escola</strong></span>
-            <div class="d-flex gap-2">
-                <a href="{{ route('schools.groups-wizard.create', $school) }}" class="btn btn-sm btn-outline-primary">
-                    Novo grupo (helper)
-                </a>
-                <a href="{{ route('classrooms.create', ['school_id' => $school->id]) }}" class="btn btn-sm btn-primary">
-                    Nova turma
-                </a>
-            </div>
         </div>
         <div class="card-body p-0">
             @if ($school->classrooms->isEmpty())
@@ -163,8 +155,6 @@
                                     <td class="text-end">
                                         <a href="{{ route('classrooms.show', $classroom) }}"
                                             class="btn btn-sm btn-outline-secondary">Ver</a>
-                                        <a href="{{ route('classrooms.edit', $classroom) }}"
-                                            class="btn btn-sm btn-outline-primary">Editar</a>
                                     </td>
                                 </tr>
                             @endforeach
@@ -184,10 +174,6 @@
                     {{ $school->workshops_count ?? $school->workshops->count() }}
                 </span>
             </div>
-
-            <a href="{{ route('schools.workshops.edit', $school) }}" class="btn btn-sm btn-primary">
-                Editar oficinas
-            </a>
         </div>
 
         <div class="card-body p-0">
