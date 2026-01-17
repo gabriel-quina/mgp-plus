@@ -27,7 +27,7 @@
 <li class="nav-item">
     <a class="nav-link {{ request()->routeIs('schools.classrooms.*') ? 'active' : '' }}"
        href="{{ route('schools.classrooms.index', ['school' => $school->id]) }}">
-        Grupos
+        Turmas
     </a>
 </li>
 
@@ -37,4 +37,3 @@
         Relatórios
     </a>
 </li>
-

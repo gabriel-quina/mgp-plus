@@ -8,6 +8,7 @@ use App\Models\Classroom;
 use App\Models\GradeLevel;
 use App\Models\School;
 use App\Models\StudentEnrollment;
+use App\Models\WorkshopAllocation;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -67,15 +68,74 @@ class SchoolClassroomController extends Controller
         // Segurança básica sem mexer nas rotas
         abort_if((int) $classroom->school_id !== (int) $school->id, 404);
 
-        // Reaproveita suas telas MASTER já prontas
         if ($classroom->parent_classroom_id) {
-            return redirect()->route('subclassrooms.show', [
-                'parent' => $classroom->parent_classroom_id,
-                'classroom' => $classroom->id,
+            return redirect()->route('schools.classrooms.show', [
+                'school' => $school->id,
+                'classroom' => $classroom->parent_classroom_id,
             ]);
         }
 
-        return redirect()->route('classrooms.show', $classroom);
+        $classroom->loadMissing('school', 'gradeLevels', 'workshop');
+
+        $allEnrollments = method_exists($classroom, 'eligibleEnrollments')
+            ? $classroom->eligibleEnrollments()->with(['student', 'gradeLevel'])->get()
+            : collect();
+
+        $children = $classroom->children()
+            ->with('workshops')
+            ->get();
+
+        $childIds = $children->pluck('id')->all();
+
+        $allocations = empty($childIds)
+            ? collect()
+            : WorkshopAllocation::whereIn('child_classroom_id', $childIds)
+                ->get(['workshop_id', 'student_enrollment_id', 'child_classroom_id']);
+
+        $allocatedAnyIds = $allocations->pluck('student_enrollment_id')->unique()->values()->all();
+
+        $allocatedPerWorkshop = $allocations
+            ->groupBy('workshop_id')
+            ->map(fn ($rows) => $rows->pluck('student_enrollment_id')->unique()->count());
+
+        $allocCountByChild = $allocations
+            ->groupBy('child_classroom_id')
+            ->map(fn ($rows) => $rows->pluck('student_enrollment_id')->unique()->count());
+
+        $enrollments = $allEnrollments->sortBy(
+            fn ($e) => mb_strtolower(optional($e->student)->name ?? '')
+        );
+
+        $stats = [
+            'total_all' => $allEnrollments->count(),
+            'allocated_any_ids' => $allocatedAnyIds,
+            'allocated_per_workshop' => $allocatedPerWorkshop,
+            'alloc_count_by_child' => $allocCountByChild,
+        ];
+
+        $explicitWorkshop = $classroom->workshop()->first();
+        $pivotWorkshops = $classroom->workshops()
+            ->orderBy('workshops.name')
+            ->orderBy('workshops.id')
+            ->get();
+
+        $workshop = $explicitWorkshop ?? $pivotWorkshops->first();
+        $hasMultipleWorkshops = $pivotWorkshops->count() > 1;
+        $hasMismatch = $explicitWorkshop
+            && $pivotWorkshops->isNotEmpty()
+            && ! $pivotWorkshops->contains('id', $explicitWorkshop->id);
+
+        return view('schools.classrooms.show', [
+            'school' => $school,
+            'schoolNav' => $school,
+            'classroom' => $classroom,
+            'enrollments' => $enrollments,
+            'children' => $children,
+            'stats' => $stats,
+            'workshop' => $workshop,
+            'hasMultipleWorkshops' => $hasMultipleWorkshops,
+            'hasWorkshopMismatch' => $hasMismatch,
+        ]);
     }
 
     public function create(School $school)
@@ -130,7 +190,7 @@ class SchoolClassroomController extends Controller
 
         return redirect()
             ->route('schools.classrooms.show', [$school, $classroom])
-            ->with('success', 'Grupo criado com sucesso.');
+            ->with('success', 'Turma criada com sucesso.');
     }
 
     private function gradeLevelsWithEnrollments(School $school)
