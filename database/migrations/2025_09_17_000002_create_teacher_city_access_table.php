@@ -12,20 +12,15 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('teacher_id')
-                ->constrained('teachers')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->index();
 
             $table->foreignId('city_id')
-                ->constrained('cities')
-                ->cascadeOnUpdate()
-                ->restrictOnDelete();
+                ->index();
 
             $table->unique(['teacher_id', 'city_id']);
 
             $table->timestamps();
 
-            $table->index('city_id');
         });
     }
 
@@ -34,4 +29,3 @@ return new class extends Migration
         Schema::dropIfExists('teacher_city_access');
     }
 };
-

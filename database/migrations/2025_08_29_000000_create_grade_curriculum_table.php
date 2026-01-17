@@ -9,10 +9,10 @@ return new class extends Migration {
     {
         Schema::create('grade_curriculum', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('school_id')->constrained('schools')->cascadeOnDelete();
+            $table->foreignId('school_id')->index();
             $table->string('academic_period', 32); // ex.: 2025.2
-            $table->foreignId('grade_level_id')->constrained('grade_levels')->cascadeOnDelete();
-            $table->foreignId('workshop_id')->constrained('workshops')->cascadeOnDelete();
+            $table->foreignId('grade_level_id')->index();
+            $table->foreignId('workshop_id')->index();
             $table->timestamps();
 
             $table->unique(['school_id','academic_period','grade_level_id','workshop_id'], 'uniq_grade_curriculum');
@@ -27,4 +27,3 @@ return new class extends Migration {
         Schema::dropIfExists('grade_curriculum');
     }
 };
-

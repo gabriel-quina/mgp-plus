@@ -12,21 +12,15 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('teacher_id')
-                ->constrained('teachers')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->index();
 
             $table->foreignId('school_id')
-                ->constrained('schools')
-                ->cascadeOnUpdate()
-                ->restrictOnDelete();
+                ->index();
 
             // Opcional, só para "saber qual vínculo financia"
             $table->foreignId('engagement_id')
                 ->nullable()
-                ->constrained('teacher_engagements')
-                ->cascadeOnUpdate()
-                ->restrictOnDelete();
+                ->index();
 
             $table->unsignedSmallInteger('academic_year'); // ex.: 2025
             // morning | afternoon | evening (validado no Request)
@@ -51,4 +45,3 @@ return new class extends Migration
         Schema::dropIfExists('teaching_assignments');
     }
 };
-

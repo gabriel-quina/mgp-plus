@@ -11,21 +11,15 @@ return new class extends Migration {
             $table->id();
 
             $table->foreignId('student_id')
-                ->constrained('students')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->index();
 
             // Escola de DESTINO
             $table->foreignId('school_id')
-                ->constrained('schools')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->index();
 
             // Série / nível escolar
             $table->foreignId('grade_level_id')
-                ->constrained('grade_levels')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->index();
 
             // Ano letivo (ex.: 2025)
             $table->unsignedSmallInteger('academic_year');
@@ -41,9 +35,7 @@ return new class extends Migration {
             // Escola de ORIGEM (pode ser histórica)
             $table->foreignId('origin_school_id')
                 ->nullable()
-                ->constrained('schools')
-                ->nullOnDelete()
-                ->cascadeOnUpdate();
+                ->index('idx_se_origin_school');
 
             // Janela do episódio
             $table->date('started_at')->nullable();
@@ -51,6 +43,8 @@ return new class extends Migration {
 
             // Status acadêmico
             $table->enum('status', [
+                'pre_enrolled',
+                'enrolled',
                 'active',
                 'completed',
                 'failed',
@@ -64,7 +58,6 @@ return new class extends Migration {
             // Índices para consultas reais
             $table->index(['student_id', 'status'], 'idx_se_student_status');
             $table->index(['school_id', 'academic_year', 'shift', 'status'], 'idx_se_school_year_shift_status');
-            $table->index('origin_school_id', 'idx_se_origin_school');
         });
     }
 
@@ -73,4 +66,3 @@ return new class extends Migration {
         Schema::dropIfExists('student_enrollments');
     }
 };
-

@@ -12,9 +12,7 @@ return new class extends Migration {
 
             // Chaves de escopo
             $table->foreignId('school_id')
-                  ->constrained('schools')
-                  ->cascadeOnUpdate()
-                  ->cascadeOnDelete();
+                  ->index();
 
             // Período letivo ANUAL (ex.: 2025).
             // Sem default no banco; o "padrão (ano corrente)" você aplica no form/controller.
@@ -23,9 +21,16 @@ return new class extends Migration {
             // Hierarquia (subturma)
             $table->foreignId('parent_classroom_id')
                   ->nullable()
-                  ->constrained('classrooms')
-                  ->cascadeOnUpdate()
-                  ->cascadeOnDelete();
+                  ->index();
+
+            $table->foreignId('workshop_id')
+                  ->nullable()
+                  ->index();
+            $table->foreignId('workshop_group_set_id')
+                  ->nullable()
+                  ->index();
+            $table->unsignedInteger('group_number')
+                  ->nullable();
 
             // Identificação
             $table->string('name', 150);
@@ -35,6 +40,8 @@ return new class extends Migration {
             // Conjunto canônico de anos atendidos (ex.: "1,2,3")
             // -> gerado a partir do multiselect de grade_levels (ordenado e único).
             $table->string('grade_level_key', 191)->nullable();
+            $table->string('status', 20)->default('active');
+            $table->timestamp('locked_at')->nullable();
 
             $table->timestamps();
 
@@ -48,6 +55,7 @@ return new class extends Migration {
             // Índices auxiliares
             $table->index(['school_id', 'academic_year'], 'idx_class_school_year');
             $table->index(['shift', 'is_active'], 'idx_class_shift_active');
+            $table->index(['workshop_group_set_id', 'group_number'], 'idx_classroom_group_set_number');
         });
     }
 
@@ -56,4 +64,3 @@ return new class extends Migration {
         Schema::dropIfExists('classrooms');
     }
 };
-

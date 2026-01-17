@@ -13,20 +13,14 @@ return new class extends Migration
 
             // Episódio de matrícula do aluno (usado para saber o ano letivo e filtrar pertença)
             $table->foreignId('student_enrollment_id')
-                ->constrained('student_enrollments')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->index();
 
             // Turma PAI de origem e destino (mesma escola/turno/ano) — checado na aplicação
             $table->foreignId('from_classroom_id')
-                ->constrained('classrooms')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->index();
 
             $table->foreignId('to_classroom_id')
-                ->constrained('classrooms')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->index();
 
             // Ativo (permite histórico: desativar ao reverter decisão)
             $table->boolean('is_active')->default(true);
@@ -41,9 +35,6 @@ return new class extends Migration
                 'one_active_override_per_year'
             );
 
-            // Índices auxiliares
-            $table->index('from_classroom_id');
-            $table->index('to_classroom_id');
         });
     }
 

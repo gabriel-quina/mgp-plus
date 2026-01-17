@@ -13,13 +13,11 @@ return new class extends Migration
 
             // Grupo (Turma PAI ou Subturma)
             $table->foreignId('classroom_id')
-                ->constrained()
-                ->cascadeOnDelete();
+                ->index();
 
             // Oficina
             $table->foreignId('workshop_id')
-                ->constrained()
-                ->cascadeOnDelete();
+                ->index();
 
             $table->string('title');              // "Prova 1", "Trabalho em grupo", etc.
             $table->text('description')->nullable();

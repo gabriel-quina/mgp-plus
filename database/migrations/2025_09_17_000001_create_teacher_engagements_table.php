@@ -12,9 +12,7 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('teacher_id')
-                ->constrained('teachers')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->index();
 
             // our_clt | our_pj | our_temporary | municipal
             $table->string('engagement_type', 32);
@@ -28,9 +26,7 @@ return new class extends Migration
             // Somente quando engagement_type = 'municipal'
             $table->foreignId('city_id')
                 ->nullable()
-                ->constrained('cities')
-                ->cascadeOnUpdate()
-                ->restrictOnDelete();
+                ->index();
 
             $table->string('notes', 500)->nullable();
 
@@ -47,4 +43,3 @@ return new class extends Migration
         Schema::dropIfExists('teacher_engagements');
     }
 };
-

@@ -11,14 +11,10 @@ return new class extends Migration {
             $table->id();
 
             $table->foreignId('classroom_id')
-                  ->constrained('classrooms')
-                  ->cascadeOnUpdate()
-                  ->cascadeOnDelete();
+                  ->index();
 
             $table->foreignId('grade_level_id')
-                  ->constrained('grade_levels')
-                  ->cascadeOnUpdate()
-                  ->cascadeOnDelete();
+                  ->index();
 
             $table->timestamps();
 
@@ -31,4 +27,3 @@ return new class extends Migration {
         Schema::dropIfExists('classroom_grade_level');
     }
 };
-

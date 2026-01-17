@@ -9,8 +9,8 @@ return new class extends Migration {
     {
         Schema::create('classroom_workshop', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('classroom_id')->constrained('classrooms')->cascadeOnUpdate()->cascadeOnDelete();
-            $table->foreignId('workshop_id')->constrained('workshops')->cascadeOnUpdate()->cascadeOnDelete();
+            $table->foreignId('classroom_id')->index();
+            $table->foreignId('workshop_id')->index();
             $table->unsignedSmallInteger('max_students')->nullable(); // capacidade opcional por oficina
             $table->timestamps();
 
@@ -24,4 +24,3 @@ return new class extends Migration {
         Schema::dropIfExists('classroom_workshop');
     }
 };
-

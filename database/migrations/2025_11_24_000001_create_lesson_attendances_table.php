@@ -12,12 +12,10 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('lesson_id')
-                ->constrained()
-                ->cascadeOnDelete();
+                ->index();
 
             $table->foreignId('student_enrollment_id')
-                ->constrained()
-                ->cascadeOnDelete();
+                ->index();
 
             // Por enquanto algo simples: presente ou ausente
             $table->boolean('present')->default(true);

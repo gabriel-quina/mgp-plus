@@ -11,13 +11,9 @@ return new class extends Migration
         Schema::create('workshop_group_sets', function (Blueprint $table) {
             $table->id();
             $table->foreignId('school_id')
-                ->constrained('schools')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->index();
             $table->foreignId('workshop_id')
-                ->constrained('workshops')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->index();
             $table->unsignedSmallInteger('academic_year');
             $table->string('shift', 50);
             $table->string('grade_levels_signature');
