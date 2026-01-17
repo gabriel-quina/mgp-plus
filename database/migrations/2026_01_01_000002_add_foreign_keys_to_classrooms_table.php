@@ -11,7 +11,6 @@ return new class extends Migration
     {
         if (DB::getDriverName() === 'sqlite') {
             DB::statement('PRAGMA foreign_keys = OFF');
-            DB::statement('DROP INDEX IF EXISTS uniq_class_school_year_shift_set');
 
             Schema::create('classrooms__tmp', function (Blueprint $table) {
                 $table->id();
@@ -107,7 +106,6 @@ return new class extends Migration
     {
         if (DB::getDriverName() === 'sqlite') {
             DB::statement('PRAGMA foreign_keys = OFF');
-            DB::statement('DROP INDEX IF EXISTS uniq_class_school_year_shift_set');
 
             Schema::create('classrooms__tmp', function (Blueprint $table) {
                 $table->id();
