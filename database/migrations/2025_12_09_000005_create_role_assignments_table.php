@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::create('role_assignments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('role_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->index();
+            $table->foreignId('role_id')->index();
 
             // escopo polimórfico:
             // null = global

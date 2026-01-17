@@ -13,13 +13,11 @@ return new class extends Migration
 
             // Grupo onde a aula acontece (pode ser Turma PAI ou Subturma)
             $table->foreignId('classroom_id')
-                ->constrained()
-                ->cascadeOnDelete();
+                ->index();
 
             // Oficina dessa aula (sempre 1 oficina por grupo)
             $table->foreignId('workshop_id')
-                ->constrained()
-                ->cascadeOnDelete();
+                ->index();
 
             // Dados básicos da aula
             $table->date('taught_at');              // data da aula

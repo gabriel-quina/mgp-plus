@@ -12,12 +12,10 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('assessment_id')
-                ->constrained()
-                ->cascadeOnDelete();
+                ->index();
 
             $table->foreignId('student_enrollment_id')
-                ->constrained()
-                ->cascadeOnDelete();
+                ->index();
 
             // ✅ Nota numérica de 0 a 100 (2 casas decimais)
             $table->decimal('score_points', 5, 2)->nullable();

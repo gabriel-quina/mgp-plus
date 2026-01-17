@@ -10,10 +10,11 @@ return new class extends Migration {
         Schema::create('schools', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('city_id')
-                ->constrained('cities')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+            $table->foreignId('city_id')->index();
+
+            $table->string('administrative_dependency')
+                ->default('municipal');
+            // municipal | state | private | federal (se quiser depois)
 
             $table->string('name', 150)->index();
 
@@ -29,7 +30,6 @@ return new class extends Migration {
 
             $table->timestamps();
 
-            $table->index('city_id');
         });
     }
 
@@ -38,4 +38,3 @@ return new class extends Migration {
         Schema::dropIfExists('schools');
     }
 };
-

@@ -11,13 +11,9 @@ return new class extends Migration
         Schema::create('workshop_group_set_grade_level', function (Blueprint $table) {
             $table->id();
             $table->foreignId('workshop_group_set_id')
-                ->constrained('workshop_group_sets')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->index();
             $table->foreignId('grade_level_id')
-                ->constrained('grade_levels')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->index();
             $table->timestamps();
 
             $table->unique(['workshop_group_set_id', 'grade_level_id'], 'uniq_wgs_grade_level');

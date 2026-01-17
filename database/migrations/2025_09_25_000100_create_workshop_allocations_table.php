@@ -13,21 +13,15 @@ return new class extends Migration
 
             // Subturma (sempre child de uma turma PAI)
             $table->foreignId('child_classroom_id')
-                ->constrained('classrooms')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->index();
 
             // Oficina (malha independente por oficina)
             $table->foreignId('workshop_id')
-                ->constrained('workshops')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->index();
 
             // Episódio de matrícula do aluno no ano letivo (verdade-fonte)
             $table->foreignId('student_enrollment_id')
-                ->constrained('student_enrollments')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->index();
 
             // Preserva ajustes manuais em rebalanceamentos
             $table->boolean('is_locked')->default(false);
@@ -50,9 +44,6 @@ return new class extends Migration
                 'wk_alloc_unique_per_workshop'
             );
 
-            $table->index('child_classroom_id');
-            $table->index('workshop_id');
-            $table->index('student_enrollment_id');
         });
     }
 
