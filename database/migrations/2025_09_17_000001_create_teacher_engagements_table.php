@@ -34,7 +34,6 @@ return new class extends Migration
 
             $table->index(['teacher_id', 'status']);
             $table->index(['engagement_type']);
-            $table->index(['city_id']);
         });
     }
 

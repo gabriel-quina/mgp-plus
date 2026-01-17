@@ -15,7 +15,6 @@ return new class extends Migration {
             $table->timestamps();
 
             $table->unique(['classroom_id', 'workshop_id']);
-            $table->index('workshop_id');
         });
     }
 

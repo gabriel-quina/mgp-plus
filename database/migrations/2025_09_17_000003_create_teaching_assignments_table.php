@@ -36,7 +36,6 @@ return new class extends Migration
 
             // Índices de filtros comuns
             $table->index(['teacher_id', 'academic_year']);
-            $table->index('school_id');
         });
     }
 
