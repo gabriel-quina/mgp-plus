@@ -28,7 +28,10 @@ return new class extends Migration
                 $table->timestamp('locked_at')->nullable();
                 $table->timestamps();
 
-                $table->unique(['school_id', 'academic_year', 'shift', 'grade_level_key']);
+                $table->unique(
+                    ['school_id', 'academic_year', 'shift', 'grade_level_key'],
+                    'uniq_class_school_year_shift_set'
+                );
 
                 $table->index(['school_id', 'academic_year'], 'idx_class_school_year');
                 $table->index(['shift', 'is_active'], 'idx_class_shift_active');
@@ -120,7 +123,10 @@ return new class extends Migration
                 $table->timestamp('locked_at')->nullable();
                 $table->timestamps();
 
-                $table->unique(['school_id', 'academic_year', 'shift', 'grade_level_key']);
+                $table->unique(
+                    ['school_id', 'academic_year', 'shift', 'grade_level_key'],
+                    'uniq_class_school_year_shift_set'
+                );
 
                 $table->index(['school_id', 'academic_year'], 'idx_class_school_year');
                 $table->index(['shift', 'is_active'], 'idx_class_shift_active');
