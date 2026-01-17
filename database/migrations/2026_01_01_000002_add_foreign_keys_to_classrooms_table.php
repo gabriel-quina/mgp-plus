@@ -28,14 +28,11 @@ return new class extends Migration
                 $table->timestamp('locked_at')->nullable();
                 $table->timestamps();
 
-                $table->unique(
-                    ['school_id', 'academic_year', 'shift', 'grade_level_key'],
-                    'uniq_class_school_year_shift_set'
-                );
+                $table->unique(['school_id', 'academic_year', 'shift', 'grade_level_key']);
 
-                $table->index(['school_id', 'academic_year'], 'idx_class_school_year');
-                $table->index(['shift', 'is_active'], 'idx_class_shift_active');
-                $table->index(['workshop_group_set_id', 'group_number'], 'idx_classroom_group_set_number');
+                $table->index(['school_id', 'academic_year']);
+                $table->index(['shift', 'is_active']);
+                $table->index(['workshop_group_set_id', 'group_number']);
 
                 $table->foreign('school_id')
                     ->references('id')
@@ -74,6 +71,23 @@ return new class extends Migration
 
             Schema::drop('classrooms');
             Schema::rename('classrooms__tmp', 'classrooms');
+
+            DB::statement("
+                CREATE UNIQUE INDEX uniq_class_school_year_shift_set
+                ON classrooms (school_id, academic_year, shift, grade_level_key)
+            ");
+            DB::statement("
+                CREATE INDEX idx_class_school_year
+                ON classrooms (school_id, academic_year)
+            ");
+            DB::statement("
+                CREATE INDEX idx_class_shift_active
+                ON classrooms (shift, is_active)
+            ");
+            DB::statement("
+                CREATE INDEX idx_classroom_group_set_number
+                ON classrooms (workshop_group_set_id, group_number)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 
@@ -123,14 +137,11 @@ return new class extends Migration
                 $table->timestamp('locked_at')->nullable();
                 $table->timestamps();
 
-                $table->unique(
-                    ['school_id', 'academic_year', 'shift', 'grade_level_key'],
-                    'uniq_class_school_year_shift_set'
-                );
+                $table->unique(['school_id', 'academic_year', 'shift', 'grade_level_key']);
 
-                $table->index(['school_id', 'academic_year'], 'idx_class_school_year');
-                $table->index(['shift', 'is_active'], 'idx_class_shift_active');
-                $table->index(['workshop_group_set_id', 'group_number'], 'idx_classroom_group_set_number');
+                $table->index(['school_id', 'academic_year']);
+                $table->index(['shift', 'is_active']);
+                $table->index(['workshop_group_set_id', 'group_number']);
             });
 
             DB::statement("
@@ -150,6 +161,23 @@ return new class extends Migration
 
             Schema::drop('classrooms');
             Schema::rename('classrooms__tmp', 'classrooms');
+
+            DB::statement("
+                CREATE UNIQUE INDEX uniq_class_school_year_shift_set
+                ON classrooms (school_id, academic_year, shift, grade_level_key)
+            ");
+            DB::statement("
+                CREATE INDEX idx_class_school_year
+                ON classrooms (school_id, academic_year)
+            ");
+            DB::statement("
+                CREATE INDEX idx_class_shift_active
+                ON classrooms (shift, is_active)
+            ");
+            DB::statement("
+                CREATE INDEX idx_classroom_group_set_number
+                ON classrooms (workshop_group_set_id, group_number)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 
