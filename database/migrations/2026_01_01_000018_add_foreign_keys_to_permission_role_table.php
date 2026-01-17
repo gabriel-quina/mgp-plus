@@ -14,11 +14,10 @@ return new class extends Migration
 
             Schema::create('permission_role__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('role_id')->index();
-                $table->foreignId('permission_id')->index();
+                $table->foreignId('role_id');
+                $table->foreignId('permission_id');
                 $table->timestamps();
 
-                $table->unique(['role_id', 'permission_id']);
 
                 $table->foreign('role_id')
                     ->references('id')
@@ -41,6 +40,19 @@ return new class extends Migration
 
             Schema::drop('permission_role');
             Schema::rename('permission_role__tmp', 'permission_role');
+
+            DB::statement("
+                CREATE INDEX permission_role_role_id_index
+                ON permission_role (role_id)
+            ");
+            DB::statement("
+                CREATE INDEX permission_role_permission_id_index
+                ON permission_role (permission_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX permission_role_role_id_permission_id_unique
+                ON permission_role (role_id, permission_id)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 
@@ -66,11 +78,10 @@ return new class extends Migration
 
             Schema::create('permission_role__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('role_id')->index();
-                $table->foreignId('permission_id')->index();
+                $table->foreignId('role_id');
+                $table->foreignId('permission_id');
                 $table->timestamps();
 
-                $table->unique(['role_id', 'permission_id']);
             });
 
             DB::statement("
@@ -84,6 +95,19 @@ return new class extends Migration
 
             Schema::drop('permission_role');
             Schema::rename('permission_role__tmp', 'permission_role');
+
+            DB::statement("
+                CREATE INDEX permission_role_role_id_index
+                ON permission_role (role_id)
+            ");
+            DB::statement("
+                CREATE INDEX permission_role_permission_id_index
+                ON permission_role (permission_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX permission_role_role_id_permission_id_unique
+                ON permission_role (role_id, permission_id)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 

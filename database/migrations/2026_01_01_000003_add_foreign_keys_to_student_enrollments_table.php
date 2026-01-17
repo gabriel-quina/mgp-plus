@@ -14,13 +14,13 @@ return new class extends Migration
 
             Schema::create('student_enrollments__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('student_id')->index();
-                $table->foreignId('school_id')->index();
-                $table->foreignId('grade_level_id')->index();
+                $table->foreignId('student_id');
+                $table->foreignId('school_id');
+                $table->foreignId('grade_level_id');
                 $table->unsignedSmallInteger('academic_year');
                 $table->enum('shift', ['morning', 'afternoon', 'evening'])->default('morning');
                 $table->enum('transfer_scope', ['first', 'internal', 'external'])->default('first');
-                $table->foreignId('origin_school_id')->nullable()->index();
+                $table->foreignId('origin_school_id')->nullable();
                 $table->date('started_at')->nullable();
                 $table->date('ended_at')->nullable();
                 $table->enum('status', [
@@ -35,8 +35,6 @@ return new class extends Migration
                 ])->default('active');
                 $table->timestamps();
 
-                $table->index(['student_id', 'status']);
-                $table->index(['school_id', 'academic_year', 'shift', 'status']);
                 $table->foreign('student_id')
                     ->references('id')
                     ->on('students')
@@ -77,6 +75,18 @@ return new class extends Migration
             Schema::drop('student_enrollments');
             Schema::rename('student_enrollments__tmp', 'student_enrollments');
 
+            DB::statement("
+                CREATE INDEX student_enrollments_student_id_index
+                ON student_enrollments (student_id)
+            ");
+            DB::statement("
+                CREATE INDEX student_enrollments_school_id_index
+                ON student_enrollments (school_id)
+            ");
+            DB::statement("
+                CREATE INDEX student_enrollments_grade_level_id_index
+                ON student_enrollments (grade_level_id)
+            ");
             DB::statement("
                 CREATE INDEX idx_se_student_status
                 ON student_enrollments (student_id, status)
@@ -126,13 +136,13 @@ return new class extends Migration
 
             Schema::create('student_enrollments__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('student_id')->index();
-                $table->foreignId('school_id')->index();
-                $table->foreignId('grade_level_id')->index();
+                $table->foreignId('student_id');
+                $table->foreignId('school_id');
+                $table->foreignId('grade_level_id');
                 $table->unsignedSmallInteger('academic_year');
                 $table->enum('shift', ['morning', 'afternoon', 'evening'])->default('morning');
                 $table->enum('transfer_scope', ['first', 'internal', 'external'])->default('first');
-                $table->foreignId('origin_school_id')->nullable()->index();
+                $table->foreignId('origin_school_id')->nullable();
                 $table->date('started_at')->nullable();
                 $table->date('ended_at')->nullable();
                 $table->enum('status', [
@@ -147,8 +157,6 @@ return new class extends Migration
                 ])->default('active');
                 $table->timestamps();
 
-                $table->index(['student_id', 'status']);
-                $table->index(['school_id', 'academic_year', 'shift', 'status']);
             });
 
             DB::statement("
@@ -169,6 +177,18 @@ return new class extends Migration
             Schema::drop('student_enrollments');
             Schema::rename('student_enrollments__tmp', 'student_enrollments');
 
+            DB::statement("
+                CREATE INDEX student_enrollments_student_id_index
+                ON student_enrollments (student_id)
+            ");
+            DB::statement("
+                CREATE INDEX student_enrollments_school_id_index
+                ON student_enrollments (school_id)
+            ");
+            DB::statement("
+                CREATE INDEX student_enrollments_grade_level_id_index
+                ON student_enrollments (grade_level_id)
+            ");
             DB::statement("
                 CREATE INDEX idx_se_student_status
                 ON student_enrollments (student_id, status)

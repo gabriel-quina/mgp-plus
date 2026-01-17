@@ -14,8 +14,8 @@ return new class extends Migration
 
             Schema::create('assessments__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('classroom_id')->index();
-                $table->foreignId('workshop_id')->index();
+                $table->foreignId('classroom_id');
+                $table->foreignId('workshop_id');
                 $table->string('title');
                 $table->text('description')->nullable();
                 $table->date('due_at')->nullable();
@@ -47,6 +47,15 @@ return new class extends Migration
             Schema::drop('assessments');
             Schema::rename('assessments__tmp', 'assessments');
 
+            DB::statement("
+                CREATE INDEX assessments_classroom_id_index
+                ON assessments (classroom_id)
+            ");
+            DB::statement("
+                CREATE INDEX assessments_workshop_id_index
+                ON assessments (workshop_id)
+            ");
+
             DB::statement('PRAGMA foreign_keys = ON');
 
             return;
@@ -71,8 +80,8 @@ return new class extends Migration
 
             Schema::create('assessments__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('classroom_id')->index();
-                $table->foreignId('workshop_id')->index();
+                $table->foreignId('classroom_id');
+                $table->foreignId('workshop_id');
                 $table->string('title');
                 $table->text('description')->nullable();
                 $table->date('due_at')->nullable();
@@ -94,6 +103,15 @@ return new class extends Migration
 
             Schema::drop('assessments');
             Schema::rename('assessments__tmp', 'assessments');
+
+            DB::statement("
+                CREATE INDEX assessments_classroom_id_index
+                ON assessments (classroom_id)
+            ");
+            DB::statement("
+                CREATE INDEX assessments_workshop_id_index
+                ON assessments (workshop_id)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 

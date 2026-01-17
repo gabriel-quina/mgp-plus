@@ -14,11 +14,10 @@ return new class extends Migration
 
             Schema::create('workshop_group_set_grade_level__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('workshop_group_set_id')->index();
-                $table->foreignId('grade_level_id')->index();
+                $table->foreignId('workshop_group_set_id');
+                $table->foreignId('grade_level_id');
                 $table->timestamps();
 
-                $table->unique(['workshop_group_set_id', 'grade_level_id'], 'uniq_wgs_grade_level');
 
                 $table->foreign('workshop_group_set_id')
                     ->references('id')
@@ -43,6 +42,19 @@ return new class extends Migration
 
             Schema::drop('workshop_group_set_grade_level');
             Schema::rename('workshop_group_set_grade_level__tmp', 'workshop_group_set_grade_level');
+
+            DB::statement("
+                CREATE INDEX workshop_group_set_grade_level_workshop_group_set_id_index
+                ON workshop_group_set_grade_level (workshop_group_set_id)
+            ");
+            DB::statement("
+                CREATE INDEX workshop_group_set_grade_level_grade_level_id_index
+                ON workshop_group_set_grade_level (grade_level_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX uniq_wgs_grade_level
+                ON workshop_group_set_grade_level (workshop_group_set_id, grade_level_id)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 
@@ -70,11 +82,10 @@ return new class extends Migration
 
             Schema::create('workshop_group_set_grade_level__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('workshop_group_set_id')->index();
-                $table->foreignId('grade_level_id')->index();
+                $table->foreignId('workshop_group_set_id');
+                $table->foreignId('grade_level_id');
                 $table->timestamps();
 
-                $table->unique(['workshop_group_set_id', 'grade_level_id'], 'uniq_wgs_grade_level');
             });
 
             DB::statement("
@@ -88,6 +99,19 @@ return new class extends Migration
 
             Schema::drop('workshop_group_set_grade_level');
             Schema::rename('workshop_group_set_grade_level__tmp', 'workshop_group_set_grade_level');
+
+            DB::statement("
+                CREATE INDEX workshop_group_set_grade_level_workshop_group_set_id_index
+                ON workshop_group_set_grade_level (workshop_group_set_id)
+            ");
+            DB::statement("
+                CREATE INDEX workshop_group_set_grade_level_grade_level_id_index
+                ON workshop_group_set_grade_level (grade_level_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX uniq_wgs_grade_level
+                ON workshop_group_set_grade_level (workshop_group_set_id, grade_level_id)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 

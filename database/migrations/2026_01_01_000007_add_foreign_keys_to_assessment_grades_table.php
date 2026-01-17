@@ -14,14 +14,13 @@ return new class extends Migration
 
             Schema::create('assessment_grades__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('assessment_id')->index();
-                $table->foreignId('student_enrollment_id')->index();
+                $table->foreignId('assessment_id');
+                $table->foreignId('student_enrollment_id');
                 $table->decimal('score_points', 5, 2)->nullable();
                 $table->string('score_concept', 20)->nullable();
                 $table->text('notes')->nullable();
                 $table->timestamps();
 
-                $table->unique(['assessment_id', 'student_enrollment_id']);
 
                 $table->foreign('assessment_id')
                     ->references('id')
@@ -49,6 +48,19 @@ return new class extends Migration
             Schema::drop('assessment_grades');
             Schema::rename('assessment_grades__tmp', 'assessment_grades');
 
+            DB::statement("
+                CREATE INDEX assessment_grades_assessment_id_index
+                ON assessment_grades (assessment_id)
+            ");
+            DB::statement("
+                CREATE INDEX assessment_grades_student_enrollment_id_index
+                ON assessment_grades (student_enrollment_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX assessment_grades_assessment_id_student_enrollment_id_unique
+                ON assessment_grades (assessment_id, student_enrollment_id)
+            ");
+
             DB::statement('PRAGMA foreign_keys = ON');
 
             return;
@@ -73,14 +85,13 @@ return new class extends Migration
 
             Schema::create('assessment_grades__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('assessment_id')->index();
-                $table->foreignId('student_enrollment_id')->index();
+                $table->foreignId('assessment_id');
+                $table->foreignId('student_enrollment_id');
                 $table->decimal('score_points', 5, 2)->nullable();
                 $table->string('score_concept', 20)->nullable();
                 $table->text('notes')->nullable();
                 $table->timestamps();
 
-                $table->unique(['assessment_id', 'student_enrollment_id']);
             });
 
             DB::statement("
@@ -98,6 +109,19 @@ return new class extends Migration
 
             Schema::drop('assessment_grades');
             Schema::rename('assessment_grades__tmp', 'assessment_grades');
+
+            DB::statement("
+                CREATE INDEX assessment_grades_assessment_id_index
+                ON assessment_grades (assessment_id)
+            ");
+            DB::statement("
+                CREATE INDEX assessment_grades_student_enrollment_id_index
+                ON assessment_grades (student_enrollment_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX assessment_grades_assessment_id_student_enrollment_id_unique
+                ON assessment_grades (assessment_id, student_enrollment_id)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 

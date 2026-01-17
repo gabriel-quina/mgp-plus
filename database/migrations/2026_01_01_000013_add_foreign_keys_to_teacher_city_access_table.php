@@ -14,11 +14,10 @@ return new class extends Migration
 
             Schema::create('teacher_city_access__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('teacher_id')->index();
-                $table->foreignId('city_id')->index();
+                $table->foreignId('teacher_id');
+                $table->foreignId('city_id');
                 $table->timestamps();
 
-                $table->unique(['teacher_id', 'city_id']);
 
                 $table->foreign('teacher_id')
                     ->references('id')
@@ -43,6 +42,19 @@ return new class extends Migration
 
             Schema::drop('teacher_city_access');
             Schema::rename('teacher_city_access__tmp', 'teacher_city_access');
+
+            DB::statement("
+                CREATE INDEX teacher_city_access_teacher_id_index
+                ON teacher_city_access (teacher_id)
+            ");
+            DB::statement("
+                CREATE INDEX teacher_city_access_city_id_index
+                ON teacher_city_access (city_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX teacher_city_access_teacher_id_city_id_unique
+                ON teacher_city_access (teacher_id, city_id)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 
@@ -70,11 +82,10 @@ return new class extends Migration
 
             Schema::create('teacher_city_access__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('teacher_id')->index();
-                $table->foreignId('city_id')->index();
+                $table->foreignId('teacher_id');
+                $table->foreignId('city_id');
                 $table->timestamps();
 
-                $table->unique(['teacher_id', 'city_id']);
             });
 
             DB::statement("
@@ -88,6 +99,19 @@ return new class extends Migration
 
             Schema::drop('teacher_city_access');
             Schema::rename('teacher_city_access__tmp', 'teacher_city_access');
+
+            DB::statement("
+                CREATE INDEX teacher_city_access_teacher_id_index
+                ON teacher_city_access (teacher_id)
+            ");
+            DB::statement("
+                CREATE INDEX teacher_city_access_city_id_index
+                ON teacher_city_access (city_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX teacher_city_access_teacher_id_city_id_unique
+                ON teacher_city_access (teacher_id, city_id)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 

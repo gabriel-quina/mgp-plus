@@ -14,21 +14,13 @@ return new class extends Migration
 
             Schema::create('workshop_allocations__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('child_classroom_id')->index();
-                $table->foreignId('workshop_id')->index();
-                $table->foreignId('student_enrollment_id')->index();
+                $table->foreignId('child_classroom_id');
+                $table->foreignId('workshop_id');
+                $table->foreignId('student_enrollment_id');
                 $table->boolean('is_locked')->default(false);
                 $table->string('note', 300)->nullable();
                 $table->timestamps();
 
-                $table->unique(
-                    ['child_classroom_id', 'workshop_id', 'student_enrollment_id'],
-                    'wk_alloc_unique_in_child'
-                );
-                $table->unique(
-                    ['workshop_id', 'student_enrollment_id'],
-                    'wk_alloc_unique_per_workshop'
-                );
 
                 $table->foreign('child_classroom_id')
                     ->references('id')
@@ -61,6 +53,27 @@ return new class extends Migration
             Schema::drop('workshop_allocations');
             Schema::rename('workshop_allocations__tmp', 'workshop_allocations');
 
+            DB::statement("
+                CREATE INDEX workshop_allocations_child_classroom_id_index
+                ON workshop_allocations (child_classroom_id)
+            ");
+            DB::statement("
+                CREATE INDEX workshop_allocations_workshop_id_index
+                ON workshop_allocations (workshop_id)
+            ");
+            DB::statement("
+                CREATE INDEX workshop_allocations_student_enrollment_id_index
+                ON workshop_allocations (student_enrollment_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX wk_alloc_unique_in_child
+                ON workshop_allocations (child_classroom_id, workshop_id, student_enrollment_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX wk_alloc_unique_per_workshop
+                ON workshop_allocations (workshop_id, student_enrollment_id)
+            ");
+
             DB::statement('PRAGMA foreign_keys = ON');
 
             return;
@@ -92,21 +105,13 @@ return new class extends Migration
 
             Schema::create('workshop_allocations__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('child_classroom_id')->index();
-                $table->foreignId('workshop_id')->index();
-                $table->foreignId('student_enrollment_id')->index();
+                $table->foreignId('child_classroom_id');
+                $table->foreignId('workshop_id');
+                $table->foreignId('student_enrollment_id');
                 $table->boolean('is_locked')->default(false);
                 $table->string('note', 300)->nullable();
                 $table->timestamps();
 
-                $table->unique(
-                    ['child_classroom_id', 'workshop_id', 'student_enrollment_id'],
-                    'wk_alloc_unique_in_child'
-                );
-                $table->unique(
-                    ['workshop_id', 'student_enrollment_id'],
-                    'wk_alloc_unique_per_workshop'
-                );
             });
 
             DB::statement("
@@ -122,6 +127,27 @@ return new class extends Migration
 
             Schema::drop('workshop_allocations');
             Schema::rename('workshop_allocations__tmp', 'workshop_allocations');
+
+            DB::statement("
+                CREATE INDEX workshop_allocations_child_classroom_id_index
+                ON workshop_allocations (child_classroom_id)
+            ");
+            DB::statement("
+                CREATE INDEX workshop_allocations_workshop_id_index
+                ON workshop_allocations (workshop_id)
+            ");
+            DB::statement("
+                CREATE INDEX workshop_allocations_student_enrollment_id_index
+                ON workshop_allocations (student_enrollment_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX wk_alloc_unique_in_child
+                ON workshop_allocations (child_classroom_id, workshop_id, student_enrollment_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX wk_alloc_unique_per_workshop
+                ON workshop_allocations (workshop_id, student_enrollment_id)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 

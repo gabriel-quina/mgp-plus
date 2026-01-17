@@ -14,7 +14,7 @@ return new class extends Migration
 
             Schema::create('cities__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('state_id')->index();
+                $table->foreignId('state_id');
                 $table->string('name');
                 $table->timestamps();
 
@@ -37,6 +37,11 @@ return new class extends Migration
             Schema::drop('cities');
             Schema::rename('cities__tmp', 'cities');
 
+            DB::statement("
+                CREATE INDEX cities_state_id_index
+                ON cities (state_id)
+            ");
+
             DB::statement('PRAGMA foreign_keys = ON');
 
             return;
@@ -58,7 +63,7 @@ return new class extends Migration
 
             Schema::create('cities__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('state_id')->index();
+                $table->foreignId('state_id');
                 $table->string('name');
                 $table->timestamps();
             });
@@ -74,6 +79,11 @@ return new class extends Migration
 
             Schema::drop('cities');
             Schema::rename('cities__tmp', 'cities');
+
+            DB::statement("
+                CREATE INDEX cities_state_id_index
+                ON cities (state_id)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 

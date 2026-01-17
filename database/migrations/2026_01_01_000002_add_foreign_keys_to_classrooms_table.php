@@ -14,11 +14,11 @@ return new class extends Migration
 
             Schema::create('classrooms__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('school_id')->index();
+                $table->foreignId('school_id');
                 $table->unsignedSmallInteger('academic_year')->nullable();
-                $table->foreignId('parent_classroom_id')->nullable()->index();
-                $table->foreignId('workshop_id')->nullable()->index();
-                $table->foreignId('workshop_group_set_id')->nullable()->index();
+                $table->foreignId('parent_classroom_id')->nullable();
+                $table->foreignId('workshop_id')->nullable();
+                $table->foreignId('workshop_group_set_id')->nullable();
                 $table->unsignedInteger('group_number')->nullable();
                 $table->string('name', 150);
                 $table->enum('shift', ['morning','afternoon','evening']);
@@ -28,11 +28,6 @@ return new class extends Migration
                 $table->timestamp('locked_at')->nullable();
                 $table->timestamps();
 
-                $table->unique(['school_id', 'academic_year', 'shift', 'grade_level_key']);
-
-                $table->index(['school_id', 'academic_year']);
-                $table->index(['shift', 'is_active']);
-                $table->index(['workshop_group_set_id', 'group_number']);
 
                 $table->foreign('school_id')
                     ->references('id')
@@ -72,6 +67,22 @@ return new class extends Migration
             Schema::drop('classrooms');
             Schema::rename('classrooms__tmp', 'classrooms');
 
+            DB::statement("
+                CREATE INDEX classrooms_school_id_index
+                ON classrooms (school_id)
+            ");
+            DB::statement("
+                CREATE INDEX classrooms_parent_classroom_id_index
+                ON classrooms (parent_classroom_id)
+            ");
+            DB::statement("
+                CREATE INDEX classrooms_workshop_id_index
+                ON classrooms (workshop_id)
+            ");
+            DB::statement("
+                CREATE INDEX classrooms_workshop_group_set_id_index
+                ON classrooms (workshop_group_set_id)
+            ");
             DB::statement("
                 CREATE UNIQUE INDEX uniq_class_school_year_shift_set
                 ON classrooms (school_id, academic_year, shift, grade_level_key)
@@ -123,11 +134,11 @@ return new class extends Migration
 
             Schema::create('classrooms__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('school_id')->index();
+                $table->foreignId('school_id');
                 $table->unsignedSmallInteger('academic_year')->nullable();
-                $table->foreignId('parent_classroom_id')->nullable()->index();
-                $table->foreignId('workshop_id')->nullable()->index();
-                $table->foreignId('workshop_group_set_id')->nullable()->index();
+                $table->foreignId('parent_classroom_id')->nullable();
+                $table->foreignId('workshop_id')->nullable();
+                $table->foreignId('workshop_group_set_id')->nullable();
                 $table->unsignedInteger('group_number')->nullable();
                 $table->string('name', 150);
                 $table->enum('shift', ['morning','afternoon','evening']);
@@ -137,11 +148,6 @@ return new class extends Migration
                 $table->timestamp('locked_at')->nullable();
                 $table->timestamps();
 
-                $table->unique(['school_id', 'academic_year', 'shift', 'grade_level_key']);
-
-                $table->index(['school_id', 'academic_year']);
-                $table->index(['shift', 'is_active']);
-                $table->index(['workshop_group_set_id', 'group_number']);
             });
 
             DB::statement("
@@ -162,6 +168,22 @@ return new class extends Migration
             Schema::drop('classrooms');
             Schema::rename('classrooms__tmp', 'classrooms');
 
+            DB::statement("
+                CREATE INDEX classrooms_school_id_index
+                ON classrooms (school_id)
+            ");
+            DB::statement("
+                CREATE INDEX classrooms_parent_classroom_id_index
+                ON classrooms (parent_classroom_id)
+            ");
+            DB::statement("
+                CREATE INDEX classrooms_workshop_id_index
+                ON classrooms (workshop_id)
+            ");
+            DB::statement("
+                CREATE INDEX classrooms_workshop_group_set_id_index
+                ON classrooms (workshop_group_set_id)
+            ");
             DB::statement("
                 CREATE UNIQUE INDEX uniq_class_school_year_shift_set
                 ON classrooms (school_id, academic_year, shift, grade_level_key)

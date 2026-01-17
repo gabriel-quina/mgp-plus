@@ -14,19 +14,12 @@ return new class extends Migration
 
             Schema::create('grade_curriculum__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('school_id')->index();
+                $table->foreignId('school_id');
                 $table->string('academic_period', 32);
-                $table->foreignId('grade_level_id')->index();
-                $table->foreignId('workshop_id')->index();
+                $table->foreignId('grade_level_id');
+                $table->foreignId('workshop_id');
                 $table->timestamps();
 
-                $table->unique(
-                    ['school_id', 'academic_period', 'grade_level_id', 'workshop_id'],
-                    'uniq_grade_curriculum'
-                );
-                $table->index(['school_id', 'academic_period']);
-                $table->index(['grade_level_id', 'academic_period']);
-                $table->index(['workshop_id', 'academic_period']);
 
                 $table->foreign('school_id')
                     ->references('id')
@@ -56,6 +49,35 @@ return new class extends Migration
             Schema::drop('grade_curriculum');
             Schema::rename('grade_curriculum__tmp', 'grade_curriculum');
 
+            DB::statement("
+                CREATE INDEX grade_curriculum_school_id_index
+                ON grade_curriculum (school_id)
+            ");
+            DB::statement("
+                CREATE INDEX grade_curriculum_grade_level_id_index
+                ON grade_curriculum (grade_level_id)
+            ");
+            DB::statement("
+                CREATE INDEX grade_curriculum_workshop_id_index
+                ON grade_curriculum (workshop_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX uniq_grade_curriculum
+                ON grade_curriculum (school_id, academic_period, grade_level_id, workshop_id)
+            ");
+            DB::statement("
+                CREATE INDEX grade_curriculum_school_id_academic_period_index
+                ON grade_curriculum (school_id, academic_period)
+            ");
+            DB::statement("
+                CREATE INDEX grade_curriculum_grade_level_id_academic_period_index
+                ON grade_curriculum (grade_level_id, academic_period)
+            ");
+            DB::statement("
+                CREATE INDEX grade_curriculum_workshop_id_academic_period_index
+                ON grade_curriculum (workshop_id, academic_period)
+            ");
+
             DB::statement('PRAGMA foreign_keys = ON');
 
             return;
@@ -84,19 +106,12 @@ return new class extends Migration
 
             Schema::create('grade_curriculum__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('school_id')->index();
+                $table->foreignId('school_id');
                 $table->string('academic_period', 32);
-                $table->foreignId('grade_level_id')->index();
-                $table->foreignId('workshop_id')->index();
+                $table->foreignId('grade_level_id');
+                $table->foreignId('workshop_id');
                 $table->timestamps();
 
-                $table->unique(
-                    ['school_id', 'academic_period', 'grade_level_id', 'workshop_id'],
-                    'uniq_grade_curriculum'
-                );
-                $table->index(['school_id', 'academic_period']);
-                $table->index(['grade_level_id', 'academic_period']);
-                $table->index(['workshop_id', 'academic_period']);
             });
 
             DB::statement("
@@ -112,6 +127,35 @@ return new class extends Migration
 
             Schema::drop('grade_curriculum');
             Schema::rename('grade_curriculum__tmp', 'grade_curriculum');
+
+            DB::statement("
+                CREATE INDEX grade_curriculum_school_id_index
+                ON grade_curriculum (school_id)
+            ");
+            DB::statement("
+                CREATE INDEX grade_curriculum_grade_level_id_index
+                ON grade_curriculum (grade_level_id)
+            ");
+            DB::statement("
+                CREATE INDEX grade_curriculum_workshop_id_index
+                ON grade_curriculum (workshop_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX uniq_grade_curriculum
+                ON grade_curriculum (school_id, academic_period, grade_level_id, workshop_id)
+            ");
+            DB::statement("
+                CREATE INDEX grade_curriculum_school_id_academic_period_index
+                ON grade_curriculum (school_id, academic_period)
+            ");
+            DB::statement("
+                CREATE INDEX grade_curriculum_grade_level_id_academic_period_index
+                ON grade_curriculum (grade_level_id, academic_period)
+            ");
+            DB::statement("
+                CREATE INDEX grade_curriculum_workshop_id_academic_period_index
+                ON grade_curriculum (workshop_id, academic_period)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 

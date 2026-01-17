@@ -14,8 +14,8 @@ return new class extends Migration
 
             Schema::create('workshop_group_sets__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('school_id')->index();
-                $table->foreignId('workshop_id')->index();
+                $table->foreignId('school_id');
+                $table->foreignId('workshop_id');
                 $table->unsignedSmallInteger('academic_year');
                 $table->string('shift', 50);
                 $table->string('grade_levels_signature');
@@ -48,6 +48,15 @@ return new class extends Migration
             Schema::drop('workshop_group_sets');
             Schema::rename('workshop_group_sets__tmp', 'workshop_group_sets');
 
+            DB::statement("
+                CREATE INDEX workshop_group_sets_school_id_index
+                ON workshop_group_sets (school_id)
+            ");
+            DB::statement("
+                CREATE INDEX workshop_group_sets_workshop_id_index
+                ON workshop_group_sets (workshop_id)
+            ");
+
             DB::statement('PRAGMA foreign_keys = ON');
 
             return;
@@ -74,8 +83,8 @@ return new class extends Migration
 
             Schema::create('workshop_group_sets__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('school_id')->index();
-                $table->foreignId('workshop_id')->index();
+                $table->foreignId('school_id');
+                $table->foreignId('workshop_id');
                 $table->unsignedSmallInteger('academic_year');
                 $table->string('shift', 50);
                 $table->string('grade_levels_signature');
@@ -96,6 +105,15 @@ return new class extends Migration
 
             Schema::drop('workshop_group_sets');
             Schema::rename('workshop_group_sets__tmp', 'workshop_group_sets');
+
+            DB::statement("
+                CREATE INDEX workshop_group_sets_school_id_index
+                ON workshop_group_sets (school_id)
+            ");
+            DB::statement("
+                CREATE INDEX workshop_group_sets_workshop_id_index
+                ON workshop_group_sets (workshop_id)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 

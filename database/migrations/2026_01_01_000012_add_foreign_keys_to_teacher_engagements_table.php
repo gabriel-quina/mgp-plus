@@ -14,19 +14,16 @@ return new class extends Migration
 
             Schema::create('teacher_engagements__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('teacher_id')->index();
+                $table->foreignId('teacher_id');
                 $table->string('engagement_type', 32);
                 $table->unsignedTinyInteger('hours_per_week');
                 $table->string('status', 24)->default('active');
                 $table->date('start_date')->nullable();
                 $table->date('end_date')->nullable();
-                $table->foreignId('city_id')->nullable()->index();
+                $table->foreignId('city_id')->nullable();
                 $table->string('notes', 500)->nullable();
                 $table->timestamps();
 
-                $table->index(['teacher_id', 'status']);
-                $table->index(['engagement_type']);
-                $table->index(['city_id']);
 
                 $table->foreign('teacher_id')
                     ->references('id')
@@ -56,6 +53,23 @@ return new class extends Migration
             Schema::drop('teacher_engagements');
             Schema::rename('teacher_engagements__tmp', 'teacher_engagements');
 
+            DB::statement("
+                CREATE INDEX teacher_engagements_teacher_id_index
+                ON teacher_engagements (teacher_id)
+            ");
+            DB::statement("
+                CREATE INDEX teacher_engagements_city_id_index
+                ON teacher_engagements (city_id)
+            ");
+            DB::statement("
+                CREATE INDEX teacher_engagements_teacher_id_status_index
+                ON teacher_engagements (teacher_id, status)
+            ");
+            DB::statement("
+                CREATE INDEX teacher_engagements_engagement_type_index
+                ON teacher_engagements (engagement_type)
+            ");
+
             DB::statement('PRAGMA foreign_keys = ON');
 
             return;
@@ -82,19 +96,16 @@ return new class extends Migration
 
             Schema::create('teacher_engagements__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('teacher_id')->index();
+                $table->foreignId('teacher_id');
                 $table->string('engagement_type', 32);
                 $table->unsignedTinyInteger('hours_per_week');
                 $table->string('status', 24)->default('active');
                 $table->date('start_date')->nullable();
                 $table->date('end_date')->nullable();
-                $table->foreignId('city_id')->nullable()->index();
+                $table->foreignId('city_id')->nullable();
                 $table->string('notes', 500)->nullable();
                 $table->timestamps();
 
-                $table->index(['teacher_id', 'status']);
-                $table->index(['engagement_type']);
-                $table->index(['city_id']);
             });
 
             DB::statement("
@@ -112,6 +123,23 @@ return new class extends Migration
 
             Schema::drop('teacher_engagements');
             Schema::rename('teacher_engagements__tmp', 'teacher_engagements');
+
+            DB::statement("
+                CREATE INDEX teacher_engagements_teacher_id_index
+                ON teacher_engagements (teacher_id)
+            ");
+            DB::statement("
+                CREATE INDEX teacher_engagements_city_id_index
+                ON teacher_engagements (city_id)
+            ");
+            DB::statement("
+                CREATE INDEX teacher_engagements_teacher_id_status_index
+                ON teacher_engagements (teacher_id, status)
+            ");
+            DB::statement("
+                CREATE INDEX teacher_engagements_engagement_type_index
+                ON teacher_engagements (engagement_type)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 

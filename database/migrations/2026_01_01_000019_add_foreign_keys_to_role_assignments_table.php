@@ -14,12 +14,11 @@ return new class extends Migration
 
             Schema::create('role_assignments__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('user_id')->index();
-                $table->foreignId('role_id')->index();
+                $table->foreignId('user_id');
+                $table->foreignId('role_id');
                 $table->nullableMorphs('scope');
                 $table->timestamps();
 
-                $table->unique(['user_id', 'role_id', 'scope_type', 'scope_id'], 'role_assignments_unique');
 
                 $table->foreign('user_id')
                     ->references('id')
@@ -45,6 +44,19 @@ return new class extends Migration
             Schema::drop('role_assignments');
             Schema::rename('role_assignments__tmp', 'role_assignments');
 
+            DB::statement("
+                CREATE INDEX role_assignments_user_id_index
+                ON role_assignments (user_id)
+            ");
+            DB::statement("
+                CREATE INDEX role_assignments_role_id_index
+                ON role_assignments (role_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX role_assignments_unique
+                ON role_assignments (user_id, role_id, scope_type, scope_id)
+            ");
+
             DB::statement('PRAGMA foreign_keys = ON');
 
             return;
@@ -69,12 +81,11 @@ return new class extends Migration
 
             Schema::create('role_assignments__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('user_id')->index();
-                $table->foreignId('role_id')->index();
+                $table->foreignId('user_id');
+                $table->foreignId('role_id');
                 $table->nullableMorphs('scope');
                 $table->timestamps();
 
-                $table->unique(['user_id', 'role_id', 'scope_type', 'scope_id'], 'role_assignments_unique');
             });
 
             DB::statement("
@@ -90,6 +101,19 @@ return new class extends Migration
 
             Schema::drop('role_assignments');
             Schema::rename('role_assignments__tmp', 'role_assignments');
+
+            DB::statement("
+                CREATE INDEX role_assignments_user_id_index
+                ON role_assignments (user_id)
+            ");
+            DB::statement("
+                CREATE INDEX role_assignments_role_id_index
+                ON role_assignments (role_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX role_assignments_unique
+                ON role_assignments (user_id, role_id, scope_type, scope_id)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 

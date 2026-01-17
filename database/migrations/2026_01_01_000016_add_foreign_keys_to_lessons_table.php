@@ -14,18 +14,14 @@ return new class extends Migration
 
             Schema::create('lessons__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('classroom_id')->index();
-                $table->foreignId('workshop_id')->index();
+                $table->foreignId('classroom_id');
+                $table->foreignId('workshop_id');
                 $table->date('taught_at');
                 $table->string('topic')->nullable();
                 $table->text('notes')->nullable();
                 $table->boolean('is_locked')->default(false);
                 $table->timestamps();
 
-                $table->unique(
-                    ['classroom_id', 'workshop_id', 'taught_at', 'starts_at'],
-                    'lessons_unique_slot'
-                );
 
                 $table->foreign('classroom_id')
                     ->references('id')
@@ -51,6 +47,19 @@ return new class extends Migration
             Schema::drop('lessons');
             Schema::rename('lessons__tmp', 'lessons');
 
+            DB::statement("
+                CREATE INDEX lessons_classroom_id_index
+                ON lessons (classroom_id)
+            ");
+            DB::statement("
+                CREATE INDEX lessons_workshop_id_index
+                ON lessons (workshop_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX lessons_unique_slot
+                ON lessons (classroom_id, workshop_id, taught_at, starts_at)
+            ");
+
             DB::statement('PRAGMA foreign_keys = ON');
 
             return;
@@ -75,18 +84,14 @@ return new class extends Migration
 
             Schema::create('lessons__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('classroom_id')->index();
-                $table->foreignId('workshop_id')->index();
+                $table->foreignId('classroom_id');
+                $table->foreignId('workshop_id');
                 $table->date('taught_at');
                 $table->string('topic')->nullable();
                 $table->text('notes')->nullable();
                 $table->boolean('is_locked')->default(false);
                 $table->timestamps();
 
-                $table->unique(
-                    ['classroom_id', 'workshop_id', 'taught_at', 'starts_at'],
-                    'lessons_unique_slot'
-                );
             });
 
             DB::statement("
@@ -102,6 +107,19 @@ return new class extends Migration
 
             Schema::drop('lessons');
             Schema::rename('lessons__tmp', 'lessons');
+
+            DB::statement("
+                CREATE INDEX lessons_classroom_id_index
+                ON lessons (classroom_id)
+            ");
+            DB::statement("
+                CREATE INDEX lessons_workshop_id_index
+                ON lessons (workshop_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX lessons_unique_slot
+                ON lessons (classroom_id, workshop_id, taught_at, starts_at)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 

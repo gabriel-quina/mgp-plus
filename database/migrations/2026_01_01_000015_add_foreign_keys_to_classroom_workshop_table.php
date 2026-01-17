@@ -14,13 +14,11 @@ return new class extends Migration
 
             Schema::create('classroom_workshop__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('classroom_id')->index();
-                $table->foreignId('workshop_id')->index();
+                $table->foreignId('classroom_id');
+                $table->foreignId('workshop_id');
                 $table->unsignedSmallInteger('max_students')->nullable();
                 $table->timestamps();
 
-                $table->unique(['classroom_id', 'workshop_id']);
-                $table->index('workshop_id');
 
                 $table->foreign('classroom_id')
                     ->references('id')
@@ -48,6 +46,19 @@ return new class extends Migration
             Schema::drop('classroom_workshop');
             Schema::rename('classroom_workshop__tmp', 'classroom_workshop');
 
+            DB::statement("
+                CREATE INDEX classroom_workshop_classroom_id_index
+                ON classroom_workshop (classroom_id)
+            ");
+            DB::statement("
+                CREATE INDEX classroom_workshop_workshop_id_index
+                ON classroom_workshop (workshop_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX classroom_workshop_classroom_id_workshop_id_unique
+                ON classroom_workshop (classroom_id, workshop_id)
+            ");
+
             DB::statement('PRAGMA foreign_keys = ON');
 
             return;
@@ -74,13 +85,11 @@ return new class extends Migration
 
             Schema::create('classroom_workshop__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('classroom_id')->index();
-                $table->foreignId('workshop_id')->index();
+                $table->foreignId('classroom_id');
+                $table->foreignId('workshop_id');
                 $table->unsignedSmallInteger('max_students')->nullable();
                 $table->timestamps();
 
-                $table->unique(['classroom_id', 'workshop_id']);
-                $table->index('workshop_id');
             });
 
             DB::statement("
@@ -96,6 +105,19 @@ return new class extends Migration
 
             Schema::drop('classroom_workshop');
             Schema::rename('classroom_workshop__tmp', 'classroom_workshop');
+
+            DB::statement("
+                CREATE INDEX classroom_workshop_classroom_id_index
+                ON classroom_workshop (classroom_id)
+            ");
+            DB::statement("
+                CREATE INDEX classroom_workshop_workshop_id_index
+                ON classroom_workshop (workshop_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX classroom_workshop_classroom_id_workshop_id_unique
+                ON classroom_workshop (classroom_id, workshop_id)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 

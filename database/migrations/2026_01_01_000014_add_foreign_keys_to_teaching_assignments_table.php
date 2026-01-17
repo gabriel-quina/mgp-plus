@@ -14,18 +14,15 @@ return new class extends Migration
 
             Schema::create('teaching_assignments__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('teacher_id')->index();
-                $table->foreignId('school_id')->index();
-                $table->foreignId('engagement_id')->nullable()->index();
+                $table->foreignId('teacher_id');
+                $table->foreignId('school_id');
+                $table->foreignId('engagement_id')->nullable();
                 $table->unsignedSmallInteger('academic_year');
                 $table->string('shift', 16)->nullable();
                 $table->unsignedTinyInteger('hours_per_week')->nullable();
                 $table->string('notes', 500)->nullable();
                 $table->timestamps();
 
-                $table->unique(['teacher_id', 'school_id', 'academic_year', 'shift']);
-                $table->index(['teacher_id', 'academic_year']);
-                $table->index('school_id');
 
                 $table->foreign('teacher_id')
                     ->references('id')
@@ -60,6 +57,27 @@ return new class extends Migration
             Schema::drop('teaching_assignments');
             Schema::rename('teaching_assignments__tmp', 'teaching_assignments');
 
+            DB::statement("
+                CREATE INDEX teaching_assignments_teacher_id_index
+                ON teaching_assignments (teacher_id)
+            ");
+            DB::statement("
+                CREATE INDEX teaching_assignments_school_id_index
+                ON teaching_assignments (school_id)
+            ");
+            DB::statement("
+                CREATE INDEX teaching_assignments_engagement_id_index
+                ON teaching_assignments (engagement_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX teaching_assignments_teacher_id_school_id_academic_year_shift_unique
+                ON teaching_assignments (teacher_id, school_id, academic_year, shift)
+            ");
+            DB::statement("
+                CREATE INDEX teaching_assignments_teacher_id_academic_year_index
+                ON teaching_assignments (teacher_id, academic_year)
+            ");
+
             DB::statement('PRAGMA foreign_keys = ON');
 
             return;
@@ -91,18 +109,15 @@ return new class extends Migration
 
             Schema::create('teaching_assignments__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('teacher_id')->index();
-                $table->foreignId('school_id')->index();
-                $table->foreignId('engagement_id')->nullable()->index();
+                $table->foreignId('teacher_id');
+                $table->foreignId('school_id');
+                $table->foreignId('engagement_id')->nullable();
                 $table->unsignedSmallInteger('academic_year');
                 $table->string('shift', 16)->nullable();
                 $table->unsignedTinyInteger('hours_per_week')->nullable();
                 $table->string('notes', 500)->nullable();
                 $table->timestamps();
 
-                $table->unique(['teacher_id', 'school_id', 'academic_year', 'shift']);
-                $table->index(['teacher_id', 'academic_year']);
-                $table->index('school_id');
             });
 
             DB::statement("
@@ -120,6 +135,27 @@ return new class extends Migration
 
             Schema::drop('teaching_assignments');
             Schema::rename('teaching_assignments__tmp', 'teaching_assignments');
+
+            DB::statement("
+                CREATE INDEX teaching_assignments_teacher_id_index
+                ON teaching_assignments (teacher_id)
+            ");
+            DB::statement("
+                CREATE INDEX teaching_assignments_school_id_index
+                ON teaching_assignments (school_id)
+            ");
+            DB::statement("
+                CREATE INDEX teaching_assignments_engagement_id_index
+                ON teaching_assignments (engagement_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX teaching_assignments_teacher_id_school_id_academic_year_shift_unique
+                ON teaching_assignments (teacher_id, school_id, academic_year, shift)
+            ");
+            DB::statement("
+                CREATE INDEX teaching_assignments_teacher_id_academic_year_index
+                ON teaching_assignments (teacher_id, academic_year)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 

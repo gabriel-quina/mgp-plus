@@ -14,11 +14,10 @@ return new class extends Migration
 
             Schema::create('classroom_grade_level__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('classroom_id')->index();
-                $table->foreignId('grade_level_id')->index();
+                $table->foreignId('classroom_id');
+                $table->foreignId('grade_level_id');
                 $table->timestamps();
 
-                $table->unique(['classroom_id', 'grade_level_id'], 'uniq_classroom_gradelevel');
 
                 $table->foreign('classroom_id')
                     ->references('id')
@@ -43,6 +42,19 @@ return new class extends Migration
 
             Schema::drop('classroom_grade_level');
             Schema::rename('classroom_grade_level__tmp', 'classroom_grade_level');
+
+            DB::statement("
+                CREATE INDEX classroom_grade_level_classroom_id_index
+                ON classroom_grade_level (classroom_id)
+            ");
+            DB::statement("
+                CREATE INDEX classroom_grade_level_grade_level_id_index
+                ON classroom_grade_level (grade_level_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX uniq_classroom_gradelevel
+                ON classroom_grade_level (classroom_id, grade_level_id)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 
@@ -70,11 +82,10 @@ return new class extends Migration
 
             Schema::create('classroom_grade_level__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('classroom_id')->index();
-                $table->foreignId('grade_level_id')->index();
+                $table->foreignId('classroom_id');
+                $table->foreignId('grade_level_id');
                 $table->timestamps();
 
-                $table->unique(['classroom_id', 'grade_level_id'], 'uniq_classroom_gradelevel');
             });
 
             DB::statement("
@@ -88,6 +99,19 @@ return new class extends Migration
 
             Schema::drop('classroom_grade_level');
             Schema::rename('classroom_grade_level__tmp', 'classroom_grade_level');
+
+            DB::statement("
+                CREATE INDEX classroom_grade_level_classroom_id_index
+                ON classroom_grade_level (classroom_id)
+            ");
+            DB::statement("
+                CREATE INDEX classroom_grade_level_grade_level_id_index
+                ON classroom_grade_level (grade_level_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX uniq_classroom_gradelevel
+                ON classroom_grade_level (classroom_id, grade_level_id)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 

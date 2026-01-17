@@ -14,17 +14,13 @@ return new class extends Migration
 
             Schema::create('classroom_overrides__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('student_enrollment_id')->index();
-                $table->foreignId('from_classroom_id')->index();
-                $table->foreignId('to_classroom_id')->index();
+                $table->foreignId('student_enrollment_id');
+                $table->foreignId('from_classroom_id');
+                $table->foreignId('to_classroom_id');
                 $table->boolean('is_active')->default(true);
                 $table->string('reason', 300)->nullable();
                 $table->timestamps();
 
-                $table->unique(
-                    ['student_enrollment_id', 'is_active'],
-                    'one_active_override_per_year'
-                );
 
                 $table->foreign('student_enrollment_id')
                     ->references('id')
@@ -57,6 +53,23 @@ return new class extends Migration
             Schema::drop('classroom_overrides');
             Schema::rename('classroom_overrides__tmp', 'classroom_overrides');
 
+            DB::statement("
+                CREATE INDEX classroom_overrides_student_enrollment_id_index
+                ON classroom_overrides (student_enrollment_id)
+            ");
+            DB::statement("
+                CREATE INDEX classroom_overrides_from_classroom_id_index
+                ON classroom_overrides (from_classroom_id)
+            ");
+            DB::statement("
+                CREATE INDEX classroom_overrides_to_classroom_id_index
+                ON classroom_overrides (to_classroom_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX one_active_override_per_year
+                ON classroom_overrides (student_enrollment_id, is_active)
+            ");
+
             DB::statement('PRAGMA foreign_keys = ON');
 
             return;
@@ -88,17 +101,13 @@ return new class extends Migration
 
             Schema::create('classroom_overrides__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('student_enrollment_id')->index();
-                $table->foreignId('from_classroom_id')->index();
-                $table->foreignId('to_classroom_id')->index();
+                $table->foreignId('student_enrollment_id');
+                $table->foreignId('from_classroom_id');
+                $table->foreignId('to_classroom_id');
                 $table->boolean('is_active')->default(true);
                 $table->string('reason', 300)->nullable();
                 $table->timestamps();
 
-                $table->unique(
-                    ['student_enrollment_id', 'is_active'],
-                    'one_active_override_per_year'
-                );
             });
 
             DB::statement("
@@ -114,6 +123,23 @@ return new class extends Migration
 
             Schema::drop('classroom_overrides');
             Schema::rename('classroom_overrides__tmp', 'classroom_overrides');
+
+            DB::statement("
+                CREATE INDEX classroom_overrides_student_enrollment_id_index
+                ON classroom_overrides (student_enrollment_id)
+            ");
+            DB::statement("
+                CREATE INDEX classroom_overrides_from_classroom_id_index
+                ON classroom_overrides (from_classroom_id)
+            ");
+            DB::statement("
+                CREATE INDEX classroom_overrides_to_classroom_id_index
+                ON classroom_overrides (to_classroom_id)
+            ");
+            DB::statement("
+                CREATE UNIQUE INDEX one_active_override_per_year
+                ON classroom_overrides (student_enrollment_id, is_active)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 

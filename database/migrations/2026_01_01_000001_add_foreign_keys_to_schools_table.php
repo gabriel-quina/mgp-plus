@@ -14,10 +14,10 @@ return new class extends Migration
 
             Schema::create('schools__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('city_id')->index();
+                $table->foreignId('city_id');
                 $table->string('administrative_dependency')->default('municipal');
-                $table->string('name', 150)->index();
-                $table->boolean('is_historical')->default(false)->index();
+                $table->string('name', 150);
+                $table->boolean('is_historical')->default(false);
                 $table->string('street', 150)->nullable();
                 $table->string('number', 20)->nullable();
                 $table->string('neighborhood', 120)->nullable();
@@ -48,6 +48,19 @@ return new class extends Migration
             Schema::drop('schools');
             Schema::rename('schools__tmp', 'schools');
 
+            DB::statement("
+                CREATE INDEX schools_city_id_index
+                ON schools (city_id)
+            ");
+            DB::statement("
+                CREATE INDEX schools_name_index
+                ON schools (name)
+            ");
+            DB::statement("
+                CREATE INDEX schools_is_historical_index
+                ON schools (is_historical)
+            ");
+
             DB::statement('PRAGMA foreign_keys = ON');
 
             return;
@@ -69,10 +82,10 @@ return new class extends Migration
 
             Schema::create('schools__tmp', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('city_id')->index();
+                $table->foreignId('city_id');
                 $table->string('administrative_dependency')->default('municipal');
-                $table->string('name', 150)->index();
-                $table->boolean('is_historical')->default(false)->index();
+                $table->string('name', 150);
+                $table->boolean('is_historical')->default(false);
                 $table->string('street', 150)->nullable();
                 $table->string('number', 20)->nullable();
                 $table->string('neighborhood', 120)->nullable();
@@ -97,6 +110,19 @@ return new class extends Migration
 
             Schema::drop('schools');
             Schema::rename('schools__tmp', 'schools');
+
+            DB::statement("
+                CREATE INDEX schools_city_id_index
+                ON schools (city_id)
+            ");
+            DB::statement("
+                CREATE INDEX schools_name_index
+                ON schools (name)
+            ");
+            DB::statement("
+                CREATE INDEX schools_is_historical_index
+                ON schools (is_historical)
+            ");
 
             DB::statement('PRAGMA foreign_keys = ON');
 
