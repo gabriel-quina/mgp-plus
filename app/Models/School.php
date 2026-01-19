@@ -56,8 +56,7 @@ class School extends Model
     }
 
     /**
-     * Turmas da escola (PAI + subturmas).
-     * No controller a gente filtra as PAI com whereNull('parent_classroom_id').
+     * Turmas da escola (operacionais).
      */
     public function classrooms()
     {

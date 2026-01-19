@@ -7,17 +7,17 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
                 <h1 class="h4 mb-1">
-                    Presença da aula – {{ $lesson->taught_at->format('d/m/Y') }}
+                    Presença da aula – {{ $lesson->lesson_at->format('d/m/Y H:i') }}
                 </h1>
                 <div class="text-muted small">
                     {{ $classroom->name }} · {{ $classroom->school->name }} ·
-                    {{ $classroom->academic_year }} · {{ $classroom->shift_label }}<br>
-                    Oficina: {{ $workshop->name }}
+                    {{ $classroom->academic_year_id }} · {{ $classroom->shift ?? '—' }}<br>
+                    Oficina: {{ $classroom->workshop?->name ?? '—' }}
                 </div>
             </div>
 
             <div class="d-flex gap-2">
-                <a href="{{ route('schools.lessons.create', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id]) }}"
+                <a href="{{ route('schools.lessons.create', ['school' => $school->id, 'classroom' => $classroom->id]) }}"
                     class="btn btn-outline-secondary btn-sm">
                     Lançar nova aula
                 </a>
@@ -32,7 +32,7 @@
             <div class="card-body row g-3">
                 <div class="col-md-6">
                     <strong>Data:</strong><br>
-                    {{ $lesson->taught_at->format('d/m/Y') }}
+                    {{ $lesson->lesson_at->format('d/m/Y H:i') }}
                 </div>
                 <div class="col-md-6">
                     <strong>Conteúdo:</strong><br>

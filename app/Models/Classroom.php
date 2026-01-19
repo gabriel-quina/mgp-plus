@@ -11,22 +11,21 @@ class Classroom extends Model
 
     protected $fillable = [
         'school_id',
-        'parent_classroom_id',
-        'workshop_id',
-        'workshop_group_set_id',
-        'group_number',
-        'name',
+        'academic_year_id',
         'shift',
-        'is_active',
-        'academic_year',
-        'grade_level_key',
+        'workshop_id',
+        'grade_level_ids',
+        'grades_signature',
+        'group_number',
+        'capacity_hint',
         'status',
-        'locked_at',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
-        'academic_year' => 'integer',
+        'academic_year_id' => 'integer',
+        'grade_level_ids' => 'array',
+        'group_number' => 'integer',
+        'capacity_hint' => 'integer',
     ];
 
     /** Escola da turma */
@@ -35,62 +34,16 @@ class Classroom extends Model
         return $this->belongsTo(School::class);
     }
 
-    /** Oficina associada diretamente ao grupo (novo modelo explícito) */
+    /** Oficina associada diretamente à turma operacional */
     public function workshop()
     {
         return $this->belongsTo(Workshop::class);
     }
 
-    /** Conjunto de grupos de oficina (novo modelo explícito) */
-    public function groupSet()
+    /** Alocações com vigência */
+    public function memberships()
     {
-        return $this->belongsTo(WorkshopGroupSet::class, 'workshop_group_set_id');
-    }
-
-    /** Turma ↔ Anos (pivot: classroom_grade_level) */
-    public function gradeLevels()
-    {
-        return $this->belongsToMany(GradeLevel::class, 'classroom_grade_level')
-            ->withTimestamps();
-    }
-
-    /** Turma ↔ Oficinas (pivot: classroom_workshop, com max_students) */
-    public function workshops()
-    {
-        return $this->belongsToMany(Workshop::class, 'classroom_workshop')
-            ->withPivot('max_students')
-            ->withTimestamps();
-    }
-
-    /**
-     * Acesso conveniente: $classroom->workshop
-     * Retorna o primeiro workshop associado (útil para SUBTURMA vinculada a 1 oficina).
-     * OBS: não é relação Eloquent; é um accessor. Para evitar N+1, faça eager load de 'workshops'.
-     */
-    public function getWorkshopAttribute()
-    {
-        if ($this->relationLoaded('workshops')) {
-            return $this->workshops->first();
-        }
-
-        return $this->workshops()->first();
-    }
-
-    /** Turma pai / subturmas */
-    public function parent()
-    {
-        return $this->belongsTo(self::class, 'parent_classroom_id');
-    }
-
-    public function children()
-    {
-        return $this->hasMany(self::class, 'parent_classroom_id');
-    }
-
-    /** Alocações em subturmas por oficina */
-    public function workshopAllocations()
-    {
-        return $this->hasMany(WorkshopAllocation::class, 'child_classroom_id');
+        return $this->hasMany(ClassroomMembership::class);
     }
 
     /*
@@ -99,80 +52,30 @@ class Classroom extends Model
     |--------------------------------------------------------------------------
     */
 
-    public function isParent(): bool
+    /**
+     * Retorna a lista de matrículas (StudentEnrollment) vigentes na data/hora informada.
+     */
+    public function rosterAt(\Carbon\CarbonInterface $at)
     {
-        return $this->parent_classroom_id === null;
-    }
-
-    public function scopeOnlyParents($q)
-    {
-        return $q->whereNull('parent_classroom_id');
-    }
-
-    public function scopeOnlyChildren($q)
-    {
-        return $q->whereNotNull('parent_classroom_id');
-    }
-
-    /** Conjunto DERIVADO de alunos (PAI) com base em episódios ativos (StudentEnrollment) */
-    public function eligibleEnrollments()
-    {
-        $gradeLevelIds = $this->gradeLevels()->pluck('grade_levels.id')->all();
-
-        // Base: episódios ativos no ano/escola/turno, filtrando série quando houver multi-ano
-        $base = StudentEnrollment::query()
+        return StudentEnrollment::query()
+            ->whereHas('memberships', function ($q) use ($at) {
+                $q->where('classroom_id', $this->id)
+                    ->where('starts_at', '<=', $at)
+                    ->where(function ($q) use ($at) {
+                        $q->whereNull('ends_at')->orWhere('ends_at', '>', $at);
+                    });
+            })
             ->with(['student', 'gradeLevel'])
-            ->where('academic_year', $this->academic_year)
-            ->where('school_id', $this->school_id)
-            ->where('shift', $this->shift)
-            ->where('status', StudentEnrollment::STATUS_ACTIVE)
-            ->whereNull('ended_at')
-            ->when(! empty($gradeLevelIds), fn ($q) => $q->whereIn('grade_level_id', $gradeLevelIds));
-
-        // Overrides (A↔B): OUT = quem sai desta turma; IN = quem entra nesta turma
-        $outIds = ClassroomOverride::where('from_classroom_id', $this->id)
-            ->where('is_active', true)
-            ->pluck('student_enrollment_id')
-            ->all();
-
-        $inIds = ClassroomOverride::where('to_classroom_id', $this->id)
-            ->where('is_active', true)
-            ->pluck('student_enrollment_id')
-            ->all();
-
-        // (base − OUT) ∪ IN
-        $base->when(! empty($outIds), fn ($q) => $q->whereNotIn('id', $outIds));
-
-        return $base->when(! empty($inIds), fn ($q) => $q->orWhereIn('id', $inIds));
+            ->get();
     }
 
-    /**
-     * Verifica se há dados acadêmicos vinculados à turma (aulas ou avaliações).
-     */
-    public function hasAcademicData(): bool
+    public function getNameAttribute(): string
     {
-        return Lesson::query()->where('classroom_id', $this->id)->exists()
-            || Assessment::query()->where('classroom_id', $this->id)->exists();
-    }
+        $workshopName = $this->workshop?->name ?? 'Turma';
+        $grades = $this->grades_signature ?? '';
+        $group = $this->group_number ? '#'.$this->group_number : '';
+        $year = $this->academic_year_id ?? '';
 
-    /**
-     * Define locked_at quando existem dados acadêmicos.
-     * Retorna true se a turma foi (ou já estava) bloqueada.
-     */
-    public function lockIfHasAcademicData(): bool
-    {
-        if ($this->locked_at !== null) {
-            return true;
-        }
-
-        if (! $this->hasAcademicData()) {
-            return false;
-        }
-
-        $this->forceFill([
-            'locked_at' => now(),
-        ])->save();
-
-        return true;
+        return trim(implode(' ', array_filter([$workshopName, $grades, $year, $group])));
     }
 }

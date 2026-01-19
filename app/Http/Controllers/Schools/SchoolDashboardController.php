@@ -17,18 +17,16 @@ class SchoolDashboardController extends Controller
         $school->load([
             'city.state',
             'classrooms' => function ($q) use ($currentAcademicYear) {
-                $q->whereNull('parent_classroom_id')
-                    ->where('academic_year', $currentAcademicYear)
-                    ->where('is_active', true)
-                    ->with(['gradeLevels'])
-                    ->orderBy('name');
+                $q->where('academic_year_id', $currentAcademicYear)
+                    ->where('status', 'active')
+                    ->with(['workshop'])
+                    ->orderBy('group_number');
             },
             'workshops',
         ])->loadCount([
             'classrooms as classrooms_count' => function ($q) use ($currentAcademicYear) {
-                $q->whereNull('parent_classroom_id')
-                    ->where('academic_year', $currentAcademicYear)
-                    ->where('is_active', true);
+                $q->where('academic_year_id', $currentAcademicYear)
+                    ->where('status', 'active');
             },
             'workshops as workshops_count',
             'enrollments as enrollments_count' => function ($q) use ($currentAcademicYear) {

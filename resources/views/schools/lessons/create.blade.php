@@ -9,7 +9,7 @@
                 <h1 class="h4 mb-1">{{ $headerTitle ?? $classroom->name }}</h1>
                 <div class="text-muted small">
                     {{ $contextLine ?? '' }}<br>
-                    {{ $workshopLine ?? 'Oficina: ' . $workshop->name }}
+                    Oficina: {{ $classroom->workshop?->name ?? '—' }}
                 </div>
             </div>
 
@@ -36,7 +36,7 @@
             </div>
         @endif
 
-        <form action="{{ route('schools.lessons.store', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id]) }}" method="POST">
+        <form action="{{ route('schools.lessons.store', ['school' => $school->id, 'classroom' => $classroom->id]) }}" method="POST">
             @csrf
 
             {{-- Dados da aula --}}
@@ -46,9 +46,9 @@
                 </div>
                 <div class="card-body row g-3">
                     <div class="col-md-3">
-                        <label for="taught_at" class="form-label">Data</label>
-                        <input type="date" id="taught_at" name="taught_at" class="form-control"
-                            value="{{ old('taught_at', now()->toDateString()) }}">
+                        <label for="lesson_at" class="form-label">Data e hora</label>
+                        <input type="datetime-local" id="lesson_at" name="lesson_at" class="form-control"
+                            value="{{ old('lesson_at', now()->format('Y-m-d\\TH:i')) }}">
                     </div>
 
                     <div class="col-md-5">
@@ -109,7 +109,7 @@
                                                 <small class="text-muted">
                                                     Matrícula #{{ $enrollment->id }}<br>
                                                     Ano:
-                                                    {{ $enrollment->gradeLevel->name ?? $classroom->gradeLevels->pluck('name')->join(', ') }}
+                                                    {{ $enrollment->gradeLevel->name ?? $classroom->grades_signature ?? '—' }}
                                                 </small>
                                             </td>
                                             <td class="text-center">

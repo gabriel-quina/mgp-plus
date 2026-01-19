@@ -130,7 +130,7 @@
                                 <th>Nome</th>
                                 <th style="width: 150px;">Ano letivo</th>
                                 <th style="width: 150px;">Turno</th>
-                                <th>Anos atendidos</th>
+                                <th>Séries</th>
                                 <th style="width: 150px;" class="text-end">Ações</th>
                             </tr>
                         </thead>
@@ -138,7 +138,7 @@
                             @foreach ($school->classrooms as $classroom)
                                 <tr>
                                     <td>{{ $classroom->name }}</td>
-                                    <td>{{ $classroom->academic_year }}</td>
+                                    <td>{{ $classroom->academic_year_id }}</td>
                                     <td>
                                         @if ($classroom->shift === 'morning')
                                             Manhã
@@ -150,8 +150,7 @@
                                             —
                                         @endif
                                     </td>
-                                    <td>{{ $classroom->gradeLevels->pluck('short_name')->filter()->join(', ') ?: $classroom->gradeLevels->pluck('name')->join(', ') }}
-                                    </td>
+                                    <td>{{ $classroom->grades_signature ?? '—' }}</td>
                                     <td class="text-end">
                                         <a href="{{ route('classrooms.show', $classroom) }}"
                                             class="btn btn-sm btn-outline-secondary">Ver</a>

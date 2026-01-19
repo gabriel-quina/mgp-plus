@@ -9,7 +9,6 @@ use App\Models\Classroom;
 use App\Models\School;
 use App\Models\StudentEnrollment;
 use App\Models\Workshop;
-use App\Models\WorkshopAllocation;
 use App\Services\AssessmentStatsService;
 use Illuminate\Http\Request;
 
@@ -20,28 +19,21 @@ class AssessmentController extends Controller
     ) {}
 
     /**
-     * Lista avaliações de um grupo (Turma PAI ou Subturma) + oficina.
+     * Lista avaliações de um grupo (turma operacional).
      *
      * Rota nova:
-     * GET /escolas/{school}/grupos/{classroom}/oficinas/{workshop}/avaliacoes
+     * GET /escolas/{school}/grupos/{classroom}/avaliacoes
      * name: schools.assessments.index
      */
-    public function index(School $school, Classroom $classroom, Workshop $workshop)
+    public function index(School $school, Classroom $classroom)
     {
         // Coerência de escopo: classroom precisa ser da escola da URL
         abort_unless((int) $classroom->school_id === (int) $school->id, 404);
 
-        $classroom->loadMissing('school', 'gradeLevels', 'workshops');
-
-        // Oficina vinculada a ESSA turma (pivot/classroom_workshop)
-        $workshopForClass = $classroom->workshops->firstWhere('id', $workshop->id);
-        abort_if(! $workshopForClass, 404);
-
         $assessments = Assessment::query()
             ->where('classroom_id', $classroom->id)
-            ->where('workshop_id', $workshopForClass->id)
             ->withCount('grades')
-            ->orderByDesc('due_at')
+            ->orderByDesc('assessment_at')
             ->orderByDesc('id')
             ->paginate(10);
 
@@ -53,7 +45,6 @@ class AssessmentController extends Controller
 
         return view('assessments.index', [
             'classroom' => $classroom,
-            'workshop' => $workshopForClass,
             'assessments' => $assessments,
             'backUrl' => $backUrl,
             'school' => $school,
@@ -63,23 +54,17 @@ class AssessmentController extends Controller
     /**
      * Tela de criação + lançamento de notas de uma avaliação.
      *
-     * GET /escolas/{school}/grupos/{classroom}/oficinas/{workshop}/avaliacoes/criar
+     * GET /escolas/{school}/grupos/{classroom}/avaliacoes/criar
      * name: schools.assessments.create
      */
-    public function create(School $school, Classroom $classroom, Workshop $workshop)
+    public function create(School $school, Classroom $classroom)
     {
         abort_unless((int) $classroom->school_id === (int) $school->id, 404);
 
-        $classroom->loadMissing('school', 'gradeLevels', 'workshops');
-
-        $workshopForClass = $classroom->workshops->firstWhere('id', $workshop->id);
-        abort_if(! $workshopForClass, 404);
-
-        $enrollments = $this->resolveEnrollments($classroom, $workshopForClass);
+        $enrollments = $classroom->rosterAt(now());
 
         return view('assessments.create', [
             'classroom' => $classroom,
-            'workshop' => $workshopForClass,
             'enrollments' => $enrollments,
             'school' => $school,
         ]);
@@ -88,22 +73,17 @@ class AssessmentController extends Controller
     /**
      * Salva avaliação + notas.
      *
-     * POST /escolas/{school}/grupos/{classroom}/oficinas/{workshop}/avaliacoes
+     * POST /escolas/{school}/grupos/{classroom}/avaliacoes
      * name: schools.assessments.store
      */
-    public function store(Request $request, School $school, Classroom $classroom, Workshop $workshop)
+    public function store(Request $request, School $school, Classroom $classroom)
     {
         abort_unless((int) $classroom->school_id === (int) $school->id, 404);
-
-        $classroom->loadMissing('school', 'gradeLevels', 'workshops');
-
-        $workshopForClass = $classroom->workshops->firstWhere('id', $workshop->id);
-        abort_if(! $workshopForClass, 404);
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'due_at' => ['nullable', 'date'],
+            'assessment_at' => ['required', 'date'],
             'scale_type' => ['required', 'in:points,concept'],
 
             // 0–100
@@ -118,15 +98,14 @@ class AssessmentController extends Controller
 
         $assessment = Assessment::create([
             'classroom_id' => $classroom->id,
-            'workshop_id' => $workshopForClass->id,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
-            'due_at' => $data['due_at'] ?? null,
+            'assessment_at' => $data['assessment_at'],
             'scale_type' => $data['scale_type'],
             'max_points' => $data['max_points'],
         ]);
 
-        $enrollments = $this->resolveEnrollments($classroom, $workshopForClass);
+        $enrollments = $classroom->rosterAt(\Carbon\Carbon::parse($data['assessment_at']));
 
         $pointsInput = collect($data['grades_points'] ?? []);
         $conceptInput = collect($data['grades_concept'] ?? []);
@@ -181,7 +160,6 @@ class AssessmentController extends Controller
             ->route('schools.assessments.show', [
                 'school' => $school->id,
                 'classroom' => $classroom->id,
-                'workshop' => $workshopForClass->id,
                 'assessment' => $assessment->id,
             ])
             ->with('status', 'Avaliação lançada com sucesso!');
@@ -190,27 +168,20 @@ class AssessmentController extends Controller
     /**
      * Mostra os detalhes de uma avaliação (com notas).
      *
-     * GET /escolas/{school}/grupos/{classroom}/oficinas/{workshop}/avaliacoes/{assessment}
+     * GET /escolas/{school}/grupos/{classroom}/avaliacoes/{assessment}
      * name: schools.assessments.show
      */
-    public function show(School $school, Classroom $classroom, Workshop $workshop, Assessment $assessment)
+    public function show(School $school, Classroom $classroom, Assessment $assessment)
     {
         abort_unless((int) $classroom->school_id === (int) $school->id, 404);
 
-        // Garante que a oficina pertence à turma
-        $classroom->loadMissing('workshops');
-        $workshopForClass = $classroom->workshops->firstWhere('id', $workshop->id);
-        abort_if(! $workshopForClass, 404);
-
         abort_if(
-            $assessment->classroom_id !== $classroom->id ||
-            $assessment->workshop_id !== $workshopForClass->id,
+            $assessment->classroom_id !== $classroom->id,
             404
         );
 
         $assessment->load([
             'classroom.school',
-            'workshop',
             'grades.enrollment.student',
             'grades.enrollment.gradeLevel',
         ]);
@@ -223,57 +194,16 @@ class AssessmentController extends Controller
         $backUrl = route('schools.assessments.index', [
             'school' => $school->id,
             'classroom' => $classroom->id,
-            'workshop' => $workshopForClass->id,
         ]);
 
         return view('assessments.show', [
             'assessment' => $assessment,
             'grades' => $grades,
             'classroom' => $classroom,
-            'workshop' => $workshopForClass,
             'backUrl' => $backUrl,
             'numericStats' => $stats['numeric'],
             'conceptStats' => $stats['concept'],
             'school' => $school,
         ]);
-    }
-
-    /**
-     * Mesmo critério de grupo do LessonController:
-     * - Turma PAI: eligibleEnrollments
-     * - Subturma: WorkshopAllocation (child_classroom_id + workshop_id)
-     */
-    protected function resolveEnrollments(Classroom $classroom, Workshop $workshop)
-    {
-        // TURMA PAI → turma inteira elegível
-        if (is_null($classroom->parent_classroom_id)) {
-            if (! method_exists($classroom, 'eligibleEnrollments')) {
-                return collect();
-            }
-
-            return $classroom->eligibleEnrollments()
-                ->with(['student', 'gradeLevel'])
-                ->get()
-                ->sortBy(fn ($e) => mb_strtolower(optional($e->student)->name ?? ''))
-                ->values();
-        }
-
-        // SUBTURMA → alocados via WorkshopAllocation
-        $allocatedIds = WorkshopAllocation::query()
-            ->where('child_classroom_id', $classroom->id)
-            ->where('workshop_id', $workshop->id)
-            ->pluck('student_enrollment_id');
-
-        if ($allocatedIds->isEmpty()) {
-            return collect();
-        }
-
-        return StudentEnrollment::query()
-            ->with(['student', 'gradeLevel', 'school'])
-            ->join('students', 'students.id', '=', 'student_enrollments.student_id')
-            ->whereIn('student_enrollments.id', $allocatedIds)
-            ->orderBy('students.name')
-            ->select('student_enrollments.*')
-            ->get();
     }
 }

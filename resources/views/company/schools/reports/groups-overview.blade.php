@@ -31,37 +31,24 @@
             <table class="table table-striped align-middle mb-0">
                 <thead>
                     <tr>
-                        <th>Nome</th>
-                        <th>Tipo</th>
+                        <th>Turma</th>
+                        <th>Oficina</th>
                         <th>Ano</th>
                         <th>Turno</th>
-                        <th>Anos escolares</th>
-                        <th class="text-end">Base (elegíveis)</th>
-                        <th class="text-end">Alocados</th>
+                        <th>Séries</th>
+                        <th>Grupo</th>
+                        <th class="text-end">Alunos alocados</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($classrooms as $c)
                         <tr>
                             <td class="fw-semibold">{{ $c->name }}</td>
-                            <td>
-                                @if ($c->parent_classroom_id)
-                                    <span class="badge text-bg-primary">Grupo</span>
-                                @else
-                                    <span class="badge text-bg-secondary">Base</span>
-                                @endif
-                            </td>
-                            <td>{{ $c->academic_year ?? '—' }}</td>
+                            <td>{{ $c->workshop?->name ?? '—' }}</td>
+                            <td>{{ $c->academic_year_id ?? '—' }}</td>
                             <td>{{ $c->shift ?? '—' }}</td>
-                            <td>
-                                @if ($c->relationLoaded('gradeLevels') && $c->gradeLevels->count())
-                                    {{ $c->gradeLevels->pluck('short_name')->filter()->implode(', ') ?:
-                                        $c->gradeLevels->pluck('name')->implode(', ') }}
-                                @else
-                                    —
-                                @endif
-                            </td>
-                            <td class="text-end">{{ $c->total_all_students ?? '—' }}</td>
+                            <td>{{ $c->grades_signature ?? '—' }}</td>
+                            <td>{{ $c->group_number ?? '—' }}</td>
                             <td class="text-end">{{ $c->students_allocated ?? 0 }}</td>
                         </tr>
                     @empty

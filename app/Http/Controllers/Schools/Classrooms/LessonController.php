@@ -3,29 +3,22 @@
 namespace App\Http\Controllers\Schools\Classrooms;
 
 use App\Http\Controllers\Controller;
-use App\Models\{Classroom, Lesson, LessonAttendance, School, StudentEnrollment, Workshop, WorkshopAllocation};
+use App\Models\{Classroom, Lesson, LessonAttendance, School};
 use Illuminate\Http\Request;
 
 class LessonController extends Controller
 {
     /**
      * Tela de lançamento de aula + grade de presença.
-     * Rota nova: GET /escolas/{school}/grupos/{classroom}/oficinas/{workshop}/aulas/criar
+     * Rota nova: GET /escolas/{school}/grupos/{classroom}/aulas/criar
      * name: schools.lessons.create
      */
-    public function create(School $school, Classroom $classroom, Workshop $workshop)
+    public function create(School $school, Classroom $classroom)
     {
         // Coerência de escopo
         abort_unless((int) $classroom->school_id === (int) $school->id, 404);
 
-        // Garante que a oficina está vinculada a ESSA turma/subturma
-        $classroom->loadMissing('school', 'gradeLevels', 'workshops');
-
-        $workshopForClass = $classroom->workshops->firstWhere('id', $workshop->id);
-        abort_if(! $workshopForClass, 404);
-
-        // Pega os alunos do grupo certo (PAI x Subturma)
-        $enrollments = $this->resolveEnrollments($classroom, $workshopForClass);
+        $enrollments = $classroom->rosterAt(now());
 
         $pageTitle = 'Lançar aula / presença';
         $headerTitle = $classroom->name;
@@ -34,48 +27,38 @@ class LessonController extends Controller
             'Turma: <strong>%s</strong> · Escola: <strong>%s</strong> · Ano letivo: <strong>%d</strong> · Turno: <strong>%s</strong>',
             e($classroom->name),
             e(optional($classroom->school)->name ?? '—'),
-            $classroom->academic_year,
+            $classroom->academic_year_id,
             $classroom->shift ?? '—',
         );
-
-        $workshopLine = 'Oficina: <strong>'.e($workshopForClass->name).'</strong>';
 
         return view('lessons.create', [
             'school' => $school,
             'classroom' => $classroom,
-            'workshop' => $workshopForClass,
             'enrollments' => $enrollments,
             'pageTitle' => $pageTitle,
             'headerTitle' => $headerTitle,
             'contextLine' => $contextLine,
-            'workshopLine' => $workshopLine,
         ]);
     }
 
     /**
      * Lista aulas do grupo + oficina.
-     * Rota nova: GET /escolas/{school}/grupos/{classroom}/oficinas/{workshop}/aulas
+     * Rota nova: GET /escolas/{school}/grupos/{classroom}/aulas
      * name: schools.lessons.index
      */
-    public function index(School $school, Classroom $classroom, Workshop $workshop)
+    public function index(School $school, Classroom $classroom)
     {
         abort_unless((int) $classroom->school_id === (int) $school->id, 404);
 
-        $classroom->loadMissing('school', 'gradeLevels', 'workshops');
-
-        $workshopForClass = $classroom->workshops->firstWhere('id', $workshop->id);
-        abort_if(! $workshopForClass, 404);
-
         $lessons = Lesson::query()
             ->where('classroom_id', $classroom->id)
-            ->where('workshop_id', $workshopForClass->id)
             ->withCount('attendances')
             ->withCount([
                 'attendances as present_count' => function ($q) {
                     $q->where('present', true);
                 },
             ])
-            ->orderByDesc('taught_at')
+            ->orderByDesc('lesson_at')
             ->orderByDesc('id')
             ->paginate(10);
 
@@ -88,7 +71,6 @@ class LessonController extends Controller
         return view('lessons.index', [
             'school' => $school,
             'classroom' => $classroom,
-            'workshop' => $workshopForClass,
             'lessons' => $lessons,
             'backUrl' => $backUrl,
         ]);
@@ -96,20 +78,15 @@ class LessonController extends Controller
 
     /**
      * Grava aula + presenças.
-     * Rota nova: POST /escolas/{school}/grupos/{classroom}/oficinas/{workshop}/aulas
+     * Rota nova: POST /escolas/{school}/grupos/{classroom}/aulas
      * name: schools.lessons.store
      */
-    public function store(Request $request, School $school, Classroom $classroom, Workshop $workshop)
+    public function store(Request $request, School $school, Classroom $classroom)
     {
         abort_unless((int) $classroom->school_id === (int) $school->id, 404);
 
-        $classroom->loadMissing('school', 'gradeLevels', 'workshops');
-
-        $workshopForClass = $classroom->workshops->firstWhere('id', $workshop->id);
-        abort_if(! $workshopForClass, 404);
-
         $data = $request->validate([
-            'taught_at' => ['required', 'date'],
+            'lesson_at' => ['required', 'date'],
             'topic' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
             'attendance' => ['nullable', 'array'],
@@ -117,13 +94,12 @@ class LessonController extends Controller
 
         $lesson = Lesson::create([
             'classroom_id' => $classroom->id,
-            'workshop_id' => $workshopForClass->id,
-            'taught_at' => $data['taught_at'],
+            'lesson_at' => $data['lesson_at'],
             'topic' => $data['topic'] ?? null,
             'notes' => $data['notes'] ?? null,
         ]);
 
-        $enrollments = $this->resolveEnrollments($classroom, $workshopForClass);
+        $enrollments = $classroom->rosterAt(\Carbon\Carbon::parse($data['lesson_at']));
 
         $presentIds = collect($data['attendance'] ?? [])
             ->keys()
@@ -148,7 +124,6 @@ class LessonController extends Controller
             ->route('schools.lessons.show', [
                 'school' => $school->id,
                 'classroom' => $classroom->id,
-                'workshop' => $workshopForClass->id,
                 'lesson' => $lesson->id,
             ])
             ->with('status', 'Aula lançada com sucesso!');
@@ -156,27 +131,20 @@ class LessonController extends Controller
 
     /**
      * Tela de presença da aula.
-     * Rota nova: GET /escolas/{school}/grupos/{classroom}/oficinas/{workshop}/aulas/{lesson}
+     * Rota nova: GET /escolas/{school}/grupos/{classroom}/aulas/{lesson}
      * name: schools.lessons.show
      */
-    public function show(School $school, Classroom $classroom, Workshop $workshop, Lesson $lesson)
+    public function show(School $school, Classroom $classroom, Lesson $lesson)
     {
         abort_unless((int) $classroom->school_id === (int) $school->id, 404);
 
-        $classroom->loadMissing('workshops');
-
-        $workshopForClass = $classroom->workshops->firstWhere('id', $workshop->id);
-        abort_if(! $workshopForClass, 404);
-
         abort_if(
-            $lesson->classroom_id !== $classroom->id ||
-            $lesson->workshop_id !== $workshopForClass->id,
+            $lesson->classroom_id !== $classroom->id,
             404
         );
 
         $lesson->load([
             'classroom.school',
-            'workshop',
             'attendances.enrollment.student',
             'attendances.enrollment.gradeLevel',
         ]);
@@ -187,7 +155,6 @@ class LessonController extends Controller
         $backUrl = route('schools.lessons.index', [
             'school' => $school->id,
             'classroom' => $classroom->id,
-            'workshop' => $workshopForClass->id,
         ]);
 
         return view('lessons.show', [
@@ -195,45 +162,7 @@ class LessonController extends Controller
             'lesson' => $lesson,
             'attendances' => $attendances,
             'classroom' => $classroom,
-            'workshop' => $workshopForClass,
             'backUrl' => $backUrl,
         ]);
-    }
-
-    /**
-     * Resolve o grupo de alunos da aula:
-     * - Turma PAI: todos elegíveis (eligibleEnrollments)
-     * - Subturma: apenas alocados via WorkshopAllocation (child_classroom_id + workshop_id)
-     */
-    protected function resolveEnrollments(Classroom $classroom, Workshop $workshop)
-    {
-        if (is_null($classroom->parent_classroom_id)) {
-            if (! method_exists($classroom, 'eligibleEnrollments')) {
-                return collect();
-            }
-
-            return $classroom->eligibleEnrollments()
-                ->with(['student', 'gradeLevel'])
-                ->get()
-                ->sortBy(fn ($e) => mb_strtolower(optional($e->student)->name ?? ''))
-                ->values();
-        }
-
-        $allocatedIds = WorkshopAllocation::query()
-            ->where('child_classroom_id', $classroom->id)
-            ->where('workshop_id', $workshop->id)
-            ->pluck('student_enrollment_id');
-
-        if ($allocatedIds->isEmpty()) {
-            return collect();
-        }
-
-        return StudentEnrollment::query()
-            ->with(['student', 'gradeLevel', 'school'])
-            ->join('students', 'students.id', '=', 'student_enrollments.student_id')
-            ->whereIn('student_enrollments.id', $allocatedIds)
-            ->orderBy('students.name')
-            ->select('student_enrollments.*')
-            ->get();
     }
 }

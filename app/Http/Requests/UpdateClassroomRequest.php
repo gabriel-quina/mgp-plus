@@ -17,11 +17,10 @@ class UpdateClassroomRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $year = $this->input('academic_year');
+        $year = $this->input('academic_year_id');
         $this->merge([
-            'academic_year'   => $year !== null && $year !== '' ? (int) $year : (int) date('Y'),
-            'is_active'       => $this->boolean('is_active'),
-            'grade_level_key' => $this->makeGradeLevelKey((array) $this->input('grade_level_ids', [])),
+            'academic_year_id' => $year !== null && $year !== '' ? (int) $year : (int) date('Y'),
+            'grades_signature' => $this->makeGradesSignature((array) $this->input('grade_level_ids', [])),
         ]);
     }
 
@@ -29,21 +28,18 @@ class UpdateClassroomRequest extends FormRequest
     {
         return [
             'school_id'            => ['required', 'integer', 'exists:schools,id'],
-            'parent_classroom_id'  => ['nullable', 'integer', 'exists:classrooms,id'],
-            'name'                 => ['required', 'string', 'max:150'],
             'shift'                => ['required', Rule::in(['morning', 'afternoon', 'evening'])],
-            'is_active'            => ['sometimes', 'boolean'],
+            'workshop_id'          => ['required', 'integer', 'exists:workshops,id'],
+            'group_number'         => ['required', 'integer', 'min:1'],
+            'capacity_hint'        => ['nullable', 'integer', 'min:1'],
+            'status'               => ['required', 'string', 'max:50'],
 
-            'academic_year'        => ['required', 'integer', 'min:2000', 'max:2100'],
+            'academic_year_id'     => ['required', 'integer', 'min:2000', 'max:2100'],
 
             'grade_level_ids'      => ['required', 'array', 'min:1'],
             'grade_level_ids.*'    => ['integer', 'exists:grade_levels,id'],
 
-            'grade_level_key'      => ['required', 'string', 'max:191'],
-
-            'workshops'                => ['nullable', 'array'],
-            'workshops.*.id'           => ['nullable', 'integer', 'exists:workshops,id'],
-            'workshops.*.max_students' => ['nullable', 'integer', 'min:0'],
+            'grades_signature'     => ['required', 'string', 'max:191'],
         ];
     }
 
@@ -56,9 +52,11 @@ class UpdateClassroomRequest extends FormRequest
         $validator->after(function ($v) use ($classroomId) {
             $conflict = Classroom::query()
                 ->where('school_id', $this->input('school_id'))
-                ->where('academic_year', $this->input('academic_year'))
+                ->where('academic_year_id', $this->input('academic_year_id'))
                 ->where('shift', $this->input('shift'))
-                ->where('grade_level_key', $this->input('grade_level_key'))
+                ->where('workshop_id', $this->input('workshop_id'))
+                ->where('grades_signature', $this->input('grades_signature'))
+                ->where('group_number', $this->input('group_number'))
                 ->where('id', '!=', $classroomId)
                 ->exists();
 
@@ -75,19 +73,18 @@ class UpdateClassroomRequest extends FormRequest
     {
         return [
             'school_id'         => 'Escola',
-            'parent_classroom_id'=> 'Turma Pai',
-            'name'              => 'Nome',
             'shift'             => 'Turno',
-            'is_active'         => 'Ativa',
-            'academic_year'     => 'Ano letivo',
+            'workshop_id'       => 'Oficina',
+            'group_number'      => 'Grupo',
+            'capacity_hint'     => 'Capacidade sugerida',
+            'status'            => 'Status',
+            'academic_year_id'  => 'Ano letivo',
             'grade_level_ids'   => 'Anos atendidos',
-            'grade_level_key'   => 'Conjunto de anos',
-            'workshops.*.id'    => 'Oficina',
-            'workshops.*.max_students' => 'Capacidade',
+            'grades_signature'  => 'Conjunto de anos',
         ];
     }
 
-    private function makeGradeLevelKey(array $ids): string
+    private function makeGradesSignature(array $ids): string
     {
         return collect($ids)
             ->map(fn ($v) => (int) $v)
@@ -97,4 +94,3 @@ class UpdateClassroomRequest extends FormRequest
             ->implode(',');
     }
 }
-

@@ -20,15 +20,20 @@ class SchoolClassroomController extends Controller
         $sh = $request->get('shift');
 
         $classroomsQuery = Classroom::query()
-            ->with(['gradeLevels', 'groupSet.gradeLevels']) // segue o padrão do seu index MASTER
+            ->with(['workshop'])
             ->where('school_id', $school->id);
 
         if ($q !== '') {
-            $classroomsQuery->where('name', 'like', "%{$q}%");
+            $classroomsQuery->where(function ($query) use ($q) {
+                $query->where('grades_signature', 'like', "%{$q}%")
+                    ->orWhereHas('workshop', function ($workshopQuery) use ($q) {
+                        $workshopQuery->where('name', 'like', "%{$q}%");
+                    });
+            });
         }
 
         if ($yr) {
-            $classroomsQuery->where('academic_year', (int) $yr);
+            $classroomsQuery->where('academic_year_id', (int) $yr);
         }
 
         if ($sh) {
@@ -37,20 +42,10 @@ class SchoolClassroomController extends Controller
 
         // Ordenação que ajuda a leitura quando mistura base + grupos
         $classrooms = $classroomsQuery
-            ->orderByRaw('parent_classroom_id is null desc')
-            ->orderBy('academic_year', 'desc')
-            ->orderBy('name')
+            ->orderBy('academic_year_id', 'desc')
+            ->orderBy('group_number')
             ->paginate(20)
             ->withQueryString();
-
-        // Mesmo “enriquecimento” do MASTER, sem assumir que child tem esse método
-        $classrooms->getCollection()->transform(function ($classroom) {
-            if (method_exists($classroom, 'eligibleEnrollments') && ! $classroom->parent_classroom_id) {
-                $classroom->total_all_students = $classroom->eligibleEnrollments()->count();
-            }
-
-            return $classroom;
-        });
 
         return view('schools.classrooms.index', [
             'school' => $school,
@@ -68,13 +63,6 @@ class SchoolClassroomController extends Controller
         abort_if((int) $classroom->school_id !== (int) $school->id, 404);
 
         // Reaproveita suas telas MASTER já prontas
-        if ($classroom->parent_classroom_id) {
-            return redirect()->route('subclassrooms.show', [
-                'parent' => $classroom->parent_classroom_id,
-                'classroom' => $classroom->id,
-            ]);
-        }
-
         return redirect()->route('classrooms.show', $classroom);
     }
 
@@ -84,11 +72,6 @@ class SchoolClassroomController extends Controller
             'school' => $school,
             'schoolNav' => $school,
             'schools' => [$school->id => $school->name],
-            'parentClassrooms' => Classroom::query()
-                ->where('school_id', $school->id)
-                ->whereNull('parent_classroom_id')
-                ->orderBy('name')
-                ->pluck('name', 'id'),
             'gradeLevels' => $this->gradeLevelsWithEnrollments($school),
             'workshops' => $school->workshops()
                 ->select('workshops.id', 'workshops.name')
@@ -103,30 +86,27 @@ class SchoolClassroomController extends Controller
         $data = $request->validated();
         $data['school_id'] = $school->id;
 
-        $this->validateParentClassroom($data['parent_classroom_id'] ?? null, $school);
         $this->validateGradeLevels($data['grade_level_ids'], $school);
+
+        $gradeLevelIds = collect($data['grade_level_ids'])
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+        $gradesSignature = implode(',', $gradeLevelIds);
 
         $classroom = Classroom::create([
             'school_id' => $data['school_id'],
-            'parent_classroom_id' => $data['parent_classroom_id'] ?? null,
-            'name' => $data['name'],
+            'academic_year_id' => (int) $data['academic_year_id'],
             'shift' => $data['shift'],
-            'is_active' => $request->boolean('is_active'),
-            'academic_year' => (int) $data['academic_year'],
-            'grade_level_key' => $data['grade_level_key'],
+            'workshop_id' => (int) $data['workshop_id'],
+            'grade_level_ids' => $gradeLevelIds,
+            'grades_signature' => $gradesSignature,
+            'group_number' => (int) $data['group_number'],
+            'capacity_hint' => $data['capacity_hint'] !== null ? (int) $data['capacity_hint'] : null,
+            'status' => $data['status'],
         ]);
-
-        $classroom->gradeLevels()->sync($data['grade_level_ids']);
-
-        $allowedWorkshopIds = $school->workshops()
-            ->select('workshops.id')
-            ->pluck('workshops.id')
-            ->all();
-        $workshopsPayload = collect($data['workshops'] ?? [])
-            ->filter(fn ($row) => empty($row['id']) || in_array((int) $row['id'], $allowedWorkshopIds, true))
-            ->values()
-            ->all();
-        $classroom->workshops()->sync($this->buildWorkshopSyncPayload($workshopsPayload));
 
         return redirect()
             ->route('schools.classrooms.show', [$school, $classroom])
@@ -150,24 +130,6 @@ class SchoolClassroomController extends Controller
             ->pluck('name', 'id');
     }
 
-    private function validateParentClassroom(?int $parentClassroomId, School $school): void
-    {
-        if (! $parentClassroomId) {
-            return;
-        }
-
-        $exists = Classroom::query()
-            ->whereKey($parentClassroomId)
-            ->where('school_id', $school->id)
-            ->exists();
-
-        if (! $exists) {
-            throw ValidationException::withMessages([
-                'parent_classroom_id' => 'A turma pai precisa pertencer a esta escola.',
-            ]);
-        }
-    }
-
     private function validateGradeLevels(array $gradeLevelIds, School $school): void
     {
         $allowed = $this->gradeLevelsWithEnrollments($school)->keys()->all();
@@ -178,21 +140,5 @@ class SchoolClassroomController extends Controller
                 'grade_level_ids' => 'Selecione apenas anos com alunos matriculados nesta escola.',
             ]);
         }
-    }
-
-    private function buildWorkshopSyncPayload(array $workshops): array
-    {
-        $out = [];
-        foreach ($workshops as $row) {
-            if (! empty($row['id'])) {
-                $out[(int) $row['id']] = [
-                    'max_students' => (isset($row['max_students']) && $row['max_students'] !== '')
-                        ? (int) $row['max_students']
-                        : null,
-                ];
-            }
-        }
-
-        return $out;
     }
 }

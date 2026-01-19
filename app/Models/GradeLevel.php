@@ -28,21 +28,5 @@ class GradeLevel extends Model
         return $this->hasMany(StudentEnrollment::class, 'grade_level_id');
     }
 
-    /**
-     * Turmas vinculadas ao ano/série (pivot classroom_grade_level).
-     */
-    public function classrooms()
-    {
-        return $this->belongsToMany(Classroom::class, 'classroom_grade_level')
-            ->withTimestamps();
-    }
-
-    /**
-     * Alias opcional para compatibilidade de código antigo:
-     * descomente se precisar manter chamadas ->studentYears()
-     */
-    // public function studentYears()
-    // {
-    //     return $this->studentEnrollments();
-    // }
+    // Turmas agora armazenam grade_level_ids em JSON (não há pivot).
 }

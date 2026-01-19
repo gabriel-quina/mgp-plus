@@ -21,15 +21,14 @@ class ClassroomController extends Controller
         $sh = request('shift');
 
         $classroomsQuery = Classroom::query()
-            ->with(['school', 'gradeLevels'])
-            ->whereNull('parent_classroom_id');
+            ->with(['school', 'workshop']);
 
         if ($q !== '') {
-            $classroomsQuery->where('name', 'like', "%{$q}%");
+            $classroomsQuery->where('grades_signature', 'like', "%{$q}%");
         }
 
         if ($yr) {
-            $classroomsQuery->where('academic_year', (int) $yr);
+            $classroomsQuery->where('academic_year_id', (int) $yr);
         }
 
         if ($sh) {
@@ -37,16 +36,10 @@ class ClassroomController extends Controller
         }
 
         $classrooms = $classroomsQuery
-            ->orderBy('academic_year', 'desc')
-            ->orderBy('name')
+            ->orderBy('academic_year_id', 'desc')
+            ->orderBy('group_number')
             ->paginate(20)
             ->withQueryString();
-
-        $classrooms->getCollection()->transform(function ($classroom) {
-            $classroom->total_all_students = $classroom->eligibleEnrollments()->count();
-
-            return $classroom;
-        });
 
         return view('classrooms.index', compact('classrooms', 'q', 'yr', 'sh'));
     }
@@ -55,7 +48,6 @@ class ClassroomController extends Controller
     {
         return view('classrooms.create', [
             'schools' => School::orderBy('name')->pluck('name', 'id'),
-            'parentClassrooms' => Classroom::orderBy('name')->pluck('name', 'id'),
             'gradeLevels' => GradeLevel::orderBy('sequence')->orderBy('name')->pluck('name', 'id'),
             'workshops' => Workshop::orderBy('name')->pluck('name', 'id'),
             'defaultYear' => (int) date('Y'),
@@ -68,37 +60,40 @@ class ClassroomController extends Controller
 
         $classroom = Classroom::create([
             'school_id' => (int) $data['school_id'],
-            'parent_classroom_id' => $data['parent_classroom_id'] ?? null,
-            'name' => $data['name'],
+            'academic_year_id' => (int) $data['academic_year_id'],
             'shift' => $data['shift'],
-            'is_active' => $request->boolean('is_active'),
-            'academic_year' => (int) $data['academic_year'],
-            'grade_level_key' => $data['grade_level_key'],
+            'workshop_id' => (int) $data['workshop_id'],
+            'grade_level_ids' => $this->normalizeGradeLevels($data['grade_level_ids']),
+            'grades_signature' => $this->buildGradesSignature($data['grade_level_ids']),
+            'group_number' => (int) $data['group_number'],
+            'capacity_hint' => $data['capacity_hint'] !== null ? (int) $data['capacity_hint'] : null,
+            'status' => $data['status'],
         ]);
-
-        $classroom->gradeLevels()->sync($data['grade_level_ids']);
-        $classroom->workshops()->sync($this->buildWorkshopSyncPayload($data['workshops'] ?? []));
 
         return redirect()
             ->route('classrooms.show', $classroom)
             ->with('success', 'Turma criada com anos e oficinas vinculadas.');
     }
 
+    public function show(Classroom $classroom)
+    {
+        $classroom->load(['school', 'workshop']);
+
+        return view('classrooms.show', [
+            'classroom' => $classroom,
+        ]);
+    }
+
     public function edit(Classroom $classroom)
     {
-        $classroom->load(['gradeLevels', 'workshops']);
+        $classroom->load(['workshop']);
 
         return view('classrooms.edit', [
             'classroom' => $classroom,
             'schools' => School::orderBy('name')->pluck('name', 'id'),
-            'parentClassrooms' => Classroom::whereKeyNot($classroom->id)->orderBy('name')->pluck('name', 'id'),
             'gradeLevels' => GradeLevel::orderBy('sequence')->orderBy('name')->pluck('name', 'id'),
             'workshops' => Workshop::orderBy('name')->pluck('name', 'id'),
-            'selectedGrades' => $classroom->gradeLevels->pluck('id')->all(),
-            'existingWorkshops' => $classroom->workshops->map(fn ($w) => [
-                'id' => $w->id,
-                'max_students' => $w->pivot->max_students,
-            ])->values()->all(),
+            'selectedGrades' => $classroom->grade_level_ids ?? [],
         ]);
     }
 
@@ -108,16 +103,15 @@ class ClassroomController extends Controller
 
         $classroom->update([
             'school_id' => (int) $data['school_id'],
-            'parent_classroom_id' => $data['parent_classroom_id'] ?? null,
-            'name' => $data['name'],
+            'academic_year_id' => (int) $data['academic_year_id'],
             'shift' => $data['shift'],
-            'is_active' => $request->boolean('is_active'),
-            'academic_year' => (int) $data['academic_year'],
-            'grade_level_key' => $data['grade_level_key'],
+            'workshop_id' => (int) $data['workshop_id'],
+            'grade_level_ids' => $this->normalizeGradeLevels($data['grade_level_ids']),
+            'grades_signature' => $this->buildGradesSignature($data['grade_level_ids']),
+            'group_number' => (int) $data['group_number'],
+            'capacity_hint' => $data['capacity_hint'] !== null ? (int) $data['capacity_hint'] : null,
+            'status' => $data['status'],
         ]);
-
-        $classroom->gradeLevels()->sync($data['grade_level_ids']);
-        $classroom->workshops()->sync($this->buildWorkshopSyncPayload($data['workshops'] ?? []));
 
         return redirect()
             ->route('classrooms.show', $classroom)
@@ -141,19 +135,18 @@ class ClassroomController extends Controller
         }
     }
 
-    private function buildWorkshopSyncPayload(array $workshops): array
+    private function normalizeGradeLevels(array $gradeLevelIds): array
     {
-        $out = [];
-        foreach ($workshops as $row) {
-            if (! empty($row['id'])) {
-                $out[(int) $row['id']] = [
-                    'max_students' => (isset($row['max_students']) && $row['max_students'] !== '')
-                        ? (int) $row['max_students']
-                        : null,
-                ];
-            }
-        }
+        return collect($gradeLevelIds)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+    }
 
-        return $out;
+    private function buildGradesSignature(array $gradeLevelIds): string
+    {
+        return implode(',', $this->normalizeGradeLevels($gradeLevelIds));
     }
 }

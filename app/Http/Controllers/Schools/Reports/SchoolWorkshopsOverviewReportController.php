@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Schools\Reports;
 
 use App\Http\Controllers\Controller;
+use App\Models\ClassroomMembership;
 use App\Models\School;
-use App\Models\WorkshopAllocation;
 use Illuminate\Http\Request;
 
 class SchoolWorkshopsOverviewReportController extends Controller
@@ -18,9 +18,11 @@ class SchoolWorkshopsOverviewReportController extends Controller
 
         $allocatedPerWorkshop = $workshopIds->isEmpty()
             ? collect()
-            : WorkshopAllocation::query()
-                ->whereIn('workshop_id', $workshopIds)
-                ->get(['workshop_id', 'student_enrollment_id'])
+            : ClassroomMembership::query()
+                ->join('classrooms', 'classrooms.id', '=', 'classroom_memberships.classroom_id')
+                ->whereIn('classrooms.workshop_id', $workshopIds)
+                ->activeAt(now())
+                ->get(['classrooms.workshop_id', 'classroom_memberships.student_enrollment_id'])
                 ->groupBy('workshop_id')
                 ->map(fn ($rows) => $rows->pluck('student_enrollment_id')->unique()->count());
 
