@@ -85,7 +85,7 @@
                                         <td>
                                             <small class="text-muted">
                                                 Matrícula #{{ $enrollment->id }}<br>
-                                                Ano: {{ $enrollment->gradeLevel->name ?? '—' }}
+                                                Ano: {{ $enrollment->gradeLevel->short_name ?? ($enrollment->gradeLevel->name ?? '—') }}
                                             </small>
                                         </td>
                                         <td class="text-center">
@@ -94,10 +94,10 @@
                                             @else
                                                 <span class="badge bg-danger">Faltou</span>
                                             @endif
-                                            @if ($attendance->justification)
+                                            @if ($attendance->note)
                                                 <br>
                                                 <small class="text-muted">
-                                                    {{ $attendance->justification }}
+                                                    {{ $attendance->note }}
                                                 </small>
                                             @endif
                                         </td>

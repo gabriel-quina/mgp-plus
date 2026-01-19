@@ -16,7 +16,7 @@
                     Turno: <strong>{{ $classroom->shift ?? '—' }}</strong>
                 </div>
                 <div class="text-muted small">
-                    Série(s): <strong>{{ $classroom->grades_signature ?? '—' }}</strong> ·
+                    Série(s): <strong>{{ $classroom->grade_level_names }}</strong> ·
                     Grupo: <strong>{{ $classroom->group_number }}</strong> ·
                     Capacidade sugerida: <strong>{{ $classroom->capacity_hint ?? '—' }}</strong> ·
                     Status: <strong>{{ $classroom->status }}</strong>

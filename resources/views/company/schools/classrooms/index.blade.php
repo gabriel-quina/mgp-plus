@@ -91,7 +91,7 @@
                             </td>
 
                             <td>
-                                {{ $classroom->grades_signature ?? '—' }}
+                                {{ $classroom->grade_level_names }}
                             </td>
 
                             <td class="text-nowrap">

@@ -10,7 +10,7 @@ class LessonAttendance extends Model
         'lesson_id',
         'student_enrollment_id',
         'present',
-        'justification',
+        'note',
     ];
 
     protected $casts = [

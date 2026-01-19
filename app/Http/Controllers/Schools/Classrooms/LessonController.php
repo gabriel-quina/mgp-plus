@@ -31,7 +31,7 @@ class LessonController extends Controller
             $classroom->shift ?? '—',
         );
 
-        return view('lessons.create', [
+        return view('schools.lessons.create', [
             'school' => $school,
             'classroom' => $classroom,
             'enrollments' => $enrollments,
@@ -68,7 +68,7 @@ class LessonController extends Controller
             'classroom' => $classroom->id,
         ]);
 
-        return view('lessons.index', [
+        return view('schools.lessons.index', [
             'school' => $school,
             'classroom' => $classroom,
             'lessons' => $lessons,
@@ -89,7 +89,9 @@ class LessonController extends Controller
             'lesson_at' => ['required', 'date'],
             'topic' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
-            'attendance' => ['nullable', 'array'],
+            'attendance_present' => ['nullable', 'array'],
+            'attendance_note' => ['nullable', 'array'],
+            'attendance_note.*' => ['nullable', 'string', 'max:500'],
         ]);
 
         $lesson = Lesson::create([
@@ -101,9 +103,10 @@ class LessonController extends Controller
 
         $enrollments = $classroom->rosterAt(\Carbon\Carbon::parse($data['lesson_at']));
 
-        $presentIds = collect($data['attendance'] ?? [])
+        $presentIds = collect($data['attendance_present'] ?? [])
             ->keys()
             ->map(fn ($id) => (int) $id);
+        $notes = collect($data['attendance_note'] ?? []);
 
         $now = now();
         $rows = [];
@@ -113,6 +116,7 @@ class LessonController extends Controller
                 'lesson_id' => $lesson->id,
                 'student_enrollment_id' => $enrollment->id,
                 'present' => $presentIds->contains($enrollment->id),
+                'note' => $notes->get($enrollment->id) ?: null,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
@@ -157,7 +161,7 @@ class LessonController extends Controller
             'classroom' => $classroom->id,
         ]);
 
-        return view('lessons.show', [
+        return view('schools.lessons.show', [
             'school' => $school,
             'lesson' => $lesson,
             'attendances' => $attendances,

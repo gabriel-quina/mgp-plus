@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('lesson_id')->constrained()->cascadeOnDelete();
             $table->foreignId('student_enrollment_id')->constrained()->cascadeOnDelete();
             $table->boolean('present')->default(true);
-            $table->text('justification')->nullable();
+            $table->text('note')->nullable();
             $table->timestamps();
 
             $table->unique(['lesson_id', 'student_enrollment_id']);

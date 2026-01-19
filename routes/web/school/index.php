@@ -16,6 +16,7 @@ Route::prefix('escola/{school:id}')
     ->name('schools.')
     ->middleware(SubstituteBindings::class)
     ->middleware('can:access-school,school')
+    ->scopeBindings()
     ->group(function () {
         require __DIR__.'/dashboard.php';
         require __DIR__.'/students.php';

@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
 class Classroom extends Model
 {
     use HasFactory;
@@ -40,6 +39,16 @@ class Classroom extends Model
         return $this->belongsTo(Workshop::class);
     }
 
+    public function lessons()
+    {
+        return $this->hasMany(Lesson::class);
+    }
+
+    public function assessments()
+    {
+        return $this->hasMany(Assessment::class);
+    }
+
     /** Alocações com vigência */
     public function memberships()
     {
@@ -69,10 +78,55 @@ class Classroom extends Model
             ->get();
     }
 
+    public function hasAcademicData(): bool
+    {
+        return $this->lessons()->exists() || $this->assessments()->exists();
+    }
+
+    public function getGradeLevelNamesAttribute(): string
+    {
+        $ids = $this->grade_level_ids ?? [];
+        if (empty($ids)) {
+            return '—';
+        }
+
+        return GradeLevel::query()
+            ->whereIn('id', $ids)
+            ->orderBy('sequence')
+            ->orderBy('id')
+            ->get(['id', 'short_name', 'name'])
+            ->map(fn (GradeLevel $grade) => $grade->short_name ?: $grade->name)
+            ->implode(', ');
+    }
+
+    public static function normalizeGradeLevelIds(array $gradeLevelIds): array
+    {
+        $ids = collect($gradeLevelIds)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return [];
+        }
+
+        return GradeLevel::query()
+            ->whereIn('id', $ids->all())
+            ->orderBy('sequence')
+            ->orderBy('id')
+            ->pluck('id')
+            ->all();
+    }
+
+    public static function buildGradesSignature(array $gradeLevelIds): string
+    {
+        return implode(',', self::normalizeGradeLevelIds($gradeLevelIds));
+    }
+
     public function getNameAttribute(): string
     {
         $workshopName = $this->workshop?->name ?? 'Turma';
-        $grades = $this->grades_signature ?? '';
+        $grades = $this->grade_level_names ?? '';
         $group = $this->group_number ? '#'.$this->group_number : '';
         $year = $this->academic_year_id ?? '';
 

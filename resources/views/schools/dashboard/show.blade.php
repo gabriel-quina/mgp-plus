@@ -150,7 +150,7 @@
                                             —
                                         @endif
                                     </td>
-                                    <td>{{ $classroom->grades_signature ?? '—' }}</td>
+                                    <td>{{ $classroom->grade_level_names }}</td>
                                     <td class="text-end">
                                         <a href="{{ route('classrooms.show', $classroom) }}"
                                             class="btn btn-sm btn-outline-secondary">Ver</a>

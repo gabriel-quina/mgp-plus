@@ -7,8 +7,6 @@ use App\Models\Assessment;
 use App\Models\AssessmentGrade;
 use App\Models\Classroom;
 use App\Models\School;
-use App\Models\StudentEnrollment;
-use App\Models\Workshop;
 use App\Services\AssessmentStatsService;
 use Illuminate\Http\Request;
 
@@ -43,7 +41,7 @@ class AssessmentController extends Controller
             'classroom' => $classroom->id,
         ]);
 
-        return view('assessments.index', [
+        return view('schools.assessments.index', [
             'classroom' => $classroom,
             'assessments' => $assessments,
             'backUrl' => $backUrl,
@@ -63,7 +61,7 @@ class AssessmentController extends Controller
 
         $enrollments = $classroom->rosterAt(now());
 
-        return view('assessments.create', [
+        return view('schools.assessments.create', [
             'classroom' => $classroom,
             'enrollments' => $enrollments,
             'school' => $school,
@@ -196,7 +194,7 @@ class AssessmentController extends Controller
             'classroom' => $classroom->id,
         ]);
 
-        return view('assessments.show', [
+        return view('schools.assessments.show', [
             'assessment' => $assessment,
             'grades' => $grades,
             'classroom' => $classroom,

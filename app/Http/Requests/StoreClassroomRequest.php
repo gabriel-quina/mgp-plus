@@ -2,9 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Models\{
-    Classroom
-};
+use App\Models\Classroom;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -36,7 +34,7 @@ class StoreClassroomRequest extends FormRequest
         $this->merge([
             'school_id'        => $schoolId,
             'academic_year_id' => $year !== null && $year !== '' ? (int) $year : (int) date('Y'),
-            'grades_signature' => $this->makeGradesSignature((array) $this->input('grade_level_ids', [])),
+            'grades_signature' => Classroom::buildGradesSignature((array) $this->input('grade_level_ids', [])),
         ]);
     }
 
@@ -105,13 +103,4 @@ class StoreClassroomRequest extends FormRequest
      * - remove duplicatas
      * - ordena crescente
      */
-    private function makeGradesSignature(array $ids): string
-    {
-        return collect($ids)
-            ->map(fn ($v) => (int) $v)
-            ->unique()
-            ->sort()
-            ->values()
-            ->implode(',');
-    }
 }

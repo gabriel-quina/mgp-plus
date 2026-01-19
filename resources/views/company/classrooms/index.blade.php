@@ -64,7 +64,7 @@
                                         Noite
                                     @endif
                                 </td>
-                                <td>{{ $c->grades_signature ?? '—' }}</td>
+                                <td>{{ $c->grade_level_names }}</td>
                                 <td>{{ $c->group_number ?? '—' }}</td>
                                 <td>{{ $c->capacity_hint ?? '—' }}</td>
                                 <td>{{ $c->status ?? '—' }}</td>

@@ -2,9 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Models\{
-    Classroom
-};
+use App\Models\Classroom;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,10 +15,20 @@ class UpdateClassroomRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $schoolFromRoute = $this->route('school');
+        $schoolId = $this->input('school_id');
+
+        if ($schoolFromRoute instanceof \App\Models\School) {
+            $schoolId = $schoolFromRoute->id;
+        } elseif (is_numeric($schoolFromRoute)) {
+            $schoolId = (int) $schoolFromRoute;
+        }
+
         $year = $this->input('academic_year_id');
         $this->merge([
+            'school_id' => $schoolId,
             'academic_year_id' => $year !== null && $year !== '' ? (int) $year : (int) date('Y'),
-            'grades_signature' => $this->makeGradesSignature((array) $this->input('grade_level_ids', [])),
+            'grades_signature' => Classroom::buildGradesSignature((array) $this->input('grade_level_ids', [])),
         ]);
     }
 
@@ -84,13 +92,4 @@ class UpdateClassroomRequest extends FormRequest
         ];
     }
 
-    private function makeGradesSignature(array $ids): string
-    {
-        return collect($ids)
-            ->map(fn ($v) => (int) $v)
-            ->unique()
-            ->sort()
-            ->values()
-            ->implode(',');
-    }
 }

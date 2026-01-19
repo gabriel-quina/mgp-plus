@@ -18,7 +18,8 @@
     'schools'           => $schools,
     'gradeLevels'       => $gradeLevels,
     'workshops'         => $workshops,
-    'selectedGrades'    => $selectedGrades
+    'selectedGrades'    => $selectedGrades,
+    'lockAcademicFields'=> $lockAcademicFields
   ])
 
   <div class="card">

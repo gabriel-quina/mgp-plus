@@ -11,6 +11,7 @@ use App\Models\GradeLevel;
 use App\Models\School;
 use App\Models\Workshop;
 use Illuminate\Database\QueryException;
+use Illuminate\Validation\ValidationException;
 
 class ClassroomController extends Controller
 {
@@ -63,8 +64,8 @@ class ClassroomController extends Controller
             'academic_year_id' => (int) $data['academic_year_id'],
             'shift' => $data['shift'],
             'workshop_id' => (int) $data['workshop_id'],
-            'grade_level_ids' => $this->normalizeGradeLevels($data['grade_level_ids']),
-            'grades_signature' => $this->buildGradesSignature($data['grade_level_ids']),
+            'grade_level_ids' => Classroom::normalizeGradeLevelIds($data['grade_level_ids']),
+            'grades_signature' => Classroom::buildGradesSignature($data['grade_level_ids']),
             'group_number' => (int) $data['group_number'],
             'capacity_hint' => $data['capacity_hint'] !== null ? (int) $data['capacity_hint'] : null,
             'status' => $data['status'],
@@ -94,6 +95,7 @@ class ClassroomController extends Controller
             'gradeLevels' => GradeLevel::orderBy('sequence')->orderBy('name')->pluck('name', 'id'),
             'workshops' => Workshop::orderBy('name')->pluck('name', 'id'),
             'selectedGrades' => $classroom->grade_level_ids ?? [],
+            'lockAcademicFields' => $classroom->hasAcademicData(),
         ]);
     }
 
@@ -101,13 +103,17 @@ class ClassroomController extends Controller
     {
         $data = $request->validated();
 
+        $normalizedGrades = Classroom::normalizeGradeLevelIds($data['grade_level_ids']);
+
+        $this->ensureEditableAcademicFields($classroom, $normalizedGrades, $data);
+
         $classroom->update([
             'school_id' => (int) $data['school_id'],
             'academic_year_id' => (int) $data['academic_year_id'],
             'shift' => $data['shift'],
             'workshop_id' => (int) $data['workshop_id'],
-            'grade_level_ids' => $this->normalizeGradeLevels($data['grade_level_ids']),
-            'grades_signature' => $this->buildGradesSignature($data['grade_level_ids']),
+            'grade_level_ids' => $normalizedGrades,
+            'grades_signature' => Classroom::buildGradesSignature($data['grade_level_ids']),
             'group_number' => (int) $data['group_number'],
             'capacity_hint' => $data['capacity_hint'] !== null ? (int) $data['capacity_hint'] : null,
             'status' => $data['status'],
@@ -134,19 +140,30 @@ class ClassroomController extends Controller
             ])->withInput();
         }
     }
-
-    private function normalizeGradeLevels(array $gradeLevelIds): array
+    private function ensureEditableAcademicFields(Classroom $classroom, array $normalizedGrades, array $data): void
     {
-        return collect($gradeLevelIds)
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->sort()
-            ->values()
-            ->all();
-    }
+        if (! $classroom->hasAcademicData()) {
+            return;
+        }
 
-    private function buildGradesSignature(array $gradeLevelIds): string
-    {
-        return implode(',', $this->normalizeGradeLevels($gradeLevelIds));
+        $originalGrades = Classroom::normalizeGradeLevelIds($classroom->grade_level_ids ?? []);
+        $blockedChanges = [
+            'grade_level_ids' => $originalGrades !== $normalizedGrades,
+            'workshop_id' => (int) $data['workshop_id'] !== (int) $classroom->workshop_id,
+            'shift' => (string) $data['shift'] !== (string) $classroom->shift,
+            'academic_year_id' => (int) $data['academic_year_id'] !== (int) $classroom->academic_year_id,
+            'group_number' => (int) $data['group_number'] !== (int) $classroom->group_number,
+        ];
+
+        $errors = [];
+        foreach ($blockedChanges as $field => $blocked) {
+            if ($blocked) {
+                $errors[$field] = 'Este campo não pode ser alterado após registros acadêmicos.';
+            }
+        }
+
+        if ($errors) {
+            throw ValidationException::withMessages($errors);
+        }
     }
 }

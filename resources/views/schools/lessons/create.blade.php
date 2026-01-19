@@ -88,9 +88,10 @@
                             <table class="table table-sm mb-0 align-middle">
                                 <thead>
                                     <tr>
-                                        <th style="width: 60%">Aluno</th>
+                                        <th style="width: 40%">Aluno</th>
                                         <th style="width: 20%">Matrícula / Ano</th>
-                                        <th style="width: 20%" class="text-center">Presente?</th>
+                                        <th style="width: 15%" class="text-center">Presente?</th>
+                                        <th style="width: 25%">Observação</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -109,12 +110,17 @@
                                                 <small class="text-muted">
                                                     Matrícula #{{ $enrollment->id }}<br>
                                                     Ano:
-                                                    {{ $enrollment->gradeLevel->name ?? $classroom->grades_signature ?? '—' }}
+                                                    {{ $enrollment->gradeLevel->short_name ?? ($enrollment->gradeLevel->name ?? $classroom->grade_level_names ?? '—') }}
                                                 </small>
                                             </td>
                                             <td class="text-center">
-                                                <input type="checkbox" name="attendance[{{ $enrollment->id }}]"
+                                                <input type="checkbox" name="attendance_present[{{ $enrollment->id }}]"
                                                     value="1" class="form-check-input attendance-checkbox" checked>
+                                            </td>
+                                            <td>
+                                                <input type="text" name="attendance_note[{{ $enrollment->id }}]"
+                                                    class="form-control form-control-sm" placeholder="Observação (opcional)"
+                                                    value="{{ old('attendance_note.' . $enrollment->id) }}">
                                             </td>
                                         </tr>
                                     @endforeach
@@ -126,7 +132,7 @@
 
                 <div class="card-footer d-flex justify-content-between">
                     <span class="text-muted small">
-                        Desmarque quem **faltou**. Depois você pode evoluir para outros tipos de status.
+                        Desmarque quem **faltou**. Observações são opcionais.
                     </span>
 
                     <button type="submit" class="btn btn-primary">

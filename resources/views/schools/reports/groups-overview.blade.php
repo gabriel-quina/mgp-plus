@@ -47,7 +47,7 @@
                             <td>{{ $c->workshop?->name ?? '—' }}</td>
                             <td>{{ $c->academic_year_id ?? '—' }}</td>
                             <td>{{ $c->shift ?? '—' }}</td>
-                            <td>{{ $c->grades_signature ?? '—' }}</td>
+                            <td>{{ $c->grade_level_names }}</td>
                             <td>{{ $c->group_number ?? '—' }}</td>
                             <td class="text-end">{{ $c->students_allocated ?? 0 }}</td>
                         </tr>
