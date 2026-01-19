@@ -11,15 +11,15 @@
                 </h1>
                 <div class="text-muted small">
                     {{ $classroom->school->name ?? '—' }} ·
-                    Ano {{ $classroom->academic_year }} ·
+                    Ano {{ $classroom->academic_year_id }} ·
                     {{ $classroom->shift ?? '—' }}<br>
-                    Oficina: <strong>{{ $workshop->name }}</strong><br>
-                    Data: {{ optional($assessment->due_at)->format('d/m/Y') ?? '—' }}
+                    Oficina: <strong>{{ $classroom->workshop?->name ?? '—' }}</strong><br>
+                    Data: {{ optional($assessment->assessment_at)->format('d/m/Y H:i') ?? '—' }}
                 </div>
             </div>
 
             <div class="d-flex gap-2">
-                <a href="{{ route('schools.assessments.create', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id]) }}"
+                <a href="{{ route('schools.assessments.create', ['school' => $school->id, 'classroom' => $classroom->id]) }}"
                     class="btn btn-outline-secondary btn-sm">
                     Lançar nova avaliação
                 </a>

@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Schools\Reports;
 
 use App\Http\Controllers\Controller;
 use App\Models\Classroom;
+use App\Models\ClassroomMembership;
 use App\Models\School;
-use App\Models\WorkshopAllocation;
 use Illuminate\Http\Request;
 
 class SchoolGroupsOverviewReportController extends Controller
@@ -17,13 +17,12 @@ class SchoolGroupsOverviewReportController extends Controller
 
         $query = Classroom::query()
             ->where('school_id', $school->id)
-            ->with(['gradeLevels', 'workshops'])
-            ->orderByRaw('parent_classroom_id is null desc')
-            ->orderBy('academic_year', 'desc')
-            ->orderBy('name');
+            ->with(['workshop'])
+            ->orderBy('academic_year_id', 'desc')
+            ->orderBy('group_number');
 
         if ($year) {
-            $query->where('academic_year', (int) $year);
+            $query->where('academic_year_id', (int) $year);
         }
         if ($shift) {
             $query->where('shift', $shift);
@@ -31,23 +30,15 @@ class SchoolGroupsOverviewReportController extends Controller
 
         $classrooms = $query->get();
 
-        // Contagem de alocados por grupo (child_classroom)
-        $childIds = $classrooms->whereNotNull('parent_classroom_id')->pluck('id')->values();
+        $counts = ClassroomMembership::query()
+            ->whereIn('classroom_id', $classrooms->pluck('id'))
+            ->activeAt(now())
+            ->get(['classroom_id', 'student_enrollment_id'])
+            ->groupBy('classroom_id')
+            ->map(fn ($rows) => $rows->pluck('student_enrollment_id')->unique()->count());
 
-        $allocCountByChild = $childIds->isEmpty()
-            ? collect()
-            : WorkshopAllocation::query()
-                ->whereIn('child_classroom_id', $childIds)
-                ->get(['child_classroom_id', 'student_enrollment_id'])
-                ->groupBy('child_classroom_id')
-                ->map(fn ($rows) => $rows->pluck('student_enrollment_id')->unique()->count());
-
-        $classrooms->each(function ($c) use ($allocCountByChild) {
-            $c->students_allocated = (int) ($allocCountByChild[$c->id] ?? 0);
-
-            if (method_exists($c, 'eligibleEnrollments') && is_null($c->parent_classroom_id)) {
-                $c->total_all_students = $c->eligibleEnrollments()->count();
-            }
+        $classrooms->each(function ($c) use ($counts) {
+            $c->students_allocated = (int) ($counts[$c->id] ?? 0);
         });
 
         return view('schools.reports.groups-overview', [

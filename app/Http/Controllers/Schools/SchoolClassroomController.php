@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Schools;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreClassroomRequest;
+use App\Http\Requests\UpdateClassroomRequest;
 use App\Models\Classroom;
 use App\Models\GradeLevel;
 use App\Models\School;
 use App\Models\StudentEnrollment;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -20,15 +22,20 @@ class SchoolClassroomController extends Controller
         $sh = $request->get('shift');
 
         $classroomsQuery = Classroom::query()
-            ->with(['gradeLevels', 'groupSet.gradeLevels']) // segue o padrão do seu index MASTER
+            ->with(['workshop'])
             ->where('school_id', $school->id);
 
         if ($q !== '') {
-            $classroomsQuery->where('name', 'like', "%{$q}%");
+            $classroomsQuery->where(function ($query) use ($q) {
+                $query->where('grades_signature', 'like', "%{$q}%")
+                    ->orWhereHas('workshop', function ($workshopQuery) use ($q) {
+                        $workshopQuery->where('name', 'like', "%{$q}%");
+                    });
+            });
         }
 
         if ($yr) {
-            $classroomsQuery->where('academic_year', (int) $yr);
+            $classroomsQuery->where('academic_year_id', (int) $yr);
         }
 
         if ($sh) {
@@ -37,20 +44,10 @@ class SchoolClassroomController extends Controller
 
         // Ordenação que ajuda a leitura quando mistura base + grupos
         $classrooms = $classroomsQuery
-            ->orderByRaw('parent_classroom_id is null desc')
-            ->orderBy('academic_year', 'desc')
-            ->orderBy('name')
+            ->orderBy('academic_year_id', 'desc')
+            ->orderBy('group_number')
             ->paginate(20)
             ->withQueryString();
-
-        // Mesmo “enriquecimento” do MASTER, sem assumir que child tem esse método
-        $classrooms->getCollection()->transform(function ($classroom) {
-            if (method_exists($classroom, 'eligibleEnrollments') && ! $classroom->parent_classroom_id) {
-                $classroom->total_all_students = $classroom->eligibleEnrollments()->count();
-            }
-
-            return $classroom;
-        });
 
         return view('schools.classrooms.index', [
             'school' => $school,
@@ -64,18 +61,18 @@ class SchoolClassroomController extends Controller
 
     public function show(School $school, Classroom $classroom)
     {
-        // Segurança básica sem mexer nas rotas
-        abort_if((int) $classroom->school_id !== (int) $school->id, 404);
+        $atParam = request('at');
+        $at = $atParam ? Carbon::parse($atParam) : now();
 
-        // Reaproveita suas telas MASTER já prontas
-        if ($classroom->parent_classroom_id) {
-            return redirect()->route('subclassrooms.show', [
-                'parent' => $classroom->parent_classroom_id,
-                'classroom' => $classroom->id,
-            ]);
-        }
+        $roster = $classroom->rosterAt($at);
 
-        return redirect()->route('classrooms.show', $classroom);
+        return view('schools.classrooms.show', [
+            'school' => $school,
+            'schoolNav' => $school,
+            'classroom' => $classroom,
+            'roster' => $roster,
+            'rosterAt' => $at,
+        ]);
     }
 
     public function create(School $school)
@@ -84,11 +81,6 @@ class SchoolClassroomController extends Controller
             'school' => $school,
             'schoolNav' => $school,
             'schools' => [$school->id => $school->name],
-            'parentClassrooms' => Classroom::query()
-                ->where('school_id', $school->id)
-                ->whereNull('parent_classroom_id')
-                ->orderBy('name')
-                ->pluck('name', 'id'),
             'gradeLevels' => $this->gradeLevelsWithEnrollments($school),
             'workshops' => $school->workshops()
                 ->select('workshops.id', 'workshops.name')
@@ -103,34 +95,85 @@ class SchoolClassroomController extends Controller
         $data = $request->validated();
         $data['school_id'] = $school->id;
 
-        $this->validateParentClassroom($data['parent_classroom_id'] ?? null, $school);
         $this->validateGradeLevels($data['grade_level_ids'], $school);
+
+        $gradeLevelIds = Classroom::normalizeGradeLevelIds($data['grade_level_ids']);
+        $gradesSignature = Classroom::buildGradesSignature($data['grade_level_ids']);
 
         $classroom = Classroom::create([
             'school_id' => $data['school_id'],
-            'parent_classroom_id' => $data['parent_classroom_id'] ?? null,
-            'name' => $data['name'],
+            'academic_year_id' => (int) $data['academic_year_id'],
             'shift' => $data['shift'],
-            'is_active' => $request->boolean('is_active'),
-            'academic_year' => (int) $data['academic_year'],
-            'grade_level_key' => $data['grade_level_key'],
+            'workshop_id' => (int) $data['workshop_id'],
+            'grade_level_ids' => $gradeLevelIds,
+            'grades_signature' => $gradesSignature,
+            'group_number' => (int) $data['group_number'],
+            'capacity_hint' => $data['capacity_hint'] !== null ? (int) $data['capacity_hint'] : null,
+            'status' => $data['status'],
         ]);
-
-        $classroom->gradeLevels()->sync($data['grade_level_ids']);
-
-        $allowedWorkshopIds = $school->workshops()
-            ->select('workshops.id')
-            ->pluck('workshops.id')
-            ->all();
-        $workshopsPayload = collect($data['workshops'] ?? [])
-            ->filter(fn ($row) => empty($row['id']) || in_array((int) $row['id'], $allowedWorkshopIds, true))
-            ->values()
-            ->all();
-        $classroom->workshops()->sync($this->buildWorkshopSyncPayload($workshopsPayload));
 
         return redirect()
             ->route('schools.classrooms.show', [$school, $classroom])
             ->with('success', 'Grupo criado com sucesso.');
+    }
+
+    public function edit(School $school, Classroom $classroom)
+    {
+        return view('schools.classrooms.edit', [
+            'school' => $school,
+            'schoolNav' => $school,
+            'classroom' => $classroom,
+            'schools' => [$school->id => $school->name],
+            'gradeLevels' => $this->gradeLevelsWithEnrollments($school),
+            'workshops' => $school->workshops()
+                ->select('workshops.id', 'workshops.name')
+                ->orderBy('workshops.name')
+                ->pluck('workshops.name', 'workshops.id'),
+            'selectedGrades' => $classroom->grade_level_ids ?? [],
+            'lockAcademicFields' => $classroom->hasAcademicData(),
+        ]);
+    }
+
+    public function update(School $school, Classroom $classroom, UpdateClassroomRequest $request)
+    {
+        $data = $request->validated();
+
+        $this->validateGradeLevels($data['grade_level_ids'], $school);
+
+        $normalizedGrades = Classroom::normalizeGradeLevelIds($data['grade_level_ids']);
+
+        $this->ensureEditableAcademicFields($classroom, $normalizedGrades, $data);
+
+        $classroom->update([
+            'school_id' => $school->id,
+            'academic_year_id' => (int) $data['academic_year_id'],
+            'shift' => $data['shift'],
+            'workshop_id' => (int) $data['workshop_id'],
+            'grade_level_ids' => $normalizedGrades,
+            'grades_signature' => Classroom::buildGradesSignature($data['grade_level_ids']),
+            'group_number' => (int) $data['group_number'],
+            'capacity_hint' => $data['capacity_hint'] !== null ? (int) $data['capacity_hint'] : null,
+            'status' => $data['status'],
+        ]);
+
+        return redirect()
+            ->route('schools.classrooms.show', [$school, $classroom])
+            ->with('success', 'Grupo atualizado com sucesso.');
+    }
+
+    public function destroy(School $school, Classroom $classroom)
+    {
+        if ($classroom->hasAcademicData()) {
+            return back()->withErrors([
+                'general' => 'Não é possível excluir grupos com aulas ou avaliações registradas.',
+            ]);
+        }
+
+        $classroom->delete();
+
+        return redirect()
+            ->route('schools.classrooms.index', $school)
+            ->with('success', 'Grupo excluído com sucesso.');
     }
 
     private function gradeLevelsWithEnrollments(School $school)
@@ -150,24 +193,6 @@ class SchoolClassroomController extends Controller
             ->pluck('name', 'id');
     }
 
-    private function validateParentClassroom(?int $parentClassroomId, School $school): void
-    {
-        if (! $parentClassroomId) {
-            return;
-        }
-
-        $exists = Classroom::query()
-            ->whereKey($parentClassroomId)
-            ->where('school_id', $school->id)
-            ->exists();
-
-        if (! $exists) {
-            throw ValidationException::withMessages([
-                'parent_classroom_id' => 'A turma pai precisa pertencer a esta escola.',
-            ]);
-        }
-    }
-
     private function validateGradeLevels(array $gradeLevelIds, School $school): void
     {
         $allowed = $this->gradeLevelsWithEnrollments($school)->keys()->all();
@@ -180,19 +205,30 @@ class SchoolClassroomController extends Controller
         }
     }
 
-    private function buildWorkshopSyncPayload(array $workshops): array
+    private function ensureEditableAcademicFields(Classroom $classroom, array $normalizedGrades, array $data): void
     {
-        $out = [];
-        foreach ($workshops as $row) {
-            if (! empty($row['id'])) {
-                $out[(int) $row['id']] = [
-                    'max_students' => (isset($row['max_students']) && $row['max_students'] !== '')
-                        ? (int) $row['max_students']
-                        : null,
-                ];
+        if (! $classroom->hasAcademicData()) {
+            return;
+        }
+
+        $originalGrades = Classroom::normalizeGradeLevelIds($classroom->grade_level_ids ?? []);
+        $blockedChanges = [
+            'grade_level_ids' => $originalGrades !== $normalizedGrades,
+            'workshop_id' => (int) $data['workshop_id'] !== (int) $classroom->workshop_id,
+            'shift' => (string) $data['shift'] !== (string) $classroom->shift,
+            'academic_year_id' => (int) $data['academic_year_id'] !== (int) $classroom->academic_year_id,
+            'group_number' => (int) $data['group_number'] !== (int) $classroom->group_number,
+        ];
+
+        $errors = [];
+        foreach ($blockedChanges as $field => $blocked) {
+            if ($blocked) {
+                $errors[$field] = 'Este campo não pode ser alterado após registros acadêmicos.';
             }
         }
 
-        return $out;
+        if ($errors) {
+            throw ValidationException::withMessages($errors);
+        }
     }
 }

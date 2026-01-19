@@ -13,7 +13,6 @@
 
   @include('classrooms._form', [
     'schools'           => $schools,
-    'parentClassrooms'  => $parentClassrooms,
     'gradeLevels'       => $gradeLevels,
     'workshops'         => $workshops,
     'defaultYear'       => $defaultYear
@@ -29,4 +28,3 @@
 @endsection
 
 @stack('scripts')
-

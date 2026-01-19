@@ -17,9 +17,6 @@
         </div>
 
         <div class="d-flex gap-2 flex-wrap">
-            <a class="btn btn-primary" href="{{ route('schools.groups-wizard.create', $school) }}">
-                Novo grupo (helper)
-            </a>
             <a class="btn btn-primary" href="{{ route('schools.classrooms.create', $school) }}">
                 Novo grupo
             </a>
@@ -31,8 +28,8 @@
     <form method="GET" class="card card-body mb-3">
         <div class="row g-2 align-items-end">
             <div class="col-12 col-md-5">
-                <label class="form-label mb-1">Buscar por nome</label>
-                <input type="text" name="q" class="form-control" placeholder="Ex.: 5º A / Grupo Inglês 4º+5º"
+                <label class="form-label mb-1">Buscar por séries</label>
+                <input type="text" name="q" class="form-control" placeholder="Ex.: 4,5"
                     value="{{ $q }}">
             </div>
 
@@ -66,46 +63,27 @@
                 <thead>
                     <tr>
                         <th>Nome</th>
-                        <th class="text-nowrap">Tipo</th>
+                        <th class="text-nowrap">Oficina</th>
                         <th class="text-nowrap">Ano letivo</th>
                         <th>Turno</th>
-                        <th>Anos escolares</th>
-                        <th class="text-nowrap text-end">Alunos (base)</th>
+                        <th>Séries</th>
+                        <th class="text-nowrap">Grupo</th>
                         <th class="text-end">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($classrooms as $classroom)
-                        @php
-                            $isGroup = !is_null($classroom->workshop_id ?? null);
-                            $gradeLevels = null;
-
-                            if ($classroom->relationLoaded('gradeLevels') && $classroom->gradeLevels?->count()) {
-                                $gradeLevels = $classroom->gradeLevels;
-                            } elseif (
-                                !empty($classroom->workshop_group_set_id)
-                                && isset($classroom->groupSet)
-                                && optional($classroom->groupSet)->relationLoaded('gradeLevels')
-                                && optional($classroom->groupSet)->gradeLevels?->count()
-                            ) {
-                                $gradeLevels = $classroom->groupSet->gradeLevels;
-                            }
-                        @endphp
                         <tr>
                             <td class="fw-semibold">
                                 {{ $classroom->name }}
                             </td>
 
                             <td class="text-nowrap">
-                                @if ($isGroup)
-                                    <span class="badge text-bg-primary">Grupo</span>
-                                @else
-                                    <span class="badge text-bg-secondary">Base (legado)</span>
-                                @endif
+                                {{ $classroom->workshop?->name ?? '—' }}
                             </td>
 
                             <td class="text-nowrap">
-                                {{ $classroom->academic_year ?? '—' }}
+                                {{ $classroom->academic_year_id ?? '—' }}
                             </td>
 
                             <td>
@@ -113,24 +91,11 @@
                             </td>
 
                             <td>
-                                @if ($gradeLevels?->count())
-                                    <div class="d-flex flex-wrap gap-1">
-                                        @foreach ($gradeLevels as $gl)
-                                            <span class="badge text-bg-light border">
-                                                {{ $gl->short_name ?? $gl->name }}
-                                            </span>
-                                        @endforeach
-                                    </div>
-                                @else
-                                    —
-                                @endif
+                                {{ $classroom->grade_level_names }}
                             </td>
 
-                            <td class="text-nowrap text-end">
-                                {{-- No seu ClassroomController MASTER você injeta total_all_students.
-                             Se o SchoolClassroomController fizer igual, mostra.
-                             Caso contrário, fica "—" sem quebrar. --}}
-                                {{ isset($classroom->total_all_students) ? $classroom->total_all_students : '—' }}
+                            <td class="text-nowrap">
+                                {{ $classroom->group_number ?? '—' }}
                             </td>
 
                             <td class="text-end">

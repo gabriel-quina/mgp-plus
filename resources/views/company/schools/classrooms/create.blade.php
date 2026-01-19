@@ -19,7 +19,6 @@
             'showSchoolSelect' => false,
             'fixedSchoolId' => $school->id,
             'schoolName' => $school->short_name ?? $school->name,
-            'parentClassrooms' => $parentClassrooms,
             'gradeLevels' => $gradeLevels,
             'workshops' => $workshops,
             'defaultYear' => $defaultYear,

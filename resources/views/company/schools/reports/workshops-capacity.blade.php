@@ -14,7 +14,7 @@
             <table class="table table-striped align-middle mb-0">
                 <thead>
                     <tr>
-                        <th>Turma base</th>
+                        <th>Turma</th>
                         <th>Ano</th>
                         <th>Turno</th>
                         <th>Oficina</th>
@@ -25,7 +25,7 @@
                 <tbody>
                     @forelse($rows as $r)
                         <tr>
-                            <td>{{ $r->parent_name }}</td>
+                            <td>{{ $r->classroom_name }}</td>
                             <td>{{ $r->academic_year ?? '—' }}</td>
                             <td>{{ $r->shift ?? '—' }}</td>
                             <td class="fw-semibold">{{ $r->workshop_name }}</td>

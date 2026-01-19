@@ -39,7 +39,7 @@
                         <tr>
                             <td class="fw-semibold">{{ $e->student->name ?? '—' }}</td>
                             <td>{{ $e->gradeLevel->name ?? '—' }}</td>
-                            <td>{{ $e->school_year ?? ($e->year ?? '—') }}</td>
+                            <td>{{ $e->academic_year ?? '—' }}</td>
                             <td class="text-end">
                                 @if (isset($e->student_id))
                                     <a class="btn btn-sm btn-outline-primary"

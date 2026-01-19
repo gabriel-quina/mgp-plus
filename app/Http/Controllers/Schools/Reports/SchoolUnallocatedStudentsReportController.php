@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Schools\Reports;
 
 use App\Http\Controllers\Controller;
+use App\Models\ClassroomMembership;
 use App\Models\School;
 use App\Models\StudentEnrollment;
-use App\Models\WorkshopAllocation;
 use Illuminate\Http\Request;
 
 class SchoolUnallocatedStudentsReportController extends Controller
@@ -14,15 +14,13 @@ class SchoolUnallocatedStudentsReportController extends Controller
     {
         $q = trim((string) $request->get('q', ''));
 
-        $allocatedIds = WorkshopAllocation::query()
-            ->whereHas('studentEnrollment', function ($q) use ($school) {
+        $allocatedIds = ClassroomMembership::query()
+            ->whereHas('enrollment', function ($q) use ($school) {
                 $q->where('school_id', $school->id);
             })
+            ->activeAt(now())
             ->pluck('student_enrollment_id')
             ->unique();
-
-        // fallback caso você não tenha relation enrollment() no WorkshopAllocation
-        // Se quebrar, troque por um join manual depois.
 
         $enrollmentsQuery = StudentEnrollment::query()
             ->where('school_id', $school->id)
@@ -39,7 +37,7 @@ class SchoolUnallocatedStudentsReportController extends Controller
         }
 
         $enrollments = $enrollmentsQuery
-            ->orderBy('school_year', 'desc')
+            ->orderBy('academic_year', 'desc')
             ->paginate(20)
             ->withQueryString();
 

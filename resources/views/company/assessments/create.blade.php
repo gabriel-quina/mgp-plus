@@ -14,13 +14,13 @@
                 <h1 class="h4 mb-1">Lançar avaliação – {{ $classroom->name }}</h1>
                 <div class="text-muted small">
                     {{ $classroom->school->name ?? '—' }} ·
-                    Ano {{ $classroom->academic_year }} ·
+                    Ano {{ $classroom->academic_year_id }} ·
                     {{ $classroom->shift ?? '—' }}<br>
-                    Oficina: <strong>{{ $workshop->name }}</strong>
+                    Oficina: <strong>{{ $classroom->workshop?->name ?? '—' }}</strong>
                 </div>
             </div>
 
-            <a href="{{ route('schools.assessments.index', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id]) }}"
+            <a href="{{ route('schools.assessments.index', ['school' => $school->id, 'classroom' => $classroom->id]) }}"
                 class="btn btn-outline-secondary btn-sm">
                 Voltar
             </a>
@@ -36,7 +36,7 @@
             </div>
         @endif
 
-        <form action="{{ route('schools.assessments.store', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id]) }}" method="POST">
+        <form action="{{ route('schools.assessments.store', ['school' => $school->id, 'classroom' => $classroom->id]) }}" method="POST">
             @csrf
 
             {{-- Card de dados da avaliação --}}
@@ -49,8 +49,9 @@
                     </div>
 
                     <div class="col-md-3">
-                        <label class="form-label">Data</label>
-                        <input type="date" name="due_at" class="form-control" value="{{ old('due_at') }}">
+                        <label class="form-label">Data e hora</label>
+                        <input type="datetime-local" name="assessment_at" class="form-control"
+                            value="{{ old('assessment_at', now()->format('Y-m-d\\TH:i')) }}">
                     </div>
 
                     <div class="col-md-3">

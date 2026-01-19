@@ -11,14 +11,14 @@
                 </h1>
                 <div class="text-muted small">
                     {{ $classroom->school->name ?? '—' }} ·
-                    Ano {{ $classroom->academic_year }} ·
+                    Ano {{ $classroom->academic_year_id }} ·
                     {{ $classroom->shift ?? '—' }}<br>
-                    Oficina: <strong>{{ $workshop->name }}</strong>
+                    Oficina: <strong>{{ $classroom->workshop?->name ?? '—' }}</strong>
                 </div>
             </div>
 
             <div class="d-flex gap-2">
-                <a href="{{ route('schools.assessments.create', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id]) }}"
+                <a href="{{ route('schools.assessments.create', ['school' => $school->id, 'classroom' => $classroom->id]) }}"
                     class="btn btn-outline-secondary btn-sm">
                     Lançar avaliação
                 </a>
@@ -42,7 +42,7 @@
             <div class="card-body p-0">
                 @if ($assessments->isEmpty())
                     <p class="p-3 mb-0 text-muted">
-                        Nenhuma avaliação lançada ainda para este grupo.
+                        Nenhuma avaliação lançada ainda para esta turma.
                     </p>
                 @else
                     <div class="table-responsive">
@@ -59,7 +59,7 @@
                             <tbody>
                                 @foreach ($assessments as $assessment)
                                     <tr>
-                                        <td>{{ optional($assessment->due_at)->format('d/m/Y') ?? '—' }}</td>
+                                        <td>{{ optional($assessment->assessment_at)->format('d/m/Y H:i') ?? '—' }}</td>
                                         <td>{{ $assessment->title }}</td>
                                         <td>
                                             @if ($assessment->scale_type === 'points')
@@ -73,7 +73,7 @@
                                             {{ $assessment->grades_count }}
                                         </td>
                                         <td class="text-end">
-                                            <a href="{{ route('schools.assessments.show', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id, 'assessment' => $assessment->id]) }}"
+                                            <a href="{{ route('schools.assessments.show', ['school' => $school->id, 'classroom' => $classroom->id, 'assessment' => $assessment->id]) }}"
                                                 class="btn btn-outline-primary btn-sm">
                                                 Ver notas
                                             </a>

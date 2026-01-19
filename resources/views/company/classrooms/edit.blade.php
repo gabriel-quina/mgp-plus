@@ -16,11 +16,10 @@
   @include('classrooms._form', [
     'classroom'         => $classroom,
     'schools'           => $schools,
-    'parentClassrooms'  => $parentClassrooms,
     'gradeLevels'       => $gradeLevels,
     'workshops'         => $workshops,
     'selectedGrades'    => $selectedGrades,
-    'existingWorkshops' => $existingWorkshops
+    'lockAcademicFields'=> $lockAcademicFields
   ])
 
   <div class="card">
@@ -33,4 +32,3 @@
 @endsection
 
 @stack('scripts')
-

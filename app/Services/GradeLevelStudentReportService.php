@@ -62,10 +62,10 @@ class GradeLevelStudentReportService
                     });
 
                 if ($start) {
-                    $q->whereDate('due_at', '>=', $start);
+                    $q->whereDate('assessment_at', '>=', $start);
                 }
                 if ($end) {
-                    $q->whereDate('due_at', '<=', $end);
+                    $q->whereDate('assessment_at', '<=', $end);
                 }
             })
             ->get()
@@ -80,10 +80,10 @@ class GradeLevelStudentReportService
                 $q->where('school_id', $school->id);
             })
             ->when($start, function ($q) use ($start) {
-                $q->whereDate('lesson_date' /* ou taught_at */, '>=', $start);
+                $q->whereDate('lesson_at', '>=', $start);
             })
             ->when($end, function ($q) use ($end) {
-                $q->whereDate('lesson_date' /* ou taught_at */, '<=', $end);
+                $q->whereDate('lesson_at', '<=', $end);
             })
             ->get()
             ->groupBy('student_enrollment_id');

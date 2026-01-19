@@ -12,9 +12,9 @@
                 </h1>
                 <div class="text-muted small">
                     {{ $classroom->school->name ?? '—' }} ·
-                    Ano {{ $classroom->academic_year }} ·
+                    Ano {{ $classroom->academic_year_id }} ·
                     {{ $classroom->shift ?? '—' }}<br>
-                    Oficina: <strong>{{ $workshop->name }}</strong>
+                    Oficina: <strong>{{ $classroom->workshop?->name ?? '—' }}</strong>
                 </div>
             </div>
 
@@ -22,7 +22,6 @@
 <a href="{{ route('schools.lessons.create', [
     'school' => $school->id,
     'classroom' => $classroom->id,
-    'workshop' => $workshop->id,
 ]) }}"
                     class="btn btn-outline-secondary btn-sm">
                     Lançar nova aula
@@ -53,7 +52,7 @@
             <div class="card-body p-0">
                 @if ($lessons->isEmpty())
                     <p class="p-3 mb-0 text-muted">
-                        Nenhuma aula lançada ainda para este grupo de oficina.
+                        Nenhuma aula lançada ainda para esta turma.
                     </p>
                 @else
                     <div class="table-responsive">
@@ -75,7 +74,7 @@
                                     @endphp
                                     <tr>
                                         <td>
-                                            {{ optional($lesson->taught_at)->format('d/m/Y') ?? '—' }}
+                                            {{ optional($lesson->lesson_at)->format('d/m/Y H:i') ?? '—' }}
                                         </td>
                                         <td>
                                             {{ $lesson->topic ?: '—' }}<br>
@@ -103,7 +102,7 @@
                                             @endif
                                         </td>
                                         <td class="text-end">
-                                            <a href="{{ route('schools.lessons.show', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id, 'lesson' => $lesson->id]) }}"
+                                            <a href="{{ route('schools.lessons.show', ['school' => $school->id, 'classroom' => $classroom->id, 'lesson' => $lesson->id]) }}"
                                                 class="btn btn-outline-primary btn-sm">
                                                 Ver presença
                                             </a>

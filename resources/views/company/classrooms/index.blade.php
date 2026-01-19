@@ -41,9 +41,10 @@
                             <th>Nome</th>
                             <th>Escola</th>
                             <th style="width: 110px;">Ano</th>
-                            <th style="width: 110px;">Qtd. Alunos</th>
                             <th style="width: 110px;">Turno</th>
-                            <th>Anos Atendidos</th>
+                            <th>Séries</th>
+                            <th style="width: 90px;">Grupo</th>
+                            <th style="width: 120px;">Capacidade</th>
                             <th style="width: 100px;">Status</th>
                             <th style="width: 220px;" class="text-end">Ações</th>
                         </tr>
@@ -53,8 +54,7 @@
                             <tr>
                                 <td>{{ $c->name }}</td>
                                 <td>{{ $c->school->name }}</td>
-                                <td>{{ $c->academic_year }}</td>
-                                <td>{{ $c->total_all_students }}</td>
+                                <td>{{ $c->academic_year_id }}</td>
                                 <td>
                                     @if ($c->shift === 'morning')
                                         Manhã
@@ -64,8 +64,10 @@
                                         Noite
                                     @endif
                                 </td>
-                                <td>{{ $c->gradeLevels->pluck('name')->join(', ') }}</td>
-                                <td>{{ $c->is_active ? 'Ativa' : 'Inativa' }}</td>
+                                <td>{{ $c->grade_level_names }}</td>
+                                <td>{{ $c->group_number ?? '—' }}</td>
+                                <td>{{ $c->capacity_hint ?? '—' }}</td>
+                                <td>{{ $c->status ?? '—' }}</td>
                                 <td class="text-end">
                                     <a href="{{ route('classrooms.show', $c) }}"
                                         class="btn btn-sm btn-outline-secondary">Ver</a>
@@ -80,7 +82,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center text-muted">Nenhuma turma cadastrada</td>
+                                <td colspan="9" class="text-center text-muted">Nenhuma turma cadastrada</td>
                             </tr>
                         @endforelse
                     </tbody>

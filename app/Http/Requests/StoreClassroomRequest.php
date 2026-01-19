@@ -2,9 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Models\{
-    Classroom
-};
+use App\Models\Classroom;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,9 +16,8 @@ class StoreClassroomRequest extends FormRequest
 
     /**
      * Normaliza entrada antes da validação:
-     * - academic_year padrão = ano corrente se vazio
-     * - is_active como boolean
-     * - grade_level_key = string canônica "1,2,3"
+     * - academic_year_id padrão = ano corrente se vazio
+     * - grades_signature = string canônica "1,2,3"
      */
     protected function prepareForValidation(): void
     {
@@ -33,12 +30,11 @@ class StoreClassroomRequest extends FormRequest
             $schoolId = (int) $schoolFromRoute;
         }
 
-        $year = $this->input('academic_year');
+        $year = $this->input('academic_year_id');
         $this->merge([
             'school_id'        => $schoolId,
-            'academic_year'   => $year !== null && $year !== '' ? (int) $year : (int) date('Y'),
-            'is_active'       => $this->boolean('is_active'),
-            'grade_level_key' => $this->makeGradeLevelKey((array) $this->input('grade_level_ids', [])),
+            'academic_year_id' => $year !== null && $year !== '' ? (int) $year : (int) date('Y'),
+            'grades_signature' => Classroom::buildGradesSignature((array) $this->input('grade_level_ids', [])),
         ]);
     }
 
@@ -47,25 +43,21 @@ class StoreClassroomRequest extends FormRequest
         return [
             // Turma
             'school_id'            => ['required', 'integer', 'exists:schools,id'],
-            'parent_classroom_id'  => ['nullable', 'integer', 'exists:classrooms,id'],
-            'name'                 => ['required', 'string', 'max:150'],
             'shift'                => ['required', Rule::in(['morning', 'afternoon', 'evening'])],
-            'is_active'            => ['sometimes', 'boolean'],
+            'workshop_id'          => ['required', 'integer', 'exists:workshops,id'],
+            'group_number'         => ['required', 'integer', 'min:1'],
+            'capacity_hint'        => ['nullable', 'integer', 'min:1'],
+            'status'               => ['required', 'string', 'max:50'],
 
             // Ano letivo (anual)
-            'academic_year'        => ['required', 'integer', 'min:2000', 'max:2100'],
+            'academic_year_id'     => ['required', 'integer', 'min:2000', 'max:2100'],
 
             // Anos atendidos (obrigatório ≥ 1)
             'grade_level_ids'      => ['required', 'array', 'min:1'],
             'grade_level_ids.*'    => ['integer', 'exists:grade_levels,id'],
 
             // Chave canônica do conjunto (gerada no prepareForValidation)
-            'grade_level_key'      => ['required', 'string', 'max:191'],
-
-            // Oficinas (opcionais) com limite
-            'workshops'                => ['nullable', 'array'],
-            'workshops.*.id'           => ['nullable', 'integer', 'exists:workshops,id'],
-            'workshops.*.max_students' => ['nullable', 'integer', 'min:0'],
+            'grades_signature'     => ['required', 'string', 'max:191'],
         ];
     }
 
@@ -75,9 +67,11 @@ class StoreClassroomRequest extends FormRequest
             // Regra de unicidade: 1 turma por (escola, ano, turno, conjunto)
             $exists = Classroom::query()
                 ->where('school_id', $this->input('school_id'))
-                ->where('academic_year', $this->input('academic_year'))
+                ->where('academic_year_id', $this->input('academic_year_id'))
                 ->where('shift', $this->input('shift'))
-                ->where('grade_level_key', $this->input('grade_level_key'))
+                ->where('workshop_id', $this->input('workshop_id'))
+                ->where('grades_signature', $this->input('grades_signature'))
+                ->where('group_number', $this->input('group_number'))
                 ->exists();
 
             if ($exists) {
@@ -93,15 +87,14 @@ class StoreClassroomRequest extends FormRequest
     {
         return [
             'school_id'         => 'Escola',
-            'parent_classroom_id'=> 'Turma Pai',
-            'name'              => 'Nome',
             'shift'             => 'Turno',
-            'is_active'         => 'Ativa',
-            'academic_year'     => 'Ano letivo',
+            'workshop_id'       => 'Oficina',
+            'group_number'      => 'Grupo',
+            'capacity_hint'     => 'Capacidade sugerida',
+            'status'            => 'Status',
+            'academic_year_id'  => 'Ano letivo',
             'grade_level_ids'   => 'Anos atendidos',
-            'grade_level_key'   => 'Conjunto de anos',
-            'workshops.*.id'    => 'Oficina',
-            'workshops.*.max_students' => 'Capacidade',
+            'grades_signature'  => 'Conjunto de anos',
         ];
     }
 
@@ -110,14 +103,4 @@ class StoreClassroomRequest extends FormRequest
      * - remove duplicatas
      * - ordena crescente
      */
-    private function makeGradeLevelKey(array $ids): string
-    {
-        return collect($ids)
-            ->map(fn ($v) => (int) $v)
-            ->unique()
-            ->sort()
-            ->values()
-            ->implode(',');
-    }
 }
-

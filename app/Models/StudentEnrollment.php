@@ -60,6 +60,12 @@ class StudentEnrollment extends Model
     public function school()       { return $this->belongsTo(School::class); }
     public function originSchool() { return $this->belongsTo(School::class, 'origin_school_id'); }
     public function gradeLevel()   { return $this->belongsTo(GradeLevel::class, 'grade_level_id'); }
+    public function memberships()  { return $this->hasMany(ClassroomMembership::class); }
+
+    public function currentMembership()
+    {
+        return $this->hasOne(ClassroomMembership::class)->whereNull('ends_at')->latest('starts_at');
+    }
 
     /* ================= Fonte única de verdade (domínio) ================= */
 
@@ -171,4 +177,3 @@ class StudentEnrollment extends Model
         };
     }
 }
-

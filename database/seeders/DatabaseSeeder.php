@@ -25,9 +25,6 @@ class DatabaseSeeder extends Seeder
             // 1) cria episódios (matrículas) — define quais anos existirão em cada escola
             StudentEnrollmentSeeder::class,
 
-            // 2) cria turmas APENAS para anos/turnos/escolas que tenham matrículas
-            ClassroomSeeder::class,
-
             RbacSeeder::class,
             MasterUserSeeder::class,
         ]);

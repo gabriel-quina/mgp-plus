@@ -115,9 +115,6 @@
         <div class="card-header d-flex align-items-center justify-content-between">
             <span><strong>Turmas da escola</strong></span>
             <div class="d-flex gap-2">
-                <a href="{{ route('schools.groups-wizard.create', $school) }}" class="btn btn-sm btn-outline-primary">
-                    Novo grupo (helper)
-                </a>
                 <a href="{{ route('classrooms.create', ['school_id' => $school->id]) }}" class="btn btn-sm btn-primary">
                     Nova turma
                 </a>
@@ -134,7 +131,7 @@
                                 <th>Nome</th>
                                 <th style="width: 150px;">Ano letivo</th>
                                 <th style="width: 150px;">Turno</th>
-                                <th>Anos atendidos</th>
+                                <th>Séries</th>
                                 <th style="width: 150px;" class="text-end">Ações</th>
                             </tr>
                         </thead>
@@ -142,7 +139,7 @@
                             @foreach ($school->classrooms as $classroom)
                                 <tr>
                                     <td>{{ $classroom->name }}</td>
-                                    <td>{{ $classroom->academic_year }}</td>
+                                    <td>{{ $classroom->academic_year_id }}</td>
                                     <td>
                                         @if ($classroom->shift === 'morning')
                                             Manhã
@@ -154,8 +151,7 @@
                                             —
                                         @endif
                                     </td>
-                                    <td>{{ $classroom->gradeLevels->pluck('short_name')->filter()->join(', ') ?: $classroom->gradeLevels->pluck('name')->join(', ') }}
-                                    </td>
+                                    <td>{{ $classroom->grade_level_names }}</td>
                                     <td class="text-end">
                                         <a href="{{ route('classrooms.show', $classroom) }}"
                                             class="btn btn-sm btn-outline-secondary">Ver</a>

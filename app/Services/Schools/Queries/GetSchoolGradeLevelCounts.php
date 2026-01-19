@@ -35,12 +35,6 @@ class GetSchoolGradeLevelCounts
                     $applyEnrollmentFilters($q);
                     $q->select(DB::raw('count(distinct student_id)'));
                 },
-                'classrooms as classrooms_count' => function ($q) use ($school, $academicYear) {
-                    $q->where('school_id', $school->id)
-                        ->where('academic_year', $academicYear)
-                        ->where('is_active', true)
-                        ->whereNull('parent_classroom_id');
-                },
             ])
             ->orderBy('sequence')
             ->orderBy('name')
