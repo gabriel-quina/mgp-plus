@@ -21,9 +21,11 @@ Todas as mudanças notáveis neste projeto serão documentadas aqui.
 - `DatabaseSeeder.php` adaptado para novos seeders
 - `package.json` com ajustes de dependências
 - `routes/web.php` reorganizado para novas entidades
+- `school_workshop` agora suporta vigência/estado para manter histórico de contratos
+- `Classroom` passa a usar `school_workshop_id` como vínculo principal de oficina
+- Validações de turma passam a exigir contrato ativo na criação e permitir histórico em atualizações
 
 ### 🗑 Removido
 - Estrutura antiga de `Aluno` e `Pessoa`
 - Controllers, Models, Migrations e Seeders relacionados a `Aluno`
 - Views Blade de `alunos`
-
