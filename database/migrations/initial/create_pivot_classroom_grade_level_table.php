@@ -8,16 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('roles', function (Blueprint $table) {
+        Schema::create('classroom_grade_level', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();   // ex.: school_teacher, city_education_secretary
-            $table->string('label')->nullable();
+
+            $table->unsignedBigInteger('classroom_id');   // FK depois
+            $table->unsignedBigInteger('grade_level_id'); // FK depois
+
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('roles');
+        Schema::dropIfExists('classroom_grade_level');
     }
 };
+

@@ -6,24 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('states', function (Blueprint $table) {
+        Schema::create('teacher_city_access', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->char('uf', 2)->unique();
+
+            $table->unsignedBigInteger('teacher_id'); // FK depois
+            $table->unsignedBigInteger('city_id');    // FK depois
+
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('states');
+        Schema::dropIfExists('teacher_city_access');
     }
 };
+

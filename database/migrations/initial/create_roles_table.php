@@ -6,24 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('cities', function (Blueprint $table) {
+        Schema::create('roles', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('state_id')->constrained('states')->cascadeOnUpdate()->restrictOnDelete();
-            $table->string('name');
+
+            $table->string('name');   // ex: admin, teacher
+            $table->string('label')->nullable();
+
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('cities');
+        Schema::dropIfExists('roles');
     }
 };
+

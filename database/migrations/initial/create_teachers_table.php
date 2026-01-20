@@ -11,23 +11,14 @@ return new class extends Migration
         Schema::create('teachers', function (Blueprint $table) {
             $table->id();
 
-            // Dados pessoais (Person é abstrata; guardamos aqui)
-            $table->string('name', 150);
-            $table->string('social_name', 150)->nullable();
-
-            // CPF será normalizado (apenas dígitos) pelo mutator em Person/Teacher
-            $table->string('cpf', 20)->nullable()->unique();
-
-            $table->string('email', 150)->nullable()->unique();
+            $table->string('name');
+            $table->string('cpf', 11)->nullable();
+            $table->string('email')->nullable();
             $table->date('birthdate')->nullable();
 
-            // Estado do cadastro
             $table->boolean('is_active')->default(true);
 
             $table->timestamps();
-
-            // Índices úteis para buscas
-            $table->index('name');
         });
     }
 
