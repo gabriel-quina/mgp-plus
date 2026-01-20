@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Abstract\Person;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Teacher extends Person
 {
@@ -11,13 +12,8 @@ class Teacher extends Person
 
     protected $table = 'teachers';
 
-    /**
-     * Campos graváveis (apenas dados pessoais + status).
-     * Demais relações/atributos virão em tabelas próprias.
-     */
     protected $fillable = [
         'name',
-        'social_name',
         'cpf',
         'email',
         'birthdate',
@@ -29,34 +25,31 @@ class Teacher extends Person
         'is_active' => 'boolean',
     ];
 
-    /* ==========================
-     |  Relações (próximas etapas)
-     |  Mantidas aqui como stubs para facilitar o uso na view teachers.show
-     |  (usar string do FQCN evita depender da existência imediata das classes)
-     *==========================*/
-
     /** Vínculos/empregos (our_clt/our_pj/our_temporary/municipal) */
-    public function engagements()
+    public function engagements(): HasMany
     {
-        return $this->hasMany('App\Models\TeacherEngagement');
+        return $this->hasMany(TeacherEngagement::class);
     }
 
-    /** Cidades onde pode atuar quando é nosso funcionário */
-    public function cityAccesses()
+    /** Cidades onde pode atuar */
+    public function cityAccesses(): HasMany
     {
-        return $this->hasMany('App\Models\TeacherCityAccess');
+        return $this->hasMany(TeacherCityAccess::class);
     }
 
-    /** Alocações operacionais em escolas (por ano/turno) */
-    public function assignments()
+    /**
+     * Habilitação/alocação em escolas (por ano/turno) — seu modelo diz que é por escola.
+     * (Mesmo não sendo "na turma", ainda é uma entidade válida)
+     */
+    public function assignments(): HasMany
     {
-        return $this->hasMany('App\Models\TeachingAssignment');
+        return $this->hasMany(TeachingAssignment::class);
     }
 
-    /** (Futuro) Aulas lançadas para este professor */
-    public function lessons()
+    /** Aulas lançadas para este professor */
+    public function lessons(): HasMany
     {
-        return $this->hasMany('App\Models\Lesson');
+        return $this->hasMany(Lesson::class);
     }
 }
 

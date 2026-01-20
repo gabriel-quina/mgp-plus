@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Workshop extends Model
 {
@@ -15,9 +16,14 @@ class Workshop extends Model
         'is_active' => 'boolean',
     ];
 
-    public function schools()
+    public function schoolWorkshops(): HasMany
     {
-        return $this->belongsToMany(School::class, 'school_workshop')->withTimestamps();
+        return $this->hasMany(SchoolWorkshop::class);
+    }
+
+    public function scopeActive($q)
+    {
+        return $q->where('is_active', true);
     }
 }
 

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LessonAttendance extends Model
 {
@@ -14,16 +15,17 @@ class LessonAttendance extends Model
     ];
 
     protected $casts = [
-        'present' => 'bool',
+        'present' => 'boolean',
     ];
 
-    public function lesson()
+    public function lesson(): BelongsTo
     {
         return $this->belongsTo(Lesson::class);
     }
 
-    public function enrollment()
+    public function enrollment(): BelongsTo
     {
         return $this->belongsTo(StudentEnrollment::class, 'student_enrollment_id');
     }
 }
+

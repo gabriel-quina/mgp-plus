@@ -4,15 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-/**
- * School: adiciona scopes para lidar com "históricas" no UX.
- */
 class School extends Model
 {
     use HasFactory;
-
-    protected $table = 'schools';
 
     protected $fillable = [
         'city_id',
@@ -29,60 +28,63 @@ class School extends Model
         'is_historical' => 'boolean',
     ];
 
-    /* ============ Relações ============ */
-
-    public function city()
+    public function city(): BelongsTo
     {
         return $this->belongsTo(City::class);
     }
 
-    public function workshops()
+    /**
+     * Contratos escola↔oficina (histórico).
+     */
+    public function schoolWorkshops(): HasMany
     {
-        return $this->belongsToMany(Workshop::class)->withTimestamps();
-    }
-
-    public function roleAssignments()
-    {
-        return $this->morphMany(\App\Models\RoleAssignment::class, 'scope');
+        return $this->hasMany(SchoolWorkshop::class);
     }
 
     /**
-     * Matriculas.
+     * Conveniência (opcional): lista de workshops através dos contratos.
+     * (Isso NÃO substitui os contratos; é só atalho.)
      */
-    public function enrollments()
+    public function workshops(): HasManyThrough
     {
-        // Episódios de matrícula dessa escola
-        return $this->hasMany(\App\Models\StudentEnrollment::class);
+        return $this->hasManyThrough(
+            Workshop::class,
+            SchoolWorkshop::class,
+            'school_id',   // FK em school_workshops
+            'id',          // PK em workshops
+            'id',          // PK em schools
+            'workshop_id'  // FK em school_workshops -> workshops
+        );
     }
 
-    /**
-     * Turmas da escola (PAI + subturmas).
-     * No controller a gente filtra as PAI com whereNull('parent_classroom_id').
-     */
-    public function classrooms()
+    public function roleAssignments(): MorphMany
+    {
+        return $this->morphMany(RoleAssignment::class, 'scope');
+    }
+
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(StudentEnrollment::class);
+    }
+
+    public function classrooms(): HasMany
     {
         return $this->hasMany(Classroom::class);
-        // se preferir evitar o use:
-        // return $this->hasMany(\App\Models\Classroom::class);
     }
 
-    /* ============ Scopes ============ */
-
-    /** Usar em combos/listas normais p/ esconder históricas. */
     public function scopeNonHistorical($q)
     {
         return $q->where('is_historical', false);
     }
 
-    /** Usar no endpoint de busca (typeahead), para incluir históricas também. */
     public function scopeIncludeHistorical($q)
     {
-        return $q; // só para semântica; não filtra nada
+        return $q;
     }
 
-    /** Só históricas (quando precisar). */
     public function scopeOnlyHistorical($q)
     {
         return $q->where('is_historical', true);
     }
 }
+

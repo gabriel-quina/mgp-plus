@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StudentEnrollment extends Model
 {
@@ -11,16 +13,11 @@ class StudentEnrollment extends Model
 
     protected $table = 'student_enrollments';
 
-    /**
-     * STATUS (workflow correto)
-     * - pre_enrolled: pré-matrícula (gerada para o ano seguinte)
-     * - enrolled: matrícula efetivada (antes do início das aulas)
-     * - active: cursando (após início do curso / comparecimento)
-     */
     public const STATUS_PRE_ENROLLED = 'pre_enrolled';
     public const STATUS_ENROLLED     = 'enrolled';
+    public const STATUS_ALLOCATED    = 'allocated';
+    public const STATUS_ACTIVE       = 'active';
 
-    public const STATUS_ACTIVE      = 'active';
     public const STATUS_COMPLETED   = 'completed';
     public const STATUS_FAILED      = 'failed';
     public const STATUS_TRANSFERRED = 'transferred';
@@ -56,18 +53,25 @@ class StudentEnrollment extends Model
 
     /* ================= Relações ================= */
 
-    public function student()      { return $this->belongsTo(Student::class); }
-    public function school()       { return $this->belongsTo(School::class); }
-    public function originSchool() { return $this->belongsTo(School::class, 'origin_school_id'); }
-    public function gradeLevel()   { return $this->belongsTo(GradeLevel::class, 'grade_level_id'); }
+    public function student(): BelongsTo      { return $this->belongsTo(Student::class); }
+    public function school(): BelongsTo       { return $this->belongsTo(School::class); }
+    public function originSchool(): BelongsTo { return $this->belongsTo(School::class, 'origin_school_id'); }
+    public function gradeLevel(): BelongsTo   { return $this->belongsTo(GradeLevel::class, 'grade_level_id'); }
 
-    /* ================= Fonte única de verdade (domínio) ================= */
+    // “onde ele está” (histórico) — fonte de verdade de turma
+    public function memberships(): HasMany
+    {
+        return $this->hasMany(ClassroomMembership::class, 'student_enrollment_id');
+    }
+
+    /* ================= Valores permitidos ================= */
 
     public static function allowedStatuses(): array
     {
         return [
             self::STATUS_PRE_ENROLLED,
             self::STATUS_ENROLLED,
+            self::STATUS_ALLOCATED,
             self::STATUS_ACTIVE,
             self::STATUS_COMPLETED,
             self::STATUS_FAILED,
@@ -82,6 +86,7 @@ class StudentEnrollment extends Model
         return [
             self::STATUS_PRE_ENROLLED,
             self::STATUS_ENROLLED,
+            self::STATUS_ALLOCATED,
             self::STATUS_ACTIVE,
         ];
     }
@@ -98,21 +103,24 @@ class StudentEnrollment extends Model
 
     /* ================= Scopes ================= */
 
-    /**
-     * “Cursando” (você pediu: cursando só após iniciar/comparecer)
-     */
     public function scopeActive($q)
     {
         return $q->where('status', self::STATUS_ACTIVE)
                  ->whereNull('ended_at');
     }
 
-    /**
-     * “Em andamento” (pré + matriculado + cursando)
-     */
     public function scopeOngoing($q)
     {
         return $q->whereIn('status', self::ongoingStatuses())
+                 ->whereNull('ended_at');
+    }
+
+    /**
+     * Elegível para entrar numa turma (aguardando turma).
+     */
+    public function scopeEligibleForAllocation($q)
+    {
+        return $q->where('status', self::STATUS_ENROLLED)
                  ->whereNull('ended_at');
     }
 
@@ -136,11 +144,17 @@ class StudentEnrollment extends Model
         return $this->status === self::STATUS_ENROLLED && $this->ended_at === null;
     }
 
+    public function getIsAllocatedAttribute(): bool
+    {
+        return $this->status === self::STATUS_ALLOCATED && $this->ended_at === null;
+    }
+
     public function getStatusLabelAttribute(): string
     {
         return match ($this->status) {
             self::STATUS_PRE_ENROLLED => 'Pré-matrícula',
-            self::STATUS_ENROLLED     => 'Matriculado',
+            self::STATUS_ENROLLED     => 'Matriculado (aguardando turma)',
+            self::STATUS_ALLOCATED    => 'Alocado (aguardando início)',
             self::STATUS_ACTIVE       => 'Cursando',
             self::STATUS_COMPLETED    => 'Concluída',
             self::STATUS_FAILED       => 'Reprovado',

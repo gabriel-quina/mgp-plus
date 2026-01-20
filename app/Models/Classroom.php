@@ -4,6 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Carbon\Carbon;
+use Carbon\CarbonInterface;
 
 class Classroom extends Model
 {
@@ -11,168 +16,159 @@ class Classroom extends Model
 
     protected $fillable = [
         'school_id',
-        'parent_classroom_id',
-        'workshop_id',
-        'workshop_group_set_id',
-        'group_number',
-        'name',
-        'shift',
-        'is_active',
-        'academic_year',
-        'grade_level_key',
+        'academic_year',          // int (2025, 2026...)
+        'shift',                  // manhã/tarde/noite...
+        'school_workshop_id',     // contrato escola↔oficina
+        'grades_signature',       // "1,2" (ids ordenados)
+        'group_number',           // 1..N (auto)
+        'capacity_hint',
         'status',
         'locked_at',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
         'academic_year' => 'integer',
+        'group_number' => 'integer',
+        'capacity_hint' => 'integer',
+        'locked_at' => 'datetime',
     ];
 
-    /** Escola da turma */
-    public function school()
+    public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
     }
 
-    /** Oficina associada diretamente ao grupo (novo modelo explícito) */
-    public function workshop()
+    public function schoolWorkshop(): BelongsTo
     {
-        return $this->belongsTo(Workshop::class);
+        return $this->belongsTo(SchoolWorkshop::class, 'school_workshop_id');
     }
 
-    /** Conjunto de grupos de oficina (novo modelo explícito) */
-    public function groupSet()
-    {
-        return $this->belongsTo(WorkshopGroupSet::class, 'workshop_group_set_id');
-    }
-
-    /** Turma ↔ Anos (pivot: classroom_grade_level) */
-    public function gradeLevels()
+    public function gradeLevels(): BelongsToMany
     {
         return $this->belongsToMany(GradeLevel::class, 'classroom_grade_level')
             ->withTimestamps();
     }
 
-    /** Turma ↔ Oficinas (pivot: classroom_workshop, com max_students) */
-    public function workshops()
+    public function memberships(): HasMany
     {
-        return $this->belongsToMany(Workshop::class, 'classroom_workshop')
-            ->withPivot('max_students')
-            ->withTimestamps();
+        return $this->hasMany(ClassroomMembership::class);
+    }
+
+    public function lessons(): HasMany
+    {
+        return $this->hasMany(Lesson::class);
+    }
+
+    public function assessments(): HasMany
+    {
+        return $this->hasMany(Assessment::class);
     }
 
     /**
-     * Acesso conveniente: $classroom->workshop
-     * Retorna o primeiro workshop associado (útil para SUBTURMA vinculada a 1 oficina).
-     * OBS: não é relação Eloquent; é um accessor. Para evitar N+1, faça eager load de 'workshops'.
+     * Conveniência: $classroom->workshop (via contrato).
+     * Eager load recomendado: schoolWorkshop.workshop
      */
-    public function getWorkshopAttribute()
+    public function getWorkshopAttribute(): ?Workshop
     {
-        if ($this->relationLoaded('workshops')) {
-            return $this->workshops->first();
+        if ($this->relationLoaded('schoolWorkshop') && $this->schoolWorkshop) {
+            return $this->schoolWorkshop->relationLoaded('workshop')
+                ? $this->schoolWorkshop->workshop
+                : $this->schoolWorkshop->workshop()->first();
         }
 
-        return $this->workshops()->first();
-    }
-
-    /** Turma pai / subturmas */
-    public function parent()
-    {
-        return $this->belongsTo(self::class, 'parent_classroom_id');
-    }
-
-    public function children()
-    {
-        return $this->hasMany(self::class, 'parent_classroom_id');
-    }
-
-    /** Alocações em subturmas por oficina */
-    public function workshopAllocations()
-    {
-        return $this->hasMany(WorkshopAllocation::class, 'child_classroom_id');
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Helpers / Scopes
-    |--------------------------------------------------------------------------
-    */
-
-    public function isParent(): bool
-    {
-        return $this->parent_classroom_id === null;
-    }
-
-    public function scopeOnlyParents($q)
-    {
-        return $q->whereNull('parent_classroom_id');
-    }
-
-    public function scopeOnlyChildren($q)
-    {
-        return $q->whereNotNull('parent_classroom_id');
-    }
-
-    /** Conjunto DERIVADO de alunos (PAI) com base em episódios ativos (StudentEnrollment) */
-    public function eligibleEnrollments()
-    {
-        $gradeLevelIds = $this->gradeLevels()->pluck('grade_levels.id')->all();
-
-        // Base: episódios ativos no ano/escola/turno, filtrando série quando houver multi-ano
-        $base = StudentEnrollment::query()
-            ->with(['student', 'gradeLevel'])
-            ->where('academic_year', $this->academic_year)
-            ->where('school_id', $this->school_id)
-            ->where('shift', $this->shift)
-            ->where('status', StudentEnrollment::STATUS_ACTIVE)
-            ->whereNull('ended_at')
-            ->when(! empty($gradeLevelIds), fn ($q) => $q->whereIn('grade_level_id', $gradeLevelIds));
-
-        // Overrides (A↔B): OUT = quem sai desta turma; IN = quem entra nesta turma
-        $outIds = ClassroomOverride::where('from_classroom_id', $this->id)
-            ->where('is_active', true)
-            ->pluck('student_enrollment_id')
-            ->all();
-
-        $inIds = ClassroomOverride::where('to_classroom_id', $this->id)
-            ->where('is_active', true)
-            ->pluck('student_enrollment_id')
-            ->all();
-
-        // (base − OUT) ∪ IN
-        $base->when(! empty($outIds), fn ($q) => $q->whereNotIn('id', $outIds));
-
-        return $base->when(! empty($inIds), fn ($q) => $q->orWhereIn('id', $inIds));
+        $sw = $this->schoolWorkshop()->with('workshop')->first();
+        return $sw?->workshop;
     }
 
     /**
-     * Verifica se há dados acadêmicos vinculados à turma (aulas ou avaliações).
+     * Nomes das séries/anos (ex.: "1º, 2º").
+     * Para evitar N+1, eager load gradeLevels.
      */
+    public function getGradeLevelNamesAttribute(): string
+    {
+        $levels = $this->relationLoaded('gradeLevels')
+            ? $this->gradeLevels
+            : $this->gradeLevels()->orderBy('sequence')->orderBy('id')->get();
+
+        if ($levels->isEmpty()) return '—';
+
+        return $levels
+            ->map(fn (GradeLevel $g) => $g->short_name ?: $g->name)
+            ->implode(', ');
+    }
+
+    /**
+     * Nome exibível (oficina + séries + ano + grupo se > 1)
+     */
+    public function getNameAttribute(): string
+    {
+        $workshopName = $this->workshop?->name ?? 'Turma';
+        $grades = $this->grade_level_names ?? '';
+        $year = (string)($this->academic_year ?? '');
+        $group = ($this->group_number ?? 1) > 1 ? '#'.$this->group_number : '';
+
+        return trim(implode(' ', array_filter([$workshopName, $grades, $year, $group])));
+    }
+
+    /**
+     * Lista de matrículas vigentes em $at (via memberships).
+     */
+    public function rosterAt(CarbonInterface|string|null $at = null)
+    {
+        $at = $at instanceof CarbonInterface ? $at : Carbon::parse($at ?? now());
+
+        return $this->memberships()
+            ->activeAt($at)
+            ->with(['enrollment.student', 'enrollment.gradeLevel'])
+            ->get()
+            ->map(fn (ClassroomMembership $m) => $m->enrollment)
+            ->filter()
+            ->unique('id')
+            ->values();
+    }
+
     public function hasAcademicData(): bool
     {
-        return Lesson::query()->where('classroom_id', $this->id)->exists()
-            || Assessment::query()->where('classroom_id', $this->id)->exists();
+        return $this->lessons()->exists() || $this->assessments()->exists();
+    }
+
+    public function lockIfHasAcademicData(): bool
+    {
+        if ($this->locked_at !== null) return true;
+        if (! $this->hasAcademicData()) return false;
+
+        $this->forceFill(['locked_at' => now()])->save();
+        return true;
     }
 
     /**
-     * Define locked_at quando existem dados acadêmicos.
-     * Retorna true se a turma foi (ou já estava) bloqueada.
+     * Normaliza ids de grade level: int, únicos, ordenados.
      */
-    public function lockIfHasAcademicData(): bool
+    public static function normalizeGradeLevelIds(array $gradeLevelIds): array
     {
-        if ($this->locked_at !== null) {
-            return true;
-        }
+        $ids = collect($gradeLevelIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
 
-        if (! $this->hasAcademicData()) {
-            return false;
-        }
+        if ($ids->isEmpty()) return [];
 
-        $this->forceFill([
-            'locked_at' => now(),
-        ])->save();
+        return GradeLevel::query()
+            ->whereIn('id', $ids->all())
+            ->orderBy('sequence')
+            ->orderBy('id')
+            ->pluck('id')
+            ->all();
+    }
 
-        return true;
+    /**
+     * Assinatura "1,2,5" (ids ordenados) para identificar conjunto de séries.
+     */
+    public static function buildGradesSignature(array $gradeLevelIds): string
+    {
+        $ids = self::normalizeGradeLevelIds($gradeLevelIds);
+        return implode(',', $ids);
     }
 }
+

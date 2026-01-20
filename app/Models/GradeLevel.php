@@ -4,13 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class GradeLevel extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'name', 'short_name', 'sequence', 'is_active',
+        'name',
+        'short_name',
+        'sequence',
+        'is_active',
     ];
 
     protected $casts = [
@@ -18,31 +23,39 @@ class GradeLevel extends Model
         'sequence' => 'integer',
     ];
 
-    /**
-     * Episódios de matrícula neste ano/série.
-     * Obs.: se você preferir manter o nome antigo por compatibilidade,
-     * pode criar um alias studentYears() chamando esta relação.
-     */
-    public function studentEnrollments()
+    public function studentEnrollments(): HasMany
     {
         return $this->hasMany(StudentEnrollment::class, 'grade_level_id');
     }
 
-    /**
-     * Turmas vinculadas ao ano/série (pivot classroom_grade_level).
-     */
-    public function classrooms()
+    public function classrooms(): BelongsToMany
     {
         return $this->belongsToMany(Classroom::class, 'classroom_grade_level')
             ->withTimestamps();
     }
 
-    /**
-     * Alias opcional para compatibilidade de código antigo:
-     * descomente se precisar manter chamadas ->studentYears()
-     */
-    // public function studentYears()
+    // Scopes úteis (opcional)
+    public function scopeActive($q)
+    {
+        return $q->where('is_active', true);
+    }
+
+    public function scopeOrdered($q)
+    {
+        return $q->orderBy('sequence')->orderBy('id');
+    }
+
+    // Normalização opcional
+    public function setShortNameAttribute($value): void
+    {
+        $v = trim((string) $value);
+        $this->attributes['short_name'] = $v !== '' ? $v : null;
+    }
+
+    // Alias opcional para compatibilidade
+    // public function studentYears(): HasMany
     // {
     //     return $this->studentEnrollments();
     // }
 }
+

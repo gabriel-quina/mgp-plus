@@ -3,15 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Lesson extends Model
 {
     protected $fillable = [
         'classroom_id',
-        'workshop_id',
-        'taught_at',
-        'starts_at',
-        'ends_at',
+        'teacher_id',
+        'taught_at',     // só a data
         'topic',
         'notes',
         'is_locked',
@@ -19,23 +19,30 @@ class Lesson extends Model
 
     protected $casts = [
         'taught_at' => 'date',
-        'starts_at' => 'datetime:H:i',
-        'ends_at' => 'datetime:H:i',
-        'is_locked' => 'bool',
+        'is_locked' => 'boolean',
     ];
 
-    public function classroom()
+    public function classroom(): BelongsTo
     {
         return $this->belongsTo(Classroom::class);
     }
 
-    public function workshop()
+    public function teacher(): BelongsTo
     {
-        return $this->belongsTo(Workshop::class);
+        return $this->belongsTo(Teacher::class);
     }
 
-    public function attendances()
+    public function attendances(): HasMany
     {
         return $this->hasMany(LessonAttendance::class);
     }
+
+    /**
+     * Conveniência: oficina via turma (sem workshop_id aqui).
+     */
+    public function getWorkshopAttribute(): ?Workshop
+    {
+        return $this->classroom?->workshop;
+    }
 }
+
