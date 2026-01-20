@@ -38,7 +38,14 @@ class School extends Model
 
     public function workshops()
     {
-        return $this->belongsToMany(Workshop::class)->withTimestamps();
+        return $this->belongsToMany(Workshop::class, 'school_workshop')
+            ->withPivot(['starts_at', 'ends_at', 'status'])
+            ->withTimestamps();
+    }
+
+    public function schoolWorkshops()
+    {
+        return $this->hasMany(SchoolWorkshop::class);
     }
 
     public function roleAssignments()
