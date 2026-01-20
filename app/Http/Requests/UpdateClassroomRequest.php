@@ -3,7 +3,8 @@
 namespace App\Http\Requests;
 
 use App\Models\{
-    Classroom
+    Classroom,
+    SchoolWorkshop
 };
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -30,6 +31,7 @@ class UpdateClassroomRequest extends FormRequest
         return [
             'school_id'            => ['required', 'integer', 'exists:schools,id'],
             'parent_classroom_id'  => ['nullable', 'integer', 'exists:classrooms,id'],
+            'school_workshop_id'   => ['required', 'integer', 'exists:school_workshop,id'],
             'name'                 => ['required', 'string', 'max:150'],
             'shift'                => ['required', Rule::in(['morning', 'afternoon', 'evening'])],
             'is_active'            => ['sometimes', 'boolean'],
@@ -40,10 +42,6 @@ class UpdateClassroomRequest extends FormRequest
             'grade_level_ids.*'    => ['integer', 'exists:grade_levels,id'],
 
             'grade_level_key'      => ['required', 'string', 'max:191'],
-
-            'workshops'                => ['nullable', 'array'],
-            'workshops.*.id'           => ['nullable', 'integer', 'exists:workshops,id'],
-            'workshops.*.max_students' => ['nullable', 'integer', 'min:0'],
         ];
     }
 
@@ -68,6 +66,31 @@ class UpdateClassroomRequest extends FormRequest
                     'Já existe outra turma para este conjunto de anos, turno e ano letivo nesta escola.'
                 );
             }
+
+            $schoolWorkshopId = (int) $this->input('school_workshop_id');
+            if (! $schoolWorkshopId) {
+                return;
+            }
+
+            $schoolWorkshop = SchoolWorkshop::query()->find($schoolWorkshopId);
+            if (! $schoolWorkshop) {
+                return;
+            }
+
+            if ($schoolWorkshop->school_id !== (int) $this->input('school_id')) {
+                $v->errors()->add('school_workshop_id', 'O contrato de oficina não pertence à escola informada.');
+                return;
+            }
+
+            $currentClassroom = $this->route('classroom') instanceof Classroom
+                ? $this->route('classroom')
+                : Classroom::query()->find($classroomId);
+
+            $currentSchoolWorkshopId = $currentClassroom?->school_workshop_id;
+
+            if ((int) $currentSchoolWorkshopId !== $schoolWorkshopId && ! $schoolWorkshop->isActiveOn()) {
+                $v->errors()->add('school_workshop_id', 'O contrato de oficina informado não está ativo.');
+            }
         });
     }
 
@@ -76,14 +99,13 @@ class UpdateClassroomRequest extends FormRequest
         return [
             'school_id'         => 'Escola',
             'parent_classroom_id'=> 'Turma Pai',
+            'school_workshop_id' => 'Contrato de oficina',
             'name'              => 'Nome',
             'shift'             => 'Turno',
             'is_active'         => 'Ativa',
             'academic_year'     => 'Ano letivo',
             'grade_level_ids'   => 'Anos atendidos',
             'grade_level_key'   => 'Conjunto de anos',
-            'workshops.*.id'    => 'Oficina',
-            'workshops.*.max_students' => 'Capacidade',
         ];
     }
 
@@ -97,4 +119,3 @@ class UpdateClassroomRequest extends FormRequest
             ->implode(',');
     }
 }
-

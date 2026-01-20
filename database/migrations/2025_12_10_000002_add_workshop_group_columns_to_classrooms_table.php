@@ -9,14 +9,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('classrooms', function (Blueprint $table) {
-            $table->foreignId('workshop_id')
+            $table->foreignId('school_workshop_id')
                 ->nullable()
                 ->after('parent_classroom_id')
-                ->constrained('workshops')
+                ->constrained('school_workshop')
                 ->nullOnDelete();
             $table->foreignId('workshop_group_set_id')
                 ->nullable()
-                ->after('workshop_id')
+                ->after('school_workshop_id')
                 ->constrained('workshop_group_sets')
                 ->nullOnDelete();
             $table->unsignedInteger('group_number')
@@ -39,9 +39,9 @@ return new class extends Migration
         Schema::table('classrooms', function (Blueprint $table) {
             $table->dropIndex('idx_classroom_group_set_number');
             $table->dropForeign(['workshop_group_set_id']);
-            $table->dropForeign(['workshop_id']);
+            $table->dropForeign(['school_workshop_id']);
             $table->dropColumn([
-                'workshop_id',
+                'school_workshop_id',
                 'workshop_group_set_id',
                 'group_number',
                 'status',

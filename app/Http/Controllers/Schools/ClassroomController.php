@@ -9,7 +9,7 @@ use App\Http\Requests\UpdateClassroomRequest;
 use App\Models\Classroom;
 use App\Models\GradeLevel;
 use App\Models\School;
-use App\Models\Workshop;
+use App\Models\SchoolWorkshop;
 use Illuminate\Database\QueryException;
 
 class ClassroomController extends Controller
@@ -53,11 +53,20 @@ class ClassroomController extends Controller
 
     public function create()
     {
+        $schoolWorkshops = SchoolWorkshop::query()
+            ->with(['school', 'workshop'])
+            ->orderBy('school_id')
+            ->orderBy('workshop_id')
+            ->get()
+            ->mapWithKeys(fn ($contract) => [
+                $contract->id => $contract->school->name.' — '.$contract->workshop->name,
+            ]);
+
         return view('classrooms.create', [
             'schools' => School::orderBy('name')->pluck('name', 'id'),
             'parentClassrooms' => Classroom::orderBy('name')->pluck('name', 'id'),
             'gradeLevels' => GradeLevel::orderBy('sequence')->orderBy('name')->pluck('name', 'id'),
-            'workshops' => Workshop::orderBy('name')->pluck('name', 'id'),
+            'schoolWorkshops' => $schoolWorkshops,
             'defaultYear' => (int) date('Y'),
         ]);
     }
@@ -69,6 +78,7 @@ class ClassroomController extends Controller
         $classroom = Classroom::create([
             'school_id' => (int) $data['school_id'],
             'parent_classroom_id' => $data['parent_classroom_id'] ?? null,
+            'school_workshop_id' => (int) $data['school_workshop_id'],
             'name' => $data['name'],
             'shift' => $data['shift'],
             'is_active' => $request->boolean('is_active'),
@@ -77,28 +87,33 @@ class ClassroomController extends Controller
         ]);
 
         $classroom->gradeLevels()->sync($data['grade_level_ids']);
-        $classroom->workshops()->sync($this->buildWorkshopSyncPayload($data['workshops'] ?? []));
 
         return redirect()
             ->route('classrooms.show', $classroom)
-            ->with('success', 'Turma criada com anos e oficinas vinculadas.');
+            ->with('success', 'Turma criada com anos e oficina vinculada.');
     }
 
     public function edit(Classroom $classroom)
     {
-        $classroom->load(['gradeLevels', 'workshops']);
+        $classroom->load(['gradeLevels', 'schoolWorkshop.workshop', 'schoolWorkshop.school']);
+
+        $schoolWorkshops = SchoolWorkshop::query()
+            ->with(['school', 'workshop'])
+            ->orderBy('school_id')
+            ->orderBy('workshop_id')
+            ->get()
+            ->mapWithKeys(fn ($contract) => [
+                $contract->id => $contract->school->name.' — '.$contract->workshop->name,
+            ]);
 
         return view('classrooms.edit', [
             'classroom' => $classroom,
             'schools' => School::orderBy('name')->pluck('name', 'id'),
             'parentClassrooms' => Classroom::whereKeyNot($classroom->id)->orderBy('name')->pluck('name', 'id'),
             'gradeLevels' => GradeLevel::orderBy('sequence')->orderBy('name')->pluck('name', 'id'),
-            'workshops' => Workshop::orderBy('name')->pluck('name', 'id'),
+            'schoolWorkshops' => $schoolWorkshops,
             'selectedGrades' => $classroom->gradeLevels->pluck('id')->all(),
-            'existingWorkshops' => $classroom->workshops->map(fn ($w) => [
-                'id' => $w->id,
-                'max_students' => $w->pivot->max_students,
-            ])->values()->all(),
+            'selectedSchoolWorkshop' => $classroom->school_workshop_id,
         ]);
     }
 
@@ -109,6 +124,7 @@ class ClassroomController extends Controller
         $classroom->update([
             'school_id' => (int) $data['school_id'],
             'parent_classroom_id' => $data['parent_classroom_id'] ?? null,
+            'school_workshop_id' => (int) $data['school_workshop_id'],
             'name' => $data['name'],
             'shift' => $data['shift'],
             'is_active' => $request->boolean('is_active'),
@@ -117,7 +133,6 @@ class ClassroomController extends Controller
         ]);
 
         $classroom->gradeLevels()->sync($data['grade_level_ids']);
-        $classroom->workshops()->sync($this->buildWorkshopSyncPayload($data['workshops'] ?? []));
 
         return redirect()
             ->route('classrooms.show', $classroom)
@@ -141,19 +156,4 @@ class ClassroomController extends Controller
         }
     }
 
-    private function buildWorkshopSyncPayload(array $workshops): array
-    {
-        $out = [];
-        foreach ($workshops as $row) {
-            if (! empty($row['id'])) {
-                $out[(int) $row['id']] = [
-                    'max_students' => (isset($row['max_students']) && $row['max_students'] !== '')
-                        ? (int) $row['max_students']
-                        : null,
-                ];
-            }
-        }
-
-        return $out;
-    }
 }

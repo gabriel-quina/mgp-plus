@@ -99,53 +99,20 @@
 </div>
 
 <div class="card mb-3">
-  <div class="card-header">Oficinas da Turma</div>
-  <div class="card-body" id="workshop-list">
+  <div class="card-header">Contrato de Oficina</div>
+  <div class="card-body">
     @php
-      $existingWorkshops = $existingWorkshops
-        ?? old('workshops', [['id'=>'','max_students'=>'']]);
+      $selectedSchoolWorkshop = old('school_workshop_id', $selectedSchoolWorkshop ?? (isset($classroom) ? $classroom->school_workshop_id : null));
     @endphp
 
-    @foreach($existingWorkshops as $i => $row)
-      <div class="row g-2 mb-2 workshop-row">
-        <div class="col-md-8">
-          <select name="workshops[{{ $i }}][id]" class="form-select">
-            <option value="">-- Selecione --</option>
-            @foreach($workshops as $wid => $wname)
-              <option value="{{ $wid }}" @selected(($row['id'] ?? null) == $wid)>{{ $wname }}</option>
-            @endforeach
-          </select>
-        </div>
-        <div class="col-md-4">
-          <input type="number" min="0" name="workshops[{{ $i }}][max_students]"
-                 class="form-control"
-                 value="{{ $row['max_students'] ?? '' }}"
-                 placeholder="Capacidade (vazio = sem limite)">
-        </div>
-      </div>
-    @endforeach
-
-    <button type="button" class="btn btn-sm btn-outline-secondary" id="add-workshop">Adicionar Oficina</button>
+    <label class="form-label">Oficina contratada</label>
+    <select name="school_workshop_id" class="form-select @error('school_workshop_id') is-invalid @enderror" required>
+      <option value="">-- Selecione --</option>
+      @foreach($schoolWorkshops as $id => $label)
+        <option value="{{ $id }}" @selected($selectedSchoolWorkshop == $id)>{{ $label }}</option>
+      @endforeach
+    </select>
+    @error('school_workshop_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    <div class="form-text">Escolha a oficina contratada pela escola.</div>
   </div>
 </div>
-
-@push('scripts')
-<script>
-(() => {
-  const btn = document.getElementById('add-workshop');
-  const list = document.getElementById('workshop-list');
-  let i = {{ max(1, is_countable($existingWorkshops ?? []) ? count($existingWorkshops ?? []) : 1) }};
-  btn?.addEventListener('click', () => {
-    const tpl = document.querySelector('.workshop-row').cloneNode(true);
-    tpl.querySelectorAll('select,input').forEach(el => {
-      el.name = el.name.replace(/\[\d+\]/, `[${i}]`);
-      if (el.tagName === 'SELECT') el.selectedIndex = 0;
-      if (el.tagName === 'INPUT')  el.value = '';
-    });
-    list.insertBefore(tpl, btn);
-    i++;
-  });
-})();
-</script>
-@endpush
-
