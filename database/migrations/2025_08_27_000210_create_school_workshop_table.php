@@ -11,9 +11,13 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('school_id')->constrained('schools')->cascadeOnDelete();
             $table->foreignId('workshop_id')->constrained('workshops')->cascadeOnDelete();
+            $table->date('starts_at')->nullable();
+            $table->date('ends_at')->nullable();
+            $table->string('status', 20)->default('active');
             $table->timestamps();
 
-            $table->unique(['school_id', 'workshop_id']);
+            $table->index(['school_id', 'workshop_id']);
+            $table->index(['school_id', 'status']);
             $table->index('school_id');
             $table->index('workshop_id');
         });
@@ -24,4 +28,3 @@ return new class extends Migration {
         Schema::dropIfExists('school_workshop');
     }
 };
-

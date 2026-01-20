@@ -12,7 +12,7 @@ class Classroom extends Model
     protected $fillable = [
         'school_id',
         'parent_classroom_id',
-        'workshop_id',
+        'school_workshop_id',
         'workshop_group_set_id',
         'group_number',
         'name',
@@ -36,9 +36,9 @@ class Classroom extends Model
     }
 
     /** Oficina associada diretamente ao grupo (novo modelo explícito) */
-    public function workshop()
+    public function schoolWorkshop()
     {
-        return $this->belongsTo(Workshop::class);
+        return $this->belongsTo(SchoolWorkshop::class);
     }
 
     /** Conjunto de grupos de oficina (novo modelo explícito) */
@@ -64,16 +64,18 @@ class Classroom extends Model
 
     /**
      * Acesso conveniente: $classroom->workshop
-     * Retorna o primeiro workshop associado (útil para SUBTURMA vinculada a 1 oficina).
-     * OBS: não é relação Eloquent; é um accessor. Para evitar N+1, faça eager load de 'workshops'.
+     * Retorna a oficina vinculada ao contrato da escola.
+     * OBS: não é relação Eloquent; é um accessor. Para evitar N+1, faça eager load de 'schoolWorkshop.workshop'.
      */
     public function getWorkshopAttribute()
     {
-        if ($this->relationLoaded('workshops')) {
-            return $this->workshops->first();
+        if ($this->relationLoaded('schoolWorkshop') && $this->schoolWorkshop) {
+            return $this->schoolWorkshop->workshop;
         }
 
-        return $this->workshops()->first();
+        $schoolWorkshop = $this->schoolWorkshop()->with('workshop')->first();
+
+        return $schoolWorkshop?->workshop;
     }
 
     /** Turma pai / subturmas */

@@ -3,7 +3,8 @@
 namespace App\Http\Requests;
 
 use App\Models\{
-    Classroom
+    Classroom,
+    SchoolWorkshop
 };
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -48,6 +49,23 @@ class StoreClassroomRequest extends FormRequest
             // Turma
             'school_id'            => ['required', 'integer', 'exists:schools,id'],
             'parent_classroom_id'  => ['nullable', 'integer', 'exists:classrooms,id'],
+            'school_workshop_id'   => [
+                'required',
+                'integer',
+                Rule::exists('school_workshop', 'id')
+                    ->where('school_id', $this->input('school_id'))
+                    ->where('status', SchoolWorkshop::STATUS_ACTIVE)
+                    ->where(function ($query) {
+                        $today = now()->toDateString();
+                        $query->whereNull('starts_at')
+                            ->orWhere('starts_at', '<=', $today);
+                    })
+                    ->where(function ($query) {
+                        $today = now()->toDateString();
+                        $query->whereNull('ends_at')
+                            ->orWhere('ends_at', '>=', $today);
+                    }),
+            ],
             'name'                 => ['required', 'string', 'max:150'],
             'shift'                => ['required', Rule::in(['morning', 'afternoon', 'evening'])],
             'is_active'            => ['sometimes', 'boolean'],
@@ -61,11 +79,6 @@ class StoreClassroomRequest extends FormRequest
 
             // Chave canônica do conjunto (gerada no prepareForValidation)
             'grade_level_key'      => ['required', 'string', 'max:191'],
-
-            // Oficinas (opcionais) com limite
-            'workshops'                => ['nullable', 'array'],
-            'workshops.*.id'           => ['nullable', 'integer', 'exists:workshops,id'],
-            'workshops.*.max_students' => ['nullable', 'integer', 'min:0'],
         ];
     }
 
@@ -94,14 +107,13 @@ class StoreClassroomRequest extends FormRequest
         return [
             'school_id'         => 'Escola',
             'parent_classroom_id'=> 'Turma Pai',
+            'school_workshop_id' => 'Contrato de oficina',
             'name'              => 'Nome',
             'shift'             => 'Turno',
             'is_active'         => 'Ativa',
             'academic_year'     => 'Ano letivo',
             'grade_level_ids'   => 'Anos atendidos',
             'grade_level_key'   => 'Conjunto de anos',
-            'workshops.*.id'    => 'Oficina',
-            'workshops.*.max_students' => 'Capacidade',
         ];
     }
 
@@ -120,4 +132,3 @@ class StoreClassroomRequest extends FormRequest
             ->implode(',');
     }
 }
-
