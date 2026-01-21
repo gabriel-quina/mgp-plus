@@ -15,11 +15,10 @@
     <form method="POST" action="{{ route('schools.classrooms.store', $school) }}">
         @csrf
 
-        @include('classrooms._form', [
+        @include('schools.classrooms._form', [
             'showSchoolSelect' => false,
             'fixedSchoolId' => $school->id,
             'schoolName' => $school->short_name ?? $school->name,
-            'parentClassrooms' => $parentClassrooms,
             'gradeLevels' => $gradeLevels,
             'workshops' => $workshops,
             'defaultYear' => $defaultYear,

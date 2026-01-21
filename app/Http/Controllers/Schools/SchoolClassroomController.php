@@ -37,7 +37,6 @@ class SchoolClassroomController extends Controller
 
         // Ordenação que ajuda a leitura quando mistura base + grupos
         $classrooms = $classroomsQuery
-            ->orderByRaw('parent_classroom_id is null desc')
             ->orderBy('academic_year', 'desc')
             ->orderBy('name')
             ->paginate(20)
@@ -45,10 +44,6 @@ class SchoolClassroomController extends Controller
 
         // Mesmo “enriquecimento” do MASTER, sem assumir que child tem esse método
         $classrooms->getCollection()->transform(function ($classroom) {
-            if (method_exists($classroom, 'eligibleEnrollments') && ! $classroom->parent_classroom_id) {
-                $classroom->total_all_students = $classroom->eligibleEnrollments()->count();
-            }
-
             return $classroom;
         });
 
@@ -67,14 +62,6 @@ class SchoolClassroomController extends Controller
         // Segurança básica sem mexer nas rotas
         abort_if((int) $classroom->school_id !== (int) $school->id, 404);
 
-        // Reaproveita suas telas MASTER já prontas
-        if ($classroom->parent_classroom_id) {
-            return redirect()->route('subclassrooms.show', [
-                'parent' => $classroom->parent_classroom_id,
-                'classroom' => $classroom->id,
-            ]);
-        }
-
         return redirect()->route('classrooms.show', $classroom);
     }
 
@@ -84,11 +71,6 @@ class SchoolClassroomController extends Controller
             'school' => $school,
             'schoolNav' => $school,
             'schools' => [$school->id => $school->name],
-            'parentClassrooms' => Classroom::query()
-                ->where('school_id', $school->id)
-                ->whereNull('parent_classroom_id')
-                ->orderBy('name')
-                ->pluck('name', 'id'),
             'gradeLevels' => $this->gradeLevelsWithEnrollments($school),
             'workshops' => $school->workshops()
                 ->select('workshops.id', 'workshops.name')
@@ -103,12 +85,10 @@ class SchoolClassroomController extends Controller
         $data = $request->validated();
         $data['school_id'] = $school->id;
 
-        $this->validateParentClassroom($data['parent_classroom_id'] ?? null, $school);
         $this->validateGradeLevels($data['grade_level_ids'], $school);
 
         $classroom = Classroom::create([
             'school_id' => $data['school_id'],
-            'parent_classroom_id' => $data['parent_classroom_id'] ?? null,
             'name' => $data['name'],
             'shift' => $data['shift'],
             'is_active' => $request->boolean('is_active'),
@@ -148,24 +128,6 @@ class SchoolClassroomController extends Controller
             ->orderBy('sequence')
             ->orderBy('name')
             ->pluck('name', 'id');
-    }
-
-    private function validateParentClassroom(?int $parentClassroomId, School $school): void
-    {
-        if (! $parentClassroomId) {
-            return;
-        }
-
-        $exists = Classroom::query()
-            ->whereKey($parentClassroomId)
-            ->where('school_id', $school->id)
-            ->exists();
-
-        if (! $exists) {
-            throw ValidationException::withMessages([
-                'parent_classroom_id' => 'A turma pai precisa pertencer a esta escola.',
-            ]);
-        }
     }
 
     private function validateGradeLevels(array $gradeLevelIds, School $school): void

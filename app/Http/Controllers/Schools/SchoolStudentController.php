@@ -89,7 +89,7 @@ class SchoolStudentController extends Controller
 
     public function create(School $school)
     {
-        $gradeLevels = GradeLevel::orderBy('order')->orderBy('name')->pluck('name', 'id');
+        $gradeLevels = GradeLevel::orderBy('sequence')->orderBy('name')->pluck('name', 'id');
 
         // IMPORTANTE: precisa ser Collection de Models para o Blade usar $st->id / $st->uf
         $states = State::orderBy('name')->get(['id', 'name', 'uf']);

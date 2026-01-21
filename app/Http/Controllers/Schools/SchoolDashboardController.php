@@ -3,8 +3,7 @@
 namespace App\Http\Controllers\Schools;
 
 use App\Http\Controllers\Controller;
-use App\Models\School;
-use App\Models\StudentEnrollment;
+use App\Models\{School, StudentEnrollment};
 use App\Services\Schools\Queries\GetSchoolGradeLevelCounts;
 use Illuminate\Support\Facades\DB;
 
@@ -17,18 +16,13 @@ class SchoolDashboardController extends Controller
         $school->load([
             'city.state',
             'classrooms' => function ($q) use ($currentAcademicYear) {
-                $q->whereNull('parent_classroom_id')
-                    ->where('academic_year', $currentAcademicYear)
-                    ->where('is_active', true)
-                    ->with(['gradeLevels'])
-                    ->orderBy('name');
+                $q->where('academic_year', $currentAcademicYear)
+                    ->with(['gradeLevels']);
             },
             'workshops',
         ])->loadCount([
             'classrooms as classrooms_count' => function ($q) use ($currentAcademicYear) {
-                $q->whereNull('parent_classroom_id')
-                    ->where('academic_year', $currentAcademicYear)
-                    ->where('is_active', true);
+                $q->where('academic_year', $currentAcademicYear);
             },
             'workshops as workshops_count',
             'enrollments as enrollments_count' => function ($q) use ($currentAcademicYear) {
@@ -42,7 +36,7 @@ class SchoolDashboardController extends Controller
             },
         ]);
 
-        $gradeLevelsWithStudents = (new GetSchoolGradeLevelCounts())->execute($school, $currentAcademicYear);
+        $gradeLevelsWithStudents = (new GetSchoolGradeLevelCounts)->execute($school, $currentAcademicYear);
 
         return view('schools.dashboard.show', [
             'school' => $school,
