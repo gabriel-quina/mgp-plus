@@ -168,26 +168,26 @@
                             </a>
                         </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('students.*') ? 'active' : '' }}"
-                                href="{{ route('students.index') }}">
-                                Alunos
-                            </a>
-                        </li>
+//                        <li class="nav-item">
+//                            <a class="nav-link {{ request()->routeIs('students.*') ? 'active' : '' }}"
+//                                href="{{ route('students.index') }}">
+//                                Alunos
+//                            </a>
+//                        </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('enrollments.*') ? 'active' : '' }}"
-                                href="{{ route('enrollments.index') }}">
-                                Matrículas
-                            </a>
-                        </li>
+//                        <li class="nav-item">
+//                            <a class="nav-link {{ request()->routeIs('enrollments.*') ? 'active' : '' }}"
+//                                href="{{ route('enrollments.index') }}">
+//                                Matrículas
+//                            </a>
+//                        </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('classrooms.*') || request()->routeIs('subclassrooms.*') ? 'active' : '' }}"
-                                href="{{ route('classrooms.index') }}">
-                                Turmas
-                            </a>
-                        </li>
+//                        <li class="nav-item">
+//                            <a class="nav-link {{ request()->routeIs('classrooms.*') || request()->routeIs('subclassrooms.*') ? 'active' : '' }}"
+//                                href="{{ route('classrooms.index') }}">
+//                                Turmas
+//                            </a>
+//                        </li>
                     @endif
                 @elseif ($resolvedScope === 'school')
                     {{-- Links do escopo ESCOLA (somente se tiver school id) --}}
