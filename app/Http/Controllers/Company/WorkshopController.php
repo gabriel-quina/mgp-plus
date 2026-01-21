@@ -66,4 +66,17 @@ class WorkshopController extends Controller
                 'name'        => [
                     'required', 'string', 'max:150',
                     Rule::unique('workshops', 'name')->ignore($id),
+                ],
+                'description' => ['nullable', 'string', 'max:5000'],
+                'is_active'   => ['sometimes', 'boolean'],
+            ],
+            [
+                'name.required' => 'Informe o nome da oficina.',
+            ],
+            [
+                'name' => 'Nome da oficina',
+            ]
+        );
+    }
+}
 
