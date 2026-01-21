@@ -1,10 +1,9 @@
 <?php
 
-namespace Database\Seeders;
+namespace Database\Seeders\Deployment;
 
 use App\Models\Workshop;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Schema;
 
 class WorkshopSeeder extends Seeder
 {
@@ -24,17 +23,10 @@ class WorkshopSeeder extends Seeder
             'Ingles',
         ];
 
-        $hasIsActive = Schema::hasColumn('workshops', 'is_active');
-
         foreach ($items as $name) {
-            $values = ['name' => $name];
-            if ($hasIsActive) {
-                $values['is_active'] = true;
-            }
-
             Workshop::updateOrCreate(
-                ['name' => $name], // chave para idempotência
-                $values
+                ['name' => $name],
+                ['name' => $name, 'is_active' => true]
             );
         }
     }

@@ -1,6 +1,6 @@
 <?php
 
-namespace Database\Seeders;
+namespace Database\Seeders\Deployment;
 
 use App\Models\City;
 use App\Models\State;
@@ -15,7 +15,6 @@ class CitySeeder extends Seeder
         $byUf = [
             'MG' => ['Juiz de Fora', 'Ubá', 'Barbacena'],
             'RJ' => ['Três Rios'],
-            'SP' => ['São Paulo'],
         ];
 
         foreach ($byUf as $uf => $cities) {

@@ -3,33 +3,19 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Database\Seeders\Deployment\DeploymentSeeder;
+use Database\Seeders\Dev\DevSeeder;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->call([
-            // Catálogos territoriais
-            StateSeeder::class,
-            CitySeeder::class,
+        // sempre roda
+        $this->call(DeploymentSeeder::class);
 
-            // Catálogo escolar
-            GradeLevelSeeder::class,
-            WorkshopSeeder::class,
-            SchoolSeeder::class,
-
-            // Pessoas
-            StudentSeeder::class,
-            TeacherSeeder::class,
-
-            // 1) cria episódios (matrículas) — define quais anos existirão em cada escola
-            StudentEnrollmentSeeder::class,
-
-            // 2) cria turmas APENAS para anos/turnos/escolas que tenham matrículas
-            ClassroomSeeder::class,
-
-            RbacSeeder::class,
-            MasterUserSeeder::class,
-        ]);
+        // só roda se você ligar a flag
+        if (app()->environment(['local', 'testing']) && env('SEED_DEV_DATA', false)) {
+            $this->call(DevSeeder::class);
+        }
     }
 }

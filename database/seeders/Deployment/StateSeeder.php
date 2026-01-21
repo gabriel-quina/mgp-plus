@@ -1,6 +1,6 @@
 <?php
 
-namespace Database\Seeders;
+namespace Database\Seeders\Deployment;
 
 use App\Models\State;
 use Illuminate\Database\Seeder;
@@ -41,7 +41,7 @@ class StateSeeder extends Seeder
             ['name' => 'Tocantins',           'uf' => 'TO', 'created_at' => $now, 'updated_at' => $now],
         ];
 
-        // evita duplicar ao rodar mais de uma vez; usa a 'uf' (única) como chave
+        // A constraint uq_states_uf garante unicidade; upsert mantém idempotência
         State::upsert($rows, ['uf'], ['name', 'updated_at']);
     }
 }
