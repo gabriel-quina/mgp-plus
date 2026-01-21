@@ -106,5 +106,53 @@ class ClassroomController extends Controller
 
         $classroom->update([
             'school_id' => (int) $data['school_id'],
-            'parent_classroom_id' => $data['parent_classroom_id'] ?? n
+            'parent_classroom_id' => $data['parent_classroom_id'] ?? null,
+            'name' => $data['name'],
+            'shift' => $data['shift'],
+            'is_active' => $request->boolean('is_active'),
+            'academic_year' => (int) $data['academic_year'],
+            'grade_level_key' => $data['grade_level_key'],
+        ]);
+
+        $classroom->gradeLevels()->sync($data['grade_level_ids']);
+        $classroom->workshops()->sync($this->buildWorkshopSyncPayload($data['workshops'] ?? []));
+
+        return redirect()
+            ->route('classrooms.show', $classroom)
+            ->with('success', 'Turma atualizada com sucesso.');
+    }
+
+    public function destroy(Classroom $classroom)
+    {
+        try {
+            $classroom->delete();
+
+            return redirect()
+                ->route('classrooms.index')
+                ->with('success', 'Turma excluída com sucesso.');
+        } catch (QueryException $e) {
+            report($e);
+
+            return back()->withErrors([
+                'general' => 'Não foi possível excluir a turma (existem vínculos dependentes).',
+            ])->withInput();
+        }
+    }
+
+    private function buildWorkshopSyncPayload(array $workshops): array
+    {
+        $out = [];
+        foreach ($workshops as $row) {
+            if (! empty($row['id'])) {
+                $out[(int) $row['id']] = [
+                    'max_students' => (isset($row['max_students']) && $row['max_students'] !== '')
+                        ? (int) $row['max_students']
+                        : null,
+                ];
+            }
+        }
+
+        return $out;
+    }
+}
 
