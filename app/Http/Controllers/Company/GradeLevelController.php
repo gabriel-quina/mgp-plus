@@ -28,7 +28,7 @@ class GradeLevelController extends Controller
         GradeLevel::create($data);
 
         return redirect()
-            ->route('grade-levels.index')
+            ->route('admin.grade-levels.index')
             ->with('success', 'Ano escolar criado com sucesso!');
     }
 
@@ -50,7 +50,7 @@ class GradeLevelController extends Controller
         $gradeLevel->update($data);
 
         return redirect()
-            ->route('grade-levels.index')
+            ->route('admin.grade-levels.index')
             ->with('success', 'Ano escolar atualizado com sucesso!');
     }
 
@@ -59,7 +59,7 @@ class GradeLevelController extends Controller
         $gradeLevel->delete();
 
         return redirect()
-            ->route('grade-levels.index')
+            ->route('admin.grade-levels.index')
             ->with('success', 'Ano escolar excluído com sucesso!');
     }
 }

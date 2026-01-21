@@ -6,7 +6,7 @@
             <h1 class="h4 mb-1">Relatório — Capacidade x Alocação</h1>
             <div class="text-muted">{{ $school->short_name ?? $school->name }}</div>
         </div>
-        <a href="{{ route('schools.reports.index', $school) }}" class="btn btn-sm btn-outline-secondary">Voltar</a>
+        <a href="{{ route('admin.schools.reports.index', $school) }}" class="btn btn-sm btn-outline-secondary">Voltar</a>
     </div>
 
     <div class="card">

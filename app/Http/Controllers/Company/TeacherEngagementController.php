@@ -27,14 +27,14 @@ class TeacherEngagementController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return view('teacher_engagements.index', compact('teacher', 'engagements', 'type', 'status'));
+        return view('company.teacher_engagements.index', compact('teacher', 'engagements', 'type', 'status'));
     }
 
     public function create(Teacher $teacher)
     {
         $engagement = new TeacherEngagement();
         $cities = City::orderBy('name')->pluck('name', 'id');
-        return view('teacher_engagements.create', compact('teacher', 'engagement', 'cities'));
+        return view('company.teacher_engagements.create', compact('teacher', 'engagement', 'cities'));
     }
 
     public function store(Teacher $teacher, StoreTeacherEngagementRequest $request)
@@ -50,7 +50,7 @@ class TeacherEngagementController extends Controller
         $teacher->engagements()->create($data);
 
         return redirect()
-            ->route('teachers.show', $teacher)
+            ->route('admin.teachers.show', $teacher)
             ->with('success', 'Vínculo criado com sucesso.');
     }
 
@@ -60,7 +60,7 @@ class TeacherEngagementController extends Controller
         abort_unless($teacher_engagement->teacher_id === $teacher->id, 404);
 
         $cities = City::orderBy('name')->pluck('name', 'id');
-        return view('teacher_engagements.edit', [
+        return view('company.teacher_engagements.edit', [
             'teacher'    => $teacher,
             'engagement' => $teacher_engagement,
             'cities'     => $cities,
@@ -79,7 +79,7 @@ class TeacherEngagementController extends Controller
         $teacher_engagement->update($data);
 
         return redirect()
-            ->route('teachers.show', $teacher)
+            ->route('admin.teachers.show', $teacher)
             ->with('success', 'Vínculo atualizado com sucesso.');
     }
 
@@ -91,13 +91,13 @@ class TeacherEngagementController extends Controller
             $teacher_engagement->delete();
 
             return redirect()
-                ->route('teachers.show', $teacher)
+                ->route('admin.teachers.show', $teacher)
                 ->with('success', 'Vínculo excluído com sucesso.');
         } catch (QueryException $e) {
             report($e);
 
             return redirect()
-                ->route('teachers.show', $teacher)
+                ->route('admin.teachers.show', $teacher)
                 ->withErrors('Não foi possível excluir este vínculo. Verifique se há dependências.');
         }
     }

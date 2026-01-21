@@ -4,14 +4,14 @@
     <header class="d-flex align-items-center justify-content-between mb-4">
         <h3 class="mb-0">Turmas</h3>
         <div class="d-flex gap-2">
-            <a href="{{ route('classrooms.create') }}" class="btn btn-primary">Nova Turma</a>
+            <a href="{{ route('admin.classrooms.create') }}" class="btn btn-primary">Nova Turma</a>
         </div>
     </header>
 
     {{-- mensagens --}}
     @include('partials.messages')
 
-    <form method="GET" action="{{ route('classrooms.index') }}" class="row g-2 mb-3">
+    <form method="GET" action="{{ route('admin.classrooms.index') }}" class="row g-2 mb-3">
         <div class="col-md-4">
             <input type="text" name="q" value="{{ $q }}" class="form-control"
                 placeholder="Buscar por nome/escola">
@@ -67,11 +67,11 @@
                                 <td>{{ $c->gradeLevels->pluck('name')->join(', ') }}</td>
                                 <td>{{ $c->is_active ? 'Ativa' : 'Inativa' }}</td>
                                 <td class="text-end">
-                                    <a href="{{ route('classrooms.show', $c) }}"
+                                    <a href="{{ route('admin.classrooms.show', $c) }}"
                                         class="btn btn-sm btn-outline-secondary">Ver</a>
-                                    <a href="{{ route('classrooms.edit', $c) }}"
+                                    <a href="{{ route('admin.classrooms.edit', $c) }}"
                                         class="btn btn-sm btn-outline-primary">Editar</a>
-                                    <form method="POST" action="{{ route('classrooms.destroy', $c) }}" class="d-inline"
+                                    <form method="POST" action="{{ route('admin.classrooms.destroy', $c) }}" class="d-inline"
                                         onsubmit="return confirm('Excluir turma?');">
                                         @csrf @method('DELETE')
                                         <button class="btn btn-sm btn-outline-danger">Excluir</button>

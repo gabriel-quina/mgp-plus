@@ -9,7 +9,7 @@
     <div class="alert alert-danger"><ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>
   @endif
 
-  <form method="POST" action="{{ route('classrooms.workshops.store', $classroom) }}" class="row g-3">
+  <form method="POST" action="{{ route('admin.classrooms.workshops.store', $classroom) }}" class="row g-3">
     @csrf
     <div class="col-12 col-md-6">
       <label class="form-label">Oficina <span class="text-danger">*</span></label>
@@ -31,7 +31,7 @@
 
     <div class="col-12 d-flex gap-2">
       <button class="btn btn-primary" type="submit">Vincular</button>
-      <a href="{{ route('classrooms.show', $classroom) }}" class="btn btn-outline-secondary">Cancelar</a>
+      <a href="{{ route('admin.classrooms.show', $classroom) }}" class="btn btn-outline-secondary">Cancelar</a>
     </div>
   </form>
 @endsection

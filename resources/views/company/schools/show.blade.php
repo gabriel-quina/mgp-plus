@@ -5,10 +5,10 @@
     <div class="d-flex align-items-center justify-content-between mb-3">
         <h1 class="h3 mb-0">{{ $school->name }}</h1>
         <div class="d-flex gap-2">
-            @if (Route::has('schools.edit'))
-                <a href="{{ route('schools.edit', $school) }}" class="btn btn-outline-secondary">Editar</a>
+            @if (Route::has('admin.schools.edit'))
+                <a href="{{ route('admin.schools.edit', $school) }}" class="btn btn-outline-secondary">Editar</a>
             @endif
-            <a href="{{ route('schools.index') }}" class="btn btn-outline-dark">Voltar</a>
+            <a href="{{ route('admin.schools.index') }}" class="btn btn-outline-dark">Voltar</a>
         </div>
     </div>
 
@@ -95,7 +95,7 @@
                                     <td>{{ $gl->classrooms_count }}</td>
                                     <td>{{ $gl->enrollments_count }}</td>
                                     <td class="text-end">
-                                        <a href="{{ route('schools.grade-level-students.index', [$school, $gl]) }}"
+                                        <a href="{{ route('admin.schools.grade-level-students.index', [$school, $gl]) }}"
                                             class="btn btn-sm btn-outline-secondary">Ver</a>
                                     </td>
                                 </tr>
@@ -114,14 +114,6 @@
     <div class="card mb-3">
         <div class="card-header d-flex align-items-center justify-content-between">
             <span><strong>Turmas da escola</strong></span>
-            <div class="d-flex gap-2">
-                <a href="{{ route('schools.groups-wizard.create', $school) }}" class="btn btn-sm btn-outline-primary">
-                    Novo grupo (helper)
-                </a>
-                <a href="{{ route('classrooms.create', ['school_id' => $school->id]) }}" class="btn btn-sm btn-primary">
-                    Nova turma
-                </a>
-            </div>
         </div>
         <div class="card-body p-0">
             @if ($school->classrooms->isEmpty())
@@ -157,9 +149,9 @@
                                     <td>{{ $classroom->gradeLevels->pluck('short_name')->filter()->join(', ') ?: $classroom->gradeLevels->pluck('name')->join(', ') }}
                                     </td>
                                     <td class="text-end">
-                                        <a href="{{ route('classrooms.show', $classroom) }}"
+                                        <a href="{{ route('admin.classrooms.show', $classroom) }}"
                                             class="btn btn-sm btn-outline-secondary">Ver</a>
-                                        <a href="{{ route('classrooms.edit', $classroom) }}"
+                                        <a href="{{ route('admin.classrooms.edit', $classroom) }}"
                                             class="btn btn-sm btn-outline-primary">Editar</a>
                                     </td>
                                 </tr>
@@ -181,7 +173,7 @@
                 </span>
             </div>
 
-            <a href="{{ route('schools.workshops.edit', $school) }}" class="btn btn-sm btn-primary">
+            <a href="{{ route('admin.schools.workshops.edit', $school) }}" class="btn btn-sm btn-primary">
                 Editar oficinas
             </a>
         </div>

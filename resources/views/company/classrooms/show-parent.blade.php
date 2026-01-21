@@ -42,7 +42,7 @@
                 </div>
             </div>
             <div>
-                <a href="{{ route('classrooms.edit', $classroom) }}" class="btn btn-outline-primary btn-sm">
+                <a href="{{ route('admin.classrooms.edit', $classroom) }}" class="btn btn-outline-primary btn-sm">
                     Editar Turma
                 </a>
             </div>
@@ -136,13 +136,13 @@
                                         <td>
                                             @if ($wk->show_subclasses_button)
                                                 {{-- Oficina em modo subturma (limit < total da turma) --}}
-                                                <a href="{{ route('classrooms.workshops.subclasses.index', [$classroom, $wk->id]) }}"
+                                                <a href="{{ route('admin.classrooms.workshops.subclasses.index', [$classroom, $wk->id]) }}"
                                                     class="btn btn-sm btn-outline-primary">
                                                     Ver subturmas
                                                 </a>
                                             @else
                                                 {{-- Oficina da turma inteira (sem limite ou limit >= total) --}}
-                                                <a href="{{ route('classrooms.workshops.show', [$classroom, $wk->id]) }}"
+                                                <a href="{{ route('admin.classrooms.workshops.show', [$classroom, $wk->id]) }}"
                                                     class="btn btn-sm btn-outline-secondary">
                                                     Ver oficina
                                                 </a>

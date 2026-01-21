@@ -6,7 +6,7 @@
             <h1 class="h4 mb-1">Relatório — Alunos não alocados</h1>
             <div class="text-muted">{{ $school->short_name ?? $school->name }}</div>
         </div>
-        <a href="{{ route('schools.reports.index', $school) }}" class="btn btn-sm btn-outline-secondary">Voltar</a>
+        <a href="{{ route('admin.schools.reports.index', $school) }}" class="btn btn-sm btn-outline-secondary">Voltar</a>
     </div>
 
     <form method="GET" class="card card-body mb-3">
@@ -17,7 +17,7 @@
             </div>
             <div class="col-12 col-md-3">
                 <button class="btn btn-primary">Filtrar</button>
-                <a href="{{ route('schools.reports.students.unallocated', $school) }}"
+                <a href="{{ route('admin.schools.reports.students.unallocated', $school) }}"
                     class="btn btn-outline-secondary">Limpar</a>
             </div>
         </div>
@@ -43,7 +43,7 @@
                             <td class="text-end">
                                 @if (isset($e->student_id))
                                     <a class="btn btn-sm btn-outline-primary"
-                                        href="{{ route('students.show', $e->student_id) }}">
+                                        href="{{ route('admin.students.show', $e->student_id) }}">
                                         Ver aluno
                                     </a>
                                 @endif

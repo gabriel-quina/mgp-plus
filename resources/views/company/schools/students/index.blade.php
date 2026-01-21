@@ -13,13 +13,13 @@
             </small>
         </div>
 
-        <a href="{{ route('schools.students.create', $school) }}" class="btn btn-primary">
+        <a href="{{ route('admin.schools.students.create', $school) }}" class="btn btn-primary">
             <i class="bi bi-plus-lg"></i> Novo aluno
         </a>
     </div>
 
     {{-- Filtros / busca --}}
-    <form method="GET" action="{{ route('schools.students.index', $school) }}" class="row gy-2 gx-2 align-items-end mb-3">
+    <form method="GET" action="{{ route('admin.schools.students.index', $school) }}" class="row gy-2 gx-2 align-items-end mb-3">
         <div class="col-md-4">
             <label for="q" class="form-label">Buscar por nome</label>
             <input type="text" name="q" id="q" value="{{ $search }}" class="form-control"
@@ -62,7 +62,7 @@
                             </td>
                             <td>
                                 @if ($enrollment->student)
-                                    <a href="{{ route('schools.students.show', [$school, $enrollment->student]) }}"
+                                    <a href="{{ route('admin.schools.students.show', [$school, $enrollment->student]) }}"
                                         class="btn btn-sm btn-outline-secondary">
                                         Ver aluno
                                     </a>

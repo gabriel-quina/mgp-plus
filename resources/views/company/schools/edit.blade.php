@@ -12,10 +12,10 @@
   </div>
 @endif
 
-<form method="POST" action="{{ route('schools.update', $school) }}">
+<form method="POST" action="{{ route('admin.schools.update', $school) }}">
   @csrf
   @method('PUT')
-  @include('schools._form', ['submitLabel' => 'Salvar alterações'])
+  @include('company.schools._form', ['submitLabel' => 'Salvar alterações'])
 </form>
 @endsection
 

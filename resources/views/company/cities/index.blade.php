@@ -4,7 +4,7 @@
 <header class="d-flex align-items-center justify-content-between mb-4">
     <h3 class="mb-0">Cidades</h3>
     <div class="d-flex gap-2">
-        <a href="{{ route('cities.create') }}" class="btn btn-primary">Nova Cidade</a>
+        <a href="{{ route('admin.cities.create') }}" class="btn btn-primary">Nova Cidade</a>
         <a href="{{ url()->current() }}" class="btn btn-outline-secondary">Atualizar</a>
     </div>
 </header>
@@ -37,9 +37,9 @@
                             <td>{{ $city->state->uf ?? '-' }}</td>
                             <td class="text-center">
                                 <div class="d-flex flex-wrap justify-content-center gap-2">
-                                    <a href="{{ route('cities.show', $city) }}" class="btn btn-sm btn-outline-info">Ver</a>
-                                    <a href="{{ route('cities.edit', $city) }}" class="btn btn-sm btn-outline-primary">Editar</a>
-                                    <form action="{{ route('cities.destroy', $city) }}"
+                                    <a href="{{ route('admin.cities.show', $city) }}" class="btn btn-sm btn-outline-info">Ver</a>
+                                    <a href="{{ route('admin.cities.edit', $city) }}" class="btn btn-sm btn-outline-primary">Editar</a>
+                                    <form action="{{ route('admin.cities.destroy', $city) }}"
                                           method="POST"
                                           class="d-inline"
                                           onsubmit="return confirm('Tem certeza que deseja excluir esta cidade?');">

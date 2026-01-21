@@ -28,7 +28,7 @@ class CityController extends Controller
         City::create($request->validated());
 
         return redirect()
-            ->route('cities.index')
+            ->route('admin.cities.index')
             ->with('success', 'Cidade criada com sucesso!');
     }
 
@@ -49,7 +49,7 @@ class CityController extends Controller
         $city->update($request->validated());
 
         return redirect()
-            ->route('cities.index')
+            ->route('admin.cities.index')
             ->with('success', 'Cidade atualizada com sucesso!');
     }
 
@@ -58,7 +58,7 @@ class CityController extends Controller
         $city->delete();
 
         return redirect()
-            ->route('cities.index')
+            ->route('admin.cities.index')
             ->with('success', 'Cidade excluída com sucesso!');
     }
 }

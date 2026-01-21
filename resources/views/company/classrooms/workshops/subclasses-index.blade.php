@@ -73,7 +73,7 @@
                     </button>
                 @endif
 
-                <a href="{{ route('classrooms.show', $classroom) }}" class="btn btn-outline-primary btn-sm">
+                <a href="{{ route('admin.classrooms.show', $classroom) }}" class="btn btn-outline-primary btn-sm">
                     Voltar para Turma
                 </a>
             </div>
@@ -158,7 +158,7 @@
 
                                 {{-- Opção 1: manter limite atual e dividir em subturmas --}}
                                 <form method="POST"
-                                    action="{{ route('classrooms.workshops.apply', [$classroom, $workshop->id]) }}"
+                                    action="{{ route('admin.classrooms.workshops.apply', [$classroom, $workshop->id]) }}"
                                     class="list-group-item list-group-item-action mb-2">
                                     @csrf
 
@@ -181,7 +181,7 @@
                                 {{-- Opção 2: não criar subturmas, ajustar limite para usar a turma inteira --}}
                                 @if ($canOfferNoSubclassesOption)
                                     <form method="POST"
-                                        action="{{ route('classrooms.workshops.adjust_capacity', [$classroom, $workshop->id]) }}"
+                                        action="{{ route('admin.classrooms.workshops.adjust_capacity', [$classroom, $workshop->id]) }}"
                                         class="list-group-item list-group-item-action">
                                         @csrf
                                         <input type="hidden" name="new_capacity" value="{{ $suggestedNewCapacity }}">

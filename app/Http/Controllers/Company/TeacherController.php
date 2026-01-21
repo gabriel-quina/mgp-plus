@@ -26,14 +26,14 @@ class TeacherController extends Controller
             ->paginate(20)                  // padrão do projeto
             ->withQueryString();            // preserva filtros na paginação
 
-        return view('teachers.index', compact('teachers', 'q', 'isActive'));
+        return view('company.teachers.index', compact('teachers', 'q', 'isActive'));
     }
 
     public function create()
     {
         $teacher = new Teacher;
 
-        return view('teachers.create', compact('teacher'));
+        return view('company.teachers.create', compact('teacher'));
     }
 
     public function store(Request $request, TeacherUserService $teacherUserService)
@@ -96,7 +96,7 @@ class TeacherController extends Controller
         $teacherUserService->syncFromTeacher($teacher);
 
         return redirect()
-            ->route('teachers.show', $teacher)
+            ->route('admin.teachers.show', $teacher)
             ->with('success', 'Professor criado e usuário gerado com senha inicial.');
     }
 
@@ -134,19 +134,18 @@ class TeacherController extends Controller
             ->orderBy('cities.name')
             ->orderBy('schools.name')
             ->orderByDesc('academic_year')
-            ->orderBy('shift')
             ->paginate(20)
             ->withQueryString();
 
         // (opcional) contadores pra header/aba
         $teacher->loadCount(['engagements', 'cityAccesses', 'assignments']);
 
-        return view('teachers.show', compact('teacher', 'engagements', 'cityAccesses', 'assignments'));
+        return view('company.teachers.show', compact('teacher', 'engagements', 'cityAccesses', 'assignments'));
     }
 
     public function edit(Teacher $teacher)
     {
-        return view('teachers.edit', compact('teacher'));
+        return view('company.teachers.edit', compact('teacher'));
     }
 
     public function update(Request $request, Teacher $teacher, TeacherUserService $teacherUserService)
@@ -187,7 +186,7 @@ class TeacherController extends Controller
         $teacherUserService->syncFromTeacher($teacher);
 
         return redirect()
-            ->route('teachers.show', $teacher)
+            ->route('admin.teachers.show', $teacher)
             ->with('success', 'Professor atualizado e usuário sincronizado.');
     }
 
@@ -197,13 +196,13 @@ class TeacherController extends Controller
             $teacher->delete();
 
             return redirect()
-                ->route('teachers.index')
+                ->route('admin.teachers.index')
                 ->with('success', 'Professor excluído com sucesso.');
         } catch (QueryException $e) {
             report($e);
 
             return redirect()
-                ->route('teachers.show', $teacher)
+                ->route('admin.teachers.show', $teacher)
                 ->withErrors('Não foi possível excluir este professor. Verifique vínculos, acessos ou alocações associadas.');
         }
     }

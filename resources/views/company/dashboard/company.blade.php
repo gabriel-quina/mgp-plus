@@ -13,10 +13,10 @@
     </div>
 
     <div class="list-group">
-        <a class="list-group-item list-group-item-action" href="{{ route('schools.index') }}">
+        <a class="list-group-item list-group-item-action" href="{{ route('admin.schools.index') }}">
             Escolas
         </a>
-        <a class="list-group-item list-group-item-action" href="{{ route('workshops.index') }}">
+        <a class="list-group-item list-group-item-action" href="{{ route('admin.workshops.index') }}">
             Oficinas
         </a>
         <a class="list-group-item list-group-item-action" href="{{ route('teachers.index') }}">

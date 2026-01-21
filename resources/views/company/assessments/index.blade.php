@@ -18,7 +18,7 @@
             </div>
 
             <div class="d-flex gap-2">
-                <a href="{{ route('schools.assessments.create', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id]) }}"
+                <a href="{{ route('admin.schools.assessments.create', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id]) }}"
                     class="btn btn-outline-secondary btn-sm">
                     Lançar avaliação
                 </a>
@@ -73,7 +73,7 @@
                                             {{ $assessment->grades_count }}
                                         </td>
                                         <td class="text-end">
-                                            <a href="{{ route('schools.assessments.show', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id, 'assessment' => $assessment->id]) }}"
+                                            <a href="{{ route('admin.schools.assessments.show', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id, 'assessment' => $assessment->id]) }}"
                                                 class="btn btn-outline-primary btn-sm">
                                                 Ver notas
                                             </a>

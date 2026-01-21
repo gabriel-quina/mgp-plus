@@ -15,11 +15,11 @@ class GetSchoolGradeLevelCounts
      */
     public function execute(School $school, int $academicYear): Collection
     {
-        // "Matriculado aguardando início" + "Cursando" (não inclui pré-matrícula nem históricos).
         $eligibleStatuses = [
             StudentEnrollment::STATUS_ENROLLED,
             StudentEnrollment::STATUS_ACTIVE,
         ];
+
         $applyEnrollmentFilters = function ($q) use ($school, $academicYear, $eligibleStatuses) {
             $q->where('school_id', $school->id)
                 ->where('academic_year', $academicYear)
@@ -27,7 +27,6 @@ class GetSchoolGradeLevelCounts
                 ->whereNull('ended_at');
         };
 
-        // Anos escolares que têm pelo menos um aluno matriculado nessa escola
         return GradeLevel::query()
             ->whereHas('studentEnrollments', $applyEnrollmentFilters)
             ->withCount([
@@ -38,8 +37,7 @@ class GetSchoolGradeLevelCounts
                 'classrooms as classrooms_count' => function ($q) use ($school, $academicYear) {
                     $q->where('school_id', $school->id)
                         ->where('academic_year', $academicYear)
-                        ->where('is_active', true)
-                        ->whereNull('parent_classroom_id');
+                        ->where('is_active', true);
                 },
             ])
             ->orderBy('sequence')
@@ -47,3 +45,4 @@ class GetSchoolGradeLevelCounts
             ->get();
     }
 }
+

@@ -16,7 +16,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('schools.students.store', $school) }}">
+    <form method="POST" action="{{ route('admin.schools.students.store', $school) }}">
         @csrf
         @include('schools.students._form', ['submitLabel' => 'Cadastrar aluno'])
     </form>

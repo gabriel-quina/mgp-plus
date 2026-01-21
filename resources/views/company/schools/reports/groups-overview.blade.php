@@ -6,7 +6,7 @@
             <h1 class="h4 mb-1">Relatório — Grupos</h1>
             <div class="text-muted">{{ $school->short_name ?? $school->name }}</div>
         </div>
-        <a href="{{ route('schools.reports.index', $school) }}" class="btn btn-sm btn-outline-secondary">Voltar</a>
+        <a href="{{ route('admin.schools.reports.index', $school) }}" class="btn btn-sm btn-outline-secondary">Voltar</a>
     </div>
 
     <form method="GET" class="card card-body mb-3">
@@ -21,7 +21,7 @@
             </div>
             <div class="col-12 col-md-3">
                 <button class="btn btn-primary">Filtrar</button>
-                <a href="{{ route('schools.reports.groups.index', $school) }}" class="btn btn-outline-secondary">Limpar</a>
+                <a href="{{ route('admin.schools.reports.groups.index', $school) }}" class="btn btn-outline-secondary">Limpar</a>
             </div>
         </div>
     </form>

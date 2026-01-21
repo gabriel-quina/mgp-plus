@@ -10,8 +10,8 @@
                 <small class="text-muted">/ {{ $workshop->name }}</small>
             </h1>
             <div class="d-flex gap-2">
-                <a href="{{ route('classrooms.show', $classroom) }}" class="btn btn-outline-secondary">Voltar</a>
-                <form action="{{ route('classrooms.workshops.apply', [$classroom, $workshop]) }}" method="POST">
+                <a href="{{ route('admin.classrooms.show', $classroom) }}" class="btn btn-outline-secondary">Voltar</a>
+                <form action="{{ route('admin.classrooms.workshops.apply', [$classroom, $workshop]) }}" method="POST">
                     @csrf
                     <button type="submit" class="btn btn-primary">Aplicar distribuição</button>
                 </form>

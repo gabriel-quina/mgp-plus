@@ -14,8 +14,8 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('schools.store') }}">
+    <form method="POST" action="{{ route('admin.schools.store') }}">
         @csrf
-        @include('schools._form', ['submitLabel' => 'Criar'])
+        @include('company.schools._form', ['submitLabel' => 'Criar'])
     </form>
 @endsection

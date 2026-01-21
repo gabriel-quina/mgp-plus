@@ -10,7 +10,7 @@
         </div>
 
         <div class="d-flex gap-2">
-            <a href="{{ route('schools.teachers.index', [$school] + request()->query()) }}" class="btn btn-outline-secondary">
+            <a href="{{ route('admin.schools.teachers.index', [$school] + request()->query()) }}" class="btn btn-outline-secondary">
                 Atualizar
             </a>
             {{-- sem botão de novo aqui por enquanto, já que o resource da escola é só index/show --}}
@@ -18,7 +18,7 @@
     </header>
 
     {{-- Filtros --}}
-    <form method="GET" action="{{ route('schools.teachers.index', $school) }}" class="mb-3">
+    <form method="GET" action="{{ route('admin.schools.teachers.index', $school) }}" class="mb-3">
         <div class="row g-2">
             <div class="col-12 col-md-6">
                 <input type="text" name="q" value="{{ old('q', $q) }}" class="form-control"
@@ -43,7 +43,7 @@
             </div>
 
             <div class="col-6 col-md-2">
-                <a href="{{ route('schools.teachers.index', $school) }}" class="btn btn-outline-secondary w-100">
+                <a href="{{ route('admin.schools.teachers.index', $school) }}" class="btn btn-outline-secondary w-100">
                     Limpar
                 </a>
             </div>
@@ -92,7 +92,7 @@
                                 </td>
                                 <td class="text-end">
                                     <div class="d-inline-flex flex-wrap gap-2 justify-content-end">
-                                        <a href="{{ route('schools.teachers.show', [$school, $teacher]) }}"
+                                        <a href="{{ route('admin.schools.teachers.show', [$school, $teacher]) }}"
                                             class="btn btn-sm btn-outline-info">
                                             Ver
                                         </a>

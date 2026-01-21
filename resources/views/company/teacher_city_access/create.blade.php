@@ -6,11 +6,11 @@
   <header class="d-flex align-items-center justify-content-between mb-4">
     <h3 class="mb-0">Adicionar cidade — {{ $teacher->display_name }}</h3>
     <div class="d-flex gap-2">
-      <a href="{{ route('teachers.show', $teacher) }}" class="btn btn-outline-secondary">Voltar</a>
+      <a href="{{ route('admin.teachers.show', $teacher) }}" class="btn btn-outline-secondary">Voltar</a>
     </div>
   </header>
 
-  <form method="POST" action="{{ route('teacher-city-access.store', $teacher) }}">
+  <form method="POST" action="{{ route('admin.teacher-city-access.store', $teacher) }}">
     @csrf
 
     <div class="card">
@@ -32,7 +32,7 @@
       </div>
 
       <div class="card-footer d-flex justify-content-between">
-        <a href="{{ route('teachers.show', $teacher) }}" class="btn btn-outline-secondary">Cancelar</a>
+        <a href="{{ route('admin.teachers.show', $teacher) }}" class="btn btn-outline-secondary">Cancelar</a>
         <button type="submit" class="btn btn-primary">Salvar</button>
       </div>
     </div>

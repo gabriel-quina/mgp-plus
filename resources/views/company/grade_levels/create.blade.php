@@ -11,13 +11,13 @@
     </div>
   @endif
 
-  <form method="POST" action="{{ route('grade-levels.store') }}">
+  <form method="POST" action="{{ route('admin.grade-levels.store') }}">
     @csrf
-    @include('grade_levels._form', ['submitLabel' => 'Criar'])
+    @include('company.grade_levels._form', ['submitLabel' => 'Criar'])
   </form>
 
   <div class="mt-3">
-    <a class="btn btn-link" href="{{ route('grade-levels.index') }}">← Voltar</a>
+    <a class="btn btn-link" href="{{ route('admin.grade-levels.index') }}">← Voltar</a>
   </div>
 @endsection
 

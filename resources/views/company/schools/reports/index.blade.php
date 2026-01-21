@@ -23,22 +23,22 @@
 
                 <div class="list-group list-group-flush">
                     <a class="list-group-item list-group-item-action"
-                        href="{{ route('schools.reports.groups.index', $school) }}">
+                        href="{{ route('admin.schools.reports.groups.index', $school) }}">
                         Visão geral de Grupos
                     </a>
 
                     <a class="list-group-item list-group-item-action"
-                        href="{{ route('schools.reports.workshops.index', $school) }}">
+                        href="{{ route('admin.schools.reports.workshops.index', $school) }}">
                         Visão geral de Oficinas ativas
                     </a>
 
                     <a class="list-group-item list-group-item-action"
-                        href="{{ route('schools.reports.workshops.capacity', $school) }}">
+                        href="{{ route('admin.schools.reports.workshops.capacity', $school) }}">
                         Capacidade x Alocação por Oficina
                     </a>
 
                     <a class="list-group-item list-group-item-action"
-                        href="{{ route('schools.reports.students.unallocated', $school) }}">
+                        href="{{ route('admin.schools.reports.students.unallocated', $school) }}">
                         Alunos não alocados em oficinas
                     </a>
                 </div>
@@ -56,12 +56,12 @@
                 </div>
 
                 <div class="list-group list-group-flush">
-                    <a class="list-group-item list-group-item-action" href="{{ route('schools.students.index', $school) }}">
+                    <a class="list-group-item list-group-item-action" href="{{ route('admin.schools.students.index', $school) }}">
                         Lista de Alunos da Escola
                     </a>
 
                     <a class="list-group-item list-group-item-action"
-                        href="{{ route('schools.enrollments.index', $school) }}">
+                        href="{{ route('admin.schools.enrollments.index', $school) }}">
                         Matrículas da Escola
                     </a>
 
@@ -72,7 +72,7 @@
                             <div class="d-flex flex-wrap gap-2">
                                 @foreach ($gradeLevels as $gl)
                                     <a class="btn btn-sm btn-outline-secondary"
-                                        href="{{ route('schools.grade-level-students.index', [$school, $gl]) }}">
+                                        href="{{ route('admin.schools.grade-level-students.index', [$school, $gl]) }}">
                                         {{ $gl->short_name ?? $gl->name }}
                                     </a>
                                 @endforeach

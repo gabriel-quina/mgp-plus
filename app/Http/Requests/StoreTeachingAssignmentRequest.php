@@ -21,7 +21,6 @@ class StoreTeachingAssignmentRequest extends FormRequest
         $this->merge([
             'academic_year'  => $this->input('academic_year') ? (int) $this->input('academic_year') : null,
             'hours_per_week' => $this->input('hours_per_week') !== null ? (int) $this->input('hours_per_week') : null,
-            'shift'          => $this->filled('shift') ? strtolower(trim($this->input('shift'))) : null,
             'notes'          => $this->filled('notes') ? trim($this->input('notes')) : null,
         ]);
     }
@@ -33,29 +32,21 @@ class StoreTeachingAssignmentRequest extends FormRequest
 
         $schoolId  = (int) $this->input('school_id');
         $year      = (int) $this->input('academic_year');
-        $shift     = $this->input('shift'); // pode ser null
 
         return [
             'school_id'      => [
                 'required',
                 'integer',
                 'exists:schools,id',
-                // unicidade composta: teacher + school + year + shift(null-safe)
-                \Illuminate\Validation\Rule::unique('teaching_assignments')->where(function ($q) use ($teacherId, $schoolId, $year, $shift) {
+                // unicidade composta: teacher + school + year
+                \Illuminate\Validation\Rule::unique('teaching_assignments')->where(function ($q) use ($teacherId, $schoolId, $year) {
                     $q->where('teacher_id', $teacherId)
                         ->where('school_id', $schoolId)
                         ->where('academic_year', $year);
-
-                    if (is_null($shift)) {
-                        $q->whereNull('shift');
-                    } else {
-                        $q->where('shift', $shift);
-                    }
                 }),
             ],
             'engagement_id'  => ['nullable', 'integer', 'exists:teacher_engagements,id'],
             'academic_year'  => ['required', 'integer', 'min:2000', 'max:2100'],
-            'shift'          => ['nullable', \Illuminate\Validation\Rule::in(['morning', 'afternoon', 'evening'])],
             'hours_per_week' => ['nullable', 'integer', 'min:1', 'max:44'],
             'notes'          => ['nullable', 'string', 'max:500'],
         ];
@@ -117,7 +108,6 @@ class StoreTeachingAssignmentRequest extends FormRequest
             'school_id'      => 'escola',
             'engagement_id'  => 'vínculo',
             'academic_year'  => 'ano letivo',
-            'shift'          => 'turno',
             'hours_per_week' => 'horas por semana',
             'notes'          => 'observações',
         ];

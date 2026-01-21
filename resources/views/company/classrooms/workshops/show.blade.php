@@ -50,7 +50,7 @@
                     Lançar aula / presença
                 </a>
 
-                <a href="{{ route('classrooms.show', $classroom) }}" class="btn btn-outline-primary btn-sm">
+                <a href="{{ route('admin.classrooms.show', $classroom) }}" class="btn btn-outline-primary btn-sm">
                     Voltar para Turma
                 </a>
             </div>

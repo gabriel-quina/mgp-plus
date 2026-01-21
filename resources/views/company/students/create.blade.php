@@ -9,9 +9,9 @@
   </div>
 @endif
 
-<form method="POST" action="{{ route('students.store') }}">
+<form method="POST" action="{{ route('admin.students.store') }}">
   @csrf
-  @include('students._form', [
+  @include('company.students._form', [
     'submitLabel' => 'Criar',
     // $schools vem do controller
   ])

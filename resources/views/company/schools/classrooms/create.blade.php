@@ -8,11 +8,11 @@
         </div>
 
         <div class="d-flex gap-2">
-            <a href="{{ route('schools.classrooms.index', $school) }}" class="btn btn-outline-secondary">Voltar</a>
+            <a href="{{ route('admin.schools.classrooms.index', $school) }}" class="btn btn-outline-secondary">Voltar</a>
         </div>
     </div>
 
-    <form method="POST" action="{{ route('schools.classrooms.store', $school) }}">
+    <form method="POST" action="{{ route('admin.schools.classrooms.store', $school) }}">
         @csrf
 
         @include('classrooms._form', [
@@ -28,7 +28,7 @@
         <div class="card">
             <div class="card-footer d-flex gap-2">
                 <button class="btn btn-primary">Salvar</button>
-                <a href="{{ route('schools.classrooms.index', $school) }}" class="btn btn-outline-secondary">Cancelar</a>
+                <a href="{{ route('admin.schools.classrooms.index', $school) }}" class="btn btn-outline-secondary">Cancelar</a>
             </div>
         </div>
     </form>

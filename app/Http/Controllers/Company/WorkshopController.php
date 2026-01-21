@@ -36,7 +36,7 @@ class WorkshopController extends Controller
         Workshop::create($data);
 
         return redirect()
-            ->route('workshops.index')
+            ->route('admin.workshops.index')
             ->with('success', 'Oficina criada com sucesso.');
     }
 
@@ -53,8 +53,17 @@ class WorkshopController extends Controller
         $workshop->update($data);
 
         return redirect()
-            ->route('workshops.index')
+            ->route('admin.workshops.index')
             ->with('success', 'Oficina atualizada com sucesso.');
+    }
+
+    public function destroy(Workshop $workshop)
+    {
+        $workshop->delete();
+
+        return redirect()
+            ->route('admin.workshops.index')
+            ->with('success', 'Oficina excluída com sucesso.');
     }
 
     // ------------------------------------------------------------------------------------
@@ -63,12 +72,12 @@ class WorkshopController extends Controller
     {
         return $request->validate(
             [
-                'name'        => [
+                'name' => [
                     'required', 'string', 'max:150',
                     Rule::unique('workshops', 'name')->ignore($id),
                 ],
                 'description' => ['nullable', 'string', 'max:5000'],
-                'is_active'   => ['sometimes', 'boolean'],
+                'is_active' => ['sometimes', 'boolean'],
             ],
             [
                 'name.required' => 'Informe o nome da oficina.',
@@ -79,4 +88,3 @@ class WorkshopController extends Controller
         );
     }
 }
-

@@ -6,8 +6,8 @@
   <div class="d-flex justify-content-between align-items-start mb-3">
     <h1 class="mb-0">🏷️ {{ $gradeLevel->name }}</h1>
     <div class="d-flex gap-2">
-      <a class="btn btn-outline-primary" href="{{ route('grade-levels.edit', $gradeLevel) }}">Editar</a>
-      <a class="btn btn-link" href="{{ route('grade-levels.index') }}">← Voltar</a>
+      <a class="btn btn-outline-primary" href="{{ route('admin.grade-levels.edit', $gradeLevel) }}">Editar</a>
+      <a class="btn btn-link" href="{{ route('admin.grade-levels.index') }}">← Voltar</a>
     </div>
   </div>
 
@@ -47,7 +47,7 @@
       <div class="card h-100">
         <div class="card-header">Ações rápidas</div>
         <div class="card-body">
-          <form action="{{ route('grade-levels.destroy', $gradeLevel) }}" method="POST" onsubmit="return confirm('Excluir este ano escolar?')">
+          <form action="{{ route('admin.grade-levels.destroy', $gradeLevel) }}" method="POST" onsubmit="return confirm('Excluir este ano escolar?')">
             @csrf
             @method('DELETE')
             <button type="submit" class="btn btn-outline-danger">Excluir</button>

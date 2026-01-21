@@ -11,14 +11,14 @@
             </div>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('schools.dashboard', $school) }}" class="btn btn-outline-dark">
+            <a href="{{ route('admin.schools.dashboard', $school) }}" class="btn btn-outline-dark">
                 Voltar para escola
             </a>
         </div>
     </div>
 
     {{-- Filtros de período (opcional) --}}
-    <form method="GET" action="{{ route('schools.grade-level-students.index', [$school, $gradeLevel]) }}"
+    <form method="GET" action="{{ route('admin.schools.grade-level-students.index', [$school, $gradeLevel]) }}"
         class="row g-2 mb-3">
         <div class="col-md-3">
             <input type="date" name="start_date" class="form-control" value="{{ $filters['start_date'] ?? '' }}"
@@ -71,7 +71,7 @@
 
                                 <td class="text-end">
                                     @if (Route::has('students.show'))
-                                        <a href="{{ route('students.show', $student) }}"
+                                        <a href="{{ route('admin.students.show', $student) }}"
                                             class="btn btn-sm btn-outline-primary">
                                             Ver aluno
                                         </a>

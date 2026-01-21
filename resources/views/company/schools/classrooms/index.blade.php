@@ -17,10 +17,10 @@
         </div>
 
         <div class="d-flex gap-2 flex-wrap">
-            <a class="btn btn-primary" href="{{ route('schools.groups-wizard.create', $school) }}">
+            <a class="btn btn-primary" href="{{ route('admin.schools.groups-wizard.create', $school) }}">
                 Novo grupo (helper)
             </a>
-            <a class="btn btn-primary" href="{{ route('schools.classrooms.create', $school) }}">
+            <a class="btn btn-primary" href="{{ route('admin.schools.classrooms.create', $school) }}">
                 Novo grupo
             </a>
             {{-- Espaço futuro: botão do planner de grupos --}}
@@ -52,7 +52,7 @@
                 <button class="btn btn-primary w-100">
                     Filtrar
                 </button>
-                <a href="{{ route('schools.classrooms.index', $school) }}" class="btn btn-outline-secondary w-100"
+                <a href="{{ route('admin.schools.classrooms.index', $school) }}" class="btn btn-outline-secondary w-100"
                     title="Limpar filtros">
                     Limpar
                 </a>
@@ -134,7 +134,7 @@
                             </td>
 
                             <td class="text-end">
-                                <a href="{{ route('schools.classrooms.show', [$school, $classroom]) }}"
+                                <a href="{{ route('admin.schools.classrooms.show', [$school, $classroom]) }}"
                                     class="btn btn-sm btn-outline-primary">
                                     Ver
                                 </a>

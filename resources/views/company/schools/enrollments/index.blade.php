@@ -10,11 +10,11 @@
         </div>
 
         <div class="d-flex gap-2">
-            <a href="{{ route('schools.enrollments.create', $school) }}" class="btn btn-primary">
+            <a href="{{ route('admin.schools.enrollments.create', $school) }}" class="btn btn-primary">
                 Nova matrícula
             </a>
 
-            <form method="POST" action="{{ route('schools.enrollments.generate-pre', $school) }}">
+            <form method="POST" action="{{ route('admin.schools.enrollments.generate-pre', $school) }}">
                 @csrf
                 <input type="hidden" name="from_year" value="{{ $yr }}">
                 <button class="btn btn-outline-secondary" type="submit" title="Gera pré-matrículas para o ano seguinte">
@@ -25,7 +25,7 @@
     </div>
 
     {{-- Filtros --}}
-    <form method="GET" action="{{ route('schools.enrollments.index', $school) }}"
+    <form method="GET" action="{{ route('admin.schools.enrollments.index', $school) }}"
         class="row gy-2 gx-2 align-items-end mb-3">
         <div class="col-md-4">
             <label class="form-label">Buscar</label>
@@ -94,12 +94,12 @@
                             </td>
                             <td class="text-end">
                                 <div class="btn-group">
-                                    <a href="{{ route('schools.enrollments.show', [$school, $enr]) }}"
+                                    <a href="{{ route('admin.schools.enrollments.show', [$school, $enr]) }}"
                                         class="btn btn-sm btn-outline-secondary">
                                         Ver
                                     </a>
 
-                                    <a href="{{ route('schools.enrollments.edit', [$school, $enr]) }}"
+                                    <a href="{{ route('admin.schools.enrollments.edit', [$school, $enr]) }}"
                                         class="btn btn-sm btn-outline-primary">
                                         Status
                                     </a>
@@ -107,7 +107,7 @@
                                     {{-- Pré-matrícula -> matriculado --}}
                                     @if ($enr->status === \App\Models\StudentEnrollment::STATUS_PRE_ENROLLED)
                                         <form method="POST"
-                                            action="{{ route('schools.enrollments.confirm', [$school, $enr]) }}">
+                                            action="{{ route('admin.schools.enrollments.confirm', [$school, $enr]) }}">
                                             @csrf
                                             <button class="btn btn-sm btn-outline-success" type="submit">Efetivar</button>
                                         </form>
@@ -119,7 +119,7 @@
                                             [\App\Models\StudentEnrollment::STATUS_PRE_ENROLLED, \App\Models\StudentEnrollment::STATUS_ENROLLED],
                                             true))
                                         <form method="POST"
-                                            action="{{ route('schools.enrollments.start-course', [$school, $enr]) }}">
+                                            action="{{ route('admin.schools.enrollments.start-course', [$school, $enr]) }}">
                                             @csrf
                                             <button class="btn btn-sm btn-outline-success" type="submit">Iniciar
                                                 curso</button>

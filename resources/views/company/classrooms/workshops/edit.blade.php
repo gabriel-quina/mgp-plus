@@ -9,7 +9,7 @@
     <div class="alert alert-danger"><ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>
   @endif
 
-  <form method="POST" action="{{ route('classrooms.workshops.update', [$classroom, $workshop]) }}" class="row g-3">
+  <form method="POST" action="{{ route('admin.classrooms.workshops.update', [$classroom, $workshop]) }}" class="row g-3">
     @csrf @method('PUT')
     <div class="col-12 col-md-3">
       <label class="form-label">Capacidade <span class="text-danger">*</span></label>
@@ -20,7 +20,7 @@
 
     <div class="col-12 d-flex gap-2">
       <button class="btn btn-primary" type="submit">Salvar</button>
-      <a href="{{ route('classrooms.show', $classroom) }}" class="btn btn-outline-secondary">Voltar</a>
+      <a href="{{ route('admin.classrooms.show', $classroom) }}" class="btn btn-outline-secondary">Voltar</a>
     </div>
   </form>
 @endsection

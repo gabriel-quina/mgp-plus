@@ -9,10 +9,10 @@
             <small class="text-muted">{{ $school->name }}</small>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('schools.enrollments.edit', [$school, $enrollment]) }}" class="btn btn-outline-primary">
+            <a href="{{ route('admin.schools.enrollments.edit', [$school, $enrollment]) }}" class="btn btn-outline-primary">
                 Alterar status
             </a>
-            <a href="{{ route('schools.enrollments.index', $school) }}" class="btn btn-outline-secondary">
+            <a href="{{ route('admin.schools.enrollments.index', $school) }}" class="btn btn-outline-secondary">
                 Voltar
             </a>
         </div>

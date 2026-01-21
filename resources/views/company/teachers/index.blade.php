@@ -7,17 +7,17 @@
     <h3 class="mb-0">Professores</h3>
 
     <div class="d-flex gap-2">
-      <a href="{{ route('teachers.index', request()->query()) }}" class="btn btn-outline-secondary">
+      <a href="{{ route('admin.teachers.index', request()->query()) }}" class="btn btn-outline-secondary">
         Atualizar
       </a>
-      <a href="{{ route('teachers.create') }}" class="btn btn-primary">
+      <a href="{{ route('admin.teachers.create') }}" class="btn btn-primary">
         Novo Professor
       </a>
     </div>
   </header>
 
   {{-- Filtros --}}
-  <form method="GET" action="{{ route('teachers.index') }}" class="mb-3">
+  <form method="GET" action="{{ route('admin.teachers.index') }}" class="mb-3">
     <div class="row g-2">
       <div class="col-12 col-md-6">
         <input
@@ -46,7 +46,7 @@
       </div>
 
       <div class="col-6 col-md-2">
-        <a href="{{ route('teachers.index') }}" class="btn btn-outline-secondary w-100">
+        <a href="{{ route('admin.teachers.index') }}" class="btn btn-outline-secondary w-100">
           Limpar
         </a>
       </div>
@@ -89,13 +89,13 @@
                 </td>
                 <td class="text-end">
                   <div class="d-inline-flex flex-wrap gap-2 justify-content-end">
-                    <a href="{{ route('teachers.show', $teacher) }}" class="btn btn-sm btn-outline-info">
+                    <a href="{{ route('admin.teachers.show', $teacher) }}" class="btn btn-sm btn-outline-info">
                       Ver
                     </a>
-                    <a href="{{ route('teachers.edit', $teacher) }}" class="btn btn-sm btn-outline-primary">
+                    <a href="{{ route('admin.teachers.edit', $teacher) }}" class="btn btn-sm btn-outline-primary">
                       Editar
                     </a>
-                    <form action="{{ route('teachers.destroy', $teacher) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir este professor?');" class="d-inline">
+                    <form action="{{ route('admin.teachers.destroy', $teacher) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir este professor?');" class="d-inline">
                       @csrf
                       @method('DELETE')
                       <button type="submit" class="btn btn-sm btn-outline-danger">

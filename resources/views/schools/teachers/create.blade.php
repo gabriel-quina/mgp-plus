@@ -7,15 +7,15 @@
         <h3 class="mb-0">Novo Professor</h3>
 
         <div class="d-flex gap-2">
-            <a href="{{ route('admin.teachers.index') }}" class="btn btn-outline-secondary">
+            <a href="{{ route('teachers.index') }}" class="btn btn-outline-secondary">
                 Voltar
             </a>
         </div>
     </header>
 
-    <form method="POST" action="{{ route('admin.teachers.store') }}">
+    <form method="POST" action="{{ route('teachers.store') }}">
         @csrf
-        @include('company.teachers._form', [
+        @include('teachers._form', [
             'submitLabel' => 'Salvar',
         ])
     </form>

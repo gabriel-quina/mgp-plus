@@ -141,7 +141,7 @@
 
   <div class="col-12 d-flex gap-2">
     <button class="btn btn-primary" type="submit">{{ $submitLabel ?? 'Salvar' }}</button>
-    <a href="{{ route('schools.students.index', $school) }}" class="btn btn-outline-secondary">Cancelar</a>
+    <a href="{{ route('admin.schools.students.index', $school) }}" class="btn btn-outline-secondary">Cancelar</a>
   </div>
 </div>
 

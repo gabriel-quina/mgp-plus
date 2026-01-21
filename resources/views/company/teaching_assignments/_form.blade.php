@@ -92,7 +92,7 @@
   </div>
 
   <div class="card-footer d-flex justify-content-between">
-    <a href="{{ route('teachers.show', $teacher) }}" class="btn btn-outline-secondary">Cancelar</a>
+    <a href="{{ route('admin.teachers.show', $teacher) }}" class="btn btn-outline-secondary">Cancelar</a>
     <button type="submit" class="btn btn-primary">{{ $submitLabel ?? 'Salvar' }}</button>
   </div>
 </div>

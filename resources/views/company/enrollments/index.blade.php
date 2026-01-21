@@ -10,7 +10,7 @@
 
     @include('partials.messages')
 
-    <form method="GET" action="{{ route('enrollments.index') }}" class="row g-2 mb-3">
+    <form method="GET" action="{{ route('admin.enrollments.index') }}" class="row g-2 mb-3">
         <div class="col-md-3">
             <input type="text" name="q" value="{{ $q }}" class="form-control"
                 placeholder="Buscar aluno (nome, CPF, e-mail)">

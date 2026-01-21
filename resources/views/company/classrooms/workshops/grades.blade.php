@@ -9,7 +9,7 @@
     <div class="alert alert-danger"><ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>
   @endif
 
-  <form method="POST" action="{{ route('classrooms.workshops.grades.update', [$classroom, $workshop]) }}">
+  <form method="POST" action="{{ route('admin.classrooms.workshops.grades.update', [$classroom, $workshop]) }}">
     @csrf @method('PUT')
 
     <div class="card mb-3">
@@ -33,7 +33,7 @@
 
     <div class="d-flex gap-2">
       <button class="btn btn-primary" type="submit">Salvar</button>
-      <a href="{{ route('classrooms.show', $classroom) }}" class="btn btn-outline-secondary">Voltar</a>
+      <a href="{{ route('admin.classrooms.show', $classroom) }}" class="btn btn-outline-secondary">Voltar</a>
     </div>
   </form>
 @endsection

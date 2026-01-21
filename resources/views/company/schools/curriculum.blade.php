@@ -20,7 +20,7 @@
 
   <div class="card mb-4">
     <div class="card-body">
-      <form method="get" action="{{ route('schools.curriculum.edit', $school->id) }}" class="row g-3">
+      <form method="get" action="{{ route('admin.schools.curriculum.edit', $school->id) }}" class="row g-3">
         <div class="col-auto">
           <label for="period" class="col-form-label">Período letivo</label>
         </div>
@@ -31,7 +31,7 @@
           <button class="btn btn-outline-primary">Carregar</button>
         </div>
         <div class="col-auto">
-          <a href="{{ route('schools.index') }}" class="btn btn-link">Voltar às escolas</a>
+          <a href="{{ route('admin.schools.index') }}" class="btn btn-link">Voltar às escolas</a>
         </div>
       </form>
     </div>
@@ -40,7 +40,7 @@
   @if (!$period)
     <div class="alert alert-info">Informe o período letivo acima para configurar a matriz.</div>
   @else
-    <form method="post" action="{{ route('schools.curriculum.update', $school->id) }}">
+    <form method="post" action="{{ route('admin.schools.curriculum.update', $school->id) }}">
       @csrf
       <input type="hidden" name="academic_period" value="{{ $period }}">
 

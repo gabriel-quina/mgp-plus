@@ -9,4 +9,6 @@ Route::controller(WorkshopController::class)->group(function () {
     Route::post('/oficinas', 'store')->name('workshops.store');
     Route::get('/oficinas/{workshop}/editar', 'edit')->whereNumber('workshop')->name('workshops.edit');
     Route::put('/oficinas/{workshop}', 'update')->whereNumber('workshop')->name('workshops.update');
+    Route::delete('oficinas/{workshop}', [WorkshopController::class, 'destroy'])
+    ->name('workshops.destroy');
 });

@@ -14,13 +14,13 @@
         </div>
     @endif
 
-    <form action="{{ route('cities.store') }}" method="POST">
+    <form action="{{ route('admin.cities.store') }}" method="POST">
         @csrf
-        @include('cities._form')
+        @include('company.cities._form')
 
         <div class="d-flex gap-2">
             <button type="submit" class="btn btn-primary">Salvar</button>
-            <a href="{{ route('cities.index') }}" class="btn btn-secondary">Cancelar</a>
+            <a href="{{ route('admin.cities.index') }}" class="btn btn-secondary">Cancelar</a>
         </div>
     </form>
 </div>

@@ -23,7 +23,7 @@ class TeacherCityAccessController extends Controller
             ->when(count($used) > 0, fn($q) => $q->whereNotIn('id', $used))
             ->pluck('name', 'id');
 
-        return view('teacher_city_access.create', compact('teacher', 'cities'));
+        return view('company.teacher_city_access.create', compact('teacher', 'cities'));
     }
 
     public function store(Teacher $teacher, StoreTeacherCityAccessRequest $request)
@@ -31,7 +31,7 @@ class TeacherCityAccessController extends Controller
         $teacher->cityAccesses()->create($request->validated());
 
         return redirect()
-            ->route('teachers.show', $teacher)
+            ->route('admin.teachers.show', $teacher)
             ->with('success', 'Cidade adicionada ao acesso do professor.');
     }
 
@@ -43,7 +43,7 @@ class TeacherCityAccessController extends Controller
         $teacher_city_access->delete();
 
         return redirect()
-            ->route('teachers.show', $teacher)
+            ->route('admin.teachers.show', $teacher)
             ->with('success', 'Acesso à cidade removido com sucesso.');
     }
 }

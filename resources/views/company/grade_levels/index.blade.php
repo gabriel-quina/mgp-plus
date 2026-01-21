@@ -4,7 +4,7 @@
 <header class="d-flex align-items-center justify-content-between mb-4">
     <h3 class="mb-0">Anos escolares</h3>
     <div class="d-flex gap-2">
-        <a href="{{ route('grade-levels.create') }}" class="btn btn-primary">Novo ano</a>
+        <a href="{{ route('admin.grade-levels.create') }}" class="btn btn-primary">Novo ano</a>
         <a href="{{ url()->current() }}" class="btn btn-outline-secondary">Atualizar</a>
     </div>
 </header>
@@ -55,14 +55,14 @@
                             </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center flex-wrap gap-2">
-                                    @if (Route::has('grade-levels.show'))
-                                        <a href="{{ route('grade-levels.show', $l) }}" class="btn btn-sm btn-outline-info">Ver</a>
+                                    @if (Route::has('admin.grade-levels.show'))
+                                        <a href="{{ route('admin.grade-levels.show', $l) }}" class="btn btn-sm btn-outline-info">Ver</a>
                                     @endif
-                                    @if (Route::has('grade-levels.edit'))
-                                        <a href="{{ route('grade-levels.edit', $l) }}" class="btn btn-sm btn-outline-primary">Editar</a>
+                                    @if (Route::has('admin.grade-levels.edit'))
+                                        <a href="{{ route('admin.grade-levels.edit', $l) }}" class="btn btn-sm btn-outline-primary">Editar</a>
                                     @endif
-                                    @if (Route::has('grade-levels.destroy'))
-                                        <form action="{{ route('grade-levels.destroy', $l) }}" method="POST" class="d-inline"
+                                    @if (Route::has('admin.grade-levels.destroy'))
+                                        <form action="{{ route('admin.grade-levels.destroy', $l) }}" method="POST" class="d-inline"
                                               onsubmit="return confirm('Tem certeza que deseja excluir este ano escolar?');">
                                             @csrf
                                             @method('DELETE')

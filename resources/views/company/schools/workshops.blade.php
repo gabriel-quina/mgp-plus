@@ -12,7 +12,7 @@
         </small>
     </div>
     <div class="d-flex gap-2">
-        <a href="{{ route('schools.dashboard', $school) }}" class="btn btn-outline-secondary">Voltar</a>
+        <a href="{{ route('admin.schools.dashboard', $school) }}" class="btn btn-outline-secondary">Voltar</a>
     </div>
 </header>
 
@@ -32,7 +32,7 @@
     </div>
 @endif
 
-<form method="post" action="{{ route('schools.workshops.update', $school->id) }}">
+<form method="post" action="{{ route('admin.schools.workshops.update', $school->id) }}">
     @csrf
 
     <div class="card">
@@ -64,7 +64,7 @@
 
         <div class="card-footer d-flex gap-2">
             <button type="submit" class="btn btn-primary">Salvar</button>
-            <a href="{{ route('schools.dashboard', $school) }}" class="btn btn-outline-secondary">Voltar</a>
+            <a href="{{ route('admin.schools.dashboard', $school) }}" class="btn btn-outline-secondary">Voltar</a>
         </div>
     </div>
 </form>

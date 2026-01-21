@@ -7,8 +7,8 @@
     <div class="d-flex justify-content-between align-items-start mb-3">
         <h1 class="mb-0">👤 {{ $student->display_name }}</h1>
         <div class="d-flex gap-2">
-            <a class="btn btn-outline-primary" href="{{ route('students.edit', $student->id) }}">Editar</a>
-            <a class="btn btn-link" href="{{ route('students.index') }}">← Voltar</a>
+            <a class="btn btn-outline-primary" href="{{ route('admin.students.edit', $student->id) }}">Editar</a>
+            <a class="btn btn-link" href="{{ route('admin.students.index') }}">← Voltar</a>
         </div>
     </div>
 

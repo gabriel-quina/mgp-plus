@@ -3,14 +3,8 @@
 namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
-
-use App\Http\Requests\StoreTeachingAssignmentRequest;
-use App\Http\Requests\UpdateTeachingAssignmentRequest;
-use App\Models\RoleAssignment;
-use App\Models\School;
-use App\Models\Teacher;
-use App\Models\TeachingAssignment;
-use App\Models\User;
+use App\Http\Requests\{StoreTeachingAssignmentRequest, UpdateTeachingAssignmentRequest};
+use App\Models\{RoleAssignment, School, Teacher, TeachingAssignment, User};
 use Illuminate\Database\QueryException;
 
 class TeachingAssignmentController extends Controller
@@ -42,7 +36,7 @@ class TeachingAssignmentController extends Controller
 
         $assignment = new TeachingAssignment;
 
-        return view('teaching_assignments.create', compact('teacher', 'assignment', 'schools', 'engagements'));
+        return view('company.teaching_assignments.create', compact('teacher', 'assignment', 'schools', 'engagements'));
     }
 
     public function store(Teacher $teacher, StoreTeachingAssignmentRequest $request)
@@ -68,7 +62,7 @@ class TeachingAssignmentController extends Controller
         }
 
         return redirect()
-            ->route('teachers.show', $teacher)
+            ->route('admin.teachers.show', $teacher)
             ->with('success', 'Alocação criada com sucesso e acesso à escola concedido.');
     }
 
@@ -96,7 +90,7 @@ class TeachingAssignmentController extends Controller
             ->orderByDesc('start_date')
             ->get();
 
-        return view('teaching_assignments.edit', [
+        return view('company.teaching_assignments.edit', [
             'teacher' => $teacher,
             'assignment' => $teaching_assignment,
             'schools' => $schools,
@@ -126,7 +120,7 @@ class TeachingAssignmentController extends Controller
         }
 
         return redirect()
-            ->route('teachers.show', $teacher)
+            ->route('admin.teachers.show', $teacher)
             ->with('success', 'Alocação atualizada com sucesso.');
     }
 
@@ -134,15 +128,21 @@ class TeachingAssignmentController extends Controller
     {
         abort_unless($teaching_assignment->teacher_id === $teacher->id, 404);
 
+        $schoolId = $teaching_assignment->school_id;
+
         try {
-            // guarda a escola antes de deletar
-            $schoolId = $teaching_assignment->school_id;
-
             $teaching_assignment->delete();
+        } catch (QueryException $e) {
+            report($e);
 
-            // ✅ RBAC: remove acesso se não houver mais alocações nessa escola
+            return redirect()
+                ->route('admin.teachers.show', $teacher)
+                ->withErrors('Não foi possível excluir esta alocação. Verifique dependências (ex.: aulas).');
+        }
+
+        // RBAC pós-delete: se falhar, não deve impedir o sucesso do delete
+        try {
             if ($schoolId && $teacher->cpf) {
-
                 $user = User::where('cpf', $teacher->cpf)->first();
 
                 if ($user) {
@@ -151,36 +151,30 @@ class TeachingAssignmentController extends Controller
                         ->exists();
 
                     if (! $stillAssigned) {
-                        // Opção 1: se você tem helper no User
                         if (method_exists($user, 'removeRole')) {
                             $school = School::find($schoolId);
                             if ($school) {
                                 $user->removeRole('school_teacher', $school);
                             }
                         } else {
-                            // Opção 2: remoção direta no pivot do seu RBAC
                             RoleAssignment::query()
                                 ->where('user_id', $user->id)
                                 ->where('scope_type', School::class)
                                 ->where('scope_id', $schoolId)
                                 ->whereHas('role', function ($q) {
-                                    $q->where('slug', 'school_teacher');
+                                    $q->where('name', 'school_teacher'); // <= troque slug por name
                                 })
                                 ->delete();
                         }
                     }
                 }
             }
-
-            return redirect()
-                ->route('teachers.show', $teacher)
-                ->with('success', 'Alocação excluída com sucesso e acesso à escola atualizado.');
-        } catch (QueryException $e) {
+        } catch (\Throwable $e) {
             report($e);
-
-            return redirect()
-                ->route('teachers.show', $teacher)
-                ->withErrors('Não foi possível excluir esta alocação. Verifique dependências (ex.: aulas).');
         }
+
+        return redirect()
+            ->route('admin.teachers.show', $teacher)
+            ->with('success', 'Alocação excluída com sucesso e acesso à escola atualizado.');
     }
 }

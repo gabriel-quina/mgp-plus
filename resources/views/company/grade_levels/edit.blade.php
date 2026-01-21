@@ -5,7 +5,7 @@
 @section('content')
   <div class="d-flex justify-content-between align-items-start mb-3">
     <h1 class="mb-0">Editar: {{ $gradeLevel->name }}</h1>
-    <a class="btn btn-link" href="{{ route('grade-levels.index') }}">← Voltar</a>
+    <a class="btn btn-link" href="{{ route('admin.grade-levels.index') }}">← Voltar</a>
   </div>
 
   @if (session('success'))
@@ -17,10 +17,10 @@
     </div>
   @endif
 
-  <form method="POST" action="{{ route('grade-levels.update', $gradeLevel) }}">
+  <form method="POST" action="{{ route('admin.grade-levels.update', $gradeLevel) }}">
     @csrf
     @method('PUT')
-    @include('grade_levels._form', ['submitLabel' => 'Salvar alterações'])
+    @include('company.grade_levels._form', ['submitLabel' => 'Salvar alterações'])
   </form>
 @endsection
 

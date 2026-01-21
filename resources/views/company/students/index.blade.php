@@ -7,8 +7,8 @@
     <header class="d-flex align-items-center justify-content-between mb-3">
         <h1 class="mb-0">Alunos</h1>
         <div class="d-flex gap-2">
-            <a href="{{ route('students.create') }}" class="btn btn-primary">Novo aluno</a>
-            <a href="{{ route('students.index') }}" class="btn btn-outline-secondary">Atualizar</a>
+            <a href="{{ route('admin.students.create') }}" class="btn btn-primary">Novo aluno</a>
+            <a href="{{ route('admin.students.index') }}" class="btn btn-outline-secondary">Atualizar</a>
         </div>
     </header>
 
@@ -25,7 +25,7 @@
         </div>
     @endif
 
-    <form method="get" action="{{ route('students.index') }}" class="row gy-2 gx-2 align-items-end mb-3">
+    <form method="get" action="{{ route('admin.students.index') }}" class="row gy-2 gx-2 align-items-end mb-3">
         <div class="col-12 col-sm-6 col-lg-4">
             <label for="q" class="form-label">Buscar (nome, CPF, e-mail)</label>
             <input type="text" id="q" name="q" value="{{ $q ?? '' }}" class="form-control"
@@ -36,7 +36,7 @@
         </div>
         @if (($q ?? '') !== '')
             <div class="col-12 col-sm-auto">
-                <a class="btn btn-link" href="{{ route('students.index') }}">Limpar</a>
+                <a class="btn btn-link" href="{{ route('admin.students.index') }}">Limpar</a>
             </div>
         @endif
     </form>
@@ -81,9 +81,9 @@
                                 <td>
                                     <div class="d-flex flex-wrap gap-2">
                                         <a class="btn btn-sm btn-outline-info"
-                                            href="{{ route('students.show', $student->id) }}">Ver</a>
+                                            href="{{ route('admin.students.show', $student->id) }}">Ver</a>
                                         <a class="btn btn-sm btn-outline-primary"
-                                            href="{{ route('students.edit', $student->id) }}">Editar</a>
+                                            href="{{ route('admin.students.edit', $student->id) }}">Editar</a>
                                     </div>
                                 </td>
                             </tr>

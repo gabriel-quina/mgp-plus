@@ -6,11 +6,11 @@
   <header class="d-flex align-items-center justify-content-between mb-4">
     <h3 class="mb-0">Professor: {{ $teacher->display_name }}</h3>
     <div class="d-flex flex-wrap gap-2">
-      <a href="{{ route('admin.teachers.index') }}" class="btn btn-outline-secondary">Voltar</a>
-      <a href="{{ route('admin.teachers.edit', $teacher) }}" class="btn btn-outline-primary">Editar</a>
-      <a href="{{ route('admin.teacher-engagements.create', $teacher) }}" class="btn btn-primary">Novo vínculo</a>
-      <a href="{{ route('admin.teacher-city-access.create', $teacher) }}" class="btn btn-primary">Adicionar cidade</a>
-      <a href="{{ route('admin.teaching-assignments.create', $teacher) }}" class="btn btn-primary">Nova alocação</a>
+      <a href="{{ route('teachers.index') }}" class="btn btn-outline-secondary">Voltar</a>
+      <a href="{{ route('teachers.edit', $teacher) }}" class="btn btn-outline-primary">Editar</a>
+      <a href="{{ route('teacher-engagements.create', $teacher) }}" class="btn btn-primary">Novo vínculo</a>
+      <a href="{{ route('teacher-city-access.create', $teacher) }}" class="btn btn-primary">Adicionar cidade</a>
+      <a href="{{ route('teaching-assignments.create', $teacher) }}" class="btn btn-primary">Nova alocação</a>
     </div>
   </header>
 
@@ -64,7 +64,7 @@
   <div class="card mb-4">
     <div class="p-3 d-flex align-items-center justify-content-between">
       <h5 class="mb-0">Vínculos</h5>
-      <a href="{{ route('admin.teacher-engagements.create', $teacher) }}" class="btn btn-sm btn-primary">Novo vínculo</a>
+      <a href="{{ route('teacher-engagements.create', $teacher) }}" class="btn btn-sm btn-primary">Novo vínculo</a>
     </div>
     <div class="table-responsive">
       <table class="table align-middle mb-0">
@@ -93,8 +93,8 @@
               <td class="text-nowrap">{{ $e->notes ?? '—' }}</td>
               <td class="text-end">
                 <div class="d-flex flex-wrap justify-content-end gap-2">
-                  <a href="{{ route('admin.teacher-engagements.edit', [$teacher, $e]) }}" class="btn btn-sm btn-outline-primary">Editar</a>
-                  <form action="{{ route('admin.teacher-engagements.destroy', [$teacher, $e]) }}" method="POST" onsubmit="return confirm('Remover este vínculo?');">
+                  <a href="{{ route('teacher-engagements.edit', [$teacher, $e]) }}" class="btn btn-sm btn-outline-primary">Editar</a>
+                  <form action="{{ route('teacher-engagements.destroy', [$teacher, $e]) }}" method="POST" onsubmit="return confirm('Remover este vínculo?');">
                     @csrf @method('DELETE')
                     <button class="btn btn-sm btn-outline-danger">Excluir</button>
                   </form>
@@ -116,7 +116,7 @@
   <div class="card mb-4">
     <div class="p-3 d-flex align-items-center justify-content-between">
       <h5 class="mb-0">Acessos de cidades</h5>
-      <a href="{{ route('admin.teacher-city-access.create', $teacher) }}" class="btn btn-sm btn-primary">Adicionar cidade</a>
+      <a href="{{ route('teacher-city-access.create', $teacher) }}" class="btn btn-sm btn-primary">Adicionar cidade</a>
     </div>
     <div class="table-responsive">
       <table class="table align-middle mb-0">
@@ -133,7 +133,7 @@
               <td>{{ $acc->city?->name ?? '—' }}</td>
               <td>{{ $acc->city?->state?->uf ?? '—' }}</td>
               <td class="text-end">
-                <form action="{{ route('admin.teacher-city-access.destroy', [$teacher, $acc]) }}" method="POST" onsubmit="return confirm('Remover acesso a esta cidade?');">
+                <form action="{{ route('teacher-city-access.destroy', [$teacher, $acc]) }}" method="POST" onsubmit="return confirm('Remover acesso a esta cidade?');">
                   @csrf @method('DELETE')
                   <button class="btn btn-sm btn-outline-danger">Remover</button>
                 </form>
@@ -157,7 +157,7 @@
   <div class="card mb-4">
     <div class="p-3 d-flex align-items-center justify-content-between">
       <h5 class="mb-0">Alocações em escolas</h5>
-      <a href="{{ route('admin.teaching-assignments.create', $teacher) }}" class="btn btn-sm btn-primary">Nova alocação</a>
+      <a href="{{ route('teaching-assignments.create', $teacher) }}" class="btn btn-sm btn-primary">Nova alocação</a>
     </div>
     <div class="table-responsive">
       <table class="table align-middle mb-0">
@@ -192,8 +192,8 @@
               </td>
               <td class="text-end">
                 <div class="d-flex flex-wrap justify-content-end gap-2">
-                  <a href="{{ route('admin.teaching-assignments.edit', [$teacher, $a]) }}" class="btn btn-sm btn-outline-primary">Editar</a>
-                  <form action="{{ route('admin.teaching-assignments.destroy', [$teacher, $a]) }}" method="POST" onsubmit="return confirm('Remover esta alocação?');">
+                  <a href="{{ route('teaching-assignments.edit', [$teacher, $a]) }}" class="btn btn-sm btn-outline-primary">Editar</a>
+                  <form action="{{ route('teaching-assignments.destroy', [$teacher, $a]) }}" method="POST" onsubmit="return confirm('Remover esta alocação?');">
                     @csrf @method('DELETE')
                     <button class="btn btn-sm btn-outline-danger">Excluir</button>
                   </form>

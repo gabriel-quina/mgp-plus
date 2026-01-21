@@ -31,7 +31,7 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ route('schools.enrollments.update', [$school, $enrollment]) }}" class="card">
+    <form method="POST" action="{{ route('admin.schools.enrollments.update', [$school, $enrollment]) }}" class="card">
         @csrf
         @method('PUT')
 
@@ -66,7 +66,7 @@
 
         <div class="card-footer d-flex gap-2">
             <button class="btn btn-primary" type="submit">Salvar</button>
-            <a href="{{ route('schools.enrollments.index', $school) }}" class="btn btn-outline-secondary">Cancelar</a>
+            <a href="{{ route('admin.schools.enrollments.index', $school) }}" class="btn btn-outline-secondary">Cancelar</a>
         </div>
     </form>
 @endsection

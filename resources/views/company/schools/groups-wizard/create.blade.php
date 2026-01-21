@@ -17,7 +17,7 @@
             <h1 class="h3 mb-1">Novo grupo (helper)</h1>
             <div class="text-muted">{{ $school->short_name ?? $school->name }}</div>
         </div>
-        <a class="btn btn-outline-secondary" href="{{ route('schools.classrooms.index', $school) }}">Voltar</a>
+        <a class="btn btn-outline-secondary" href="{{ route('admin.schools.classrooms.index', $school) }}">Voltar</a>
     </div>
 
     <div class="row g-3">
@@ -25,7 +25,7 @@
             <div class="card mb-3">
                 <div class="card-header">Parâmetros</div>
                 <div class="card-body">
-                    <form method="GET" action="{{ route('schools.groups-wizard.create', $school) }}" class="mb-3">
+                    <form method="GET" action="{{ route('admin.schools.groups-wizard.create', $school) }}" class="mb-3">
                         <div class="row g-2">
                             <div class="col-12">
                                 <label class="form-label">Oficina</label>
@@ -75,12 +75,12 @@
                             <div class="col-12 d-flex gap-2">
                                 <button class="btn btn-outline-primary">Atualizar prévia</button>
                                 <a class="btn btn-outline-secondary"
-                                    href="{{ route('schools.groups-wizard.create', $school) }}">Limpar</a>
+                                    href="{{ route('admin.schools.groups-wizard.create', $school) }}">Limpar</a>
                             </div>
                         </div>
                     </form>
 
-                    <form method="POST" action="{{ route('schools.groups-wizard.store', $school) }}">
+                    <form method="POST" action="{{ route('admin.schools.groups-wizard.store', $school) }}">
                         @csrf
                         <input type="hidden" name="workshop_id" value="{{ $selectedWorkshop }}">
                         @foreach ($selectedGrades as $id)

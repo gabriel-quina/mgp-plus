@@ -2,26 +2,17 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        /*
-        |--------------------------------------------------------------------------
-        | STATES
-        |--------------------------------------------------------------------------
-        */
         Schema::table('states', function (Blueprint $table) {
             $table->unique('uf', 'uq_states_uf');
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | CITIES
-        |--------------------------------------------------------------------------
-        */
         Schema::table('cities', function (Blueprint $table) {
             $table->index('state_id', 'idx_cities_state_id');
             $table->unique(['state_id', 'name'], 'uq_cities_state_name');
@@ -31,11 +22,6 @@ return new class extends Migration
                 ->cascadeOnDelete();
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | SCHOOLS
-        |--------------------------------------------------------------------------
-        */
         Schema::table('schools', function (Blueprint $table) {
             $table->index('city_id', 'idx_schools_city_id');
             $table->index('administrative_dependency', 'idx_schools_admin_dep');
@@ -45,30 +31,15 @@ return new class extends Migration
                 ->restrictOnDelete();
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | GRADE LEVELS
-        |--------------------------------------------------------------------------
-        */
         Schema::table('grade_levels', function (Blueprint $table) {
             $table->index('sequence', 'idx_grade_levels_sequence');
             $table->index('is_active', 'idx_grade_levels_is_active');
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | WORKSHOPS
-        |--------------------------------------------------------------------------
-        */
         Schema::table('workshops', function (Blueprint $table) {
             $table->index('is_active', 'idx_workshops_is_active');
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | SCHOOL_WORKSHOPS (contracts)
-        |--------------------------------------------------------------------------
-        */
         Schema::table('school_workshops', function (Blueprint $table) {
             $table->index('school_id', 'idx_school_workshops_school_id');
             $table->index('workshop_id', 'idx_school_workshops_workshop_id');
@@ -85,32 +56,17 @@ return new class extends Migration
                 ->restrictOnDelete();
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | STUDENTS
-        |--------------------------------------------------------------------------
-        */
         Schema::table('students', function (Blueprint $table) {
             $table->unique('cpf', 'uq_students_cpf');
             $table->index('name', 'idx_students_name');
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | TEACHERS
-        |--------------------------------------------------------------------------
-        */
         Schema::table('teachers', function (Blueprint $table) {
             $table->unique('cpf', 'uq_teachers_cpf');
             $table->index('is_active', 'idx_teachers_is_active');
             $table->index('name', 'idx_teachers_name');
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | STUDENT_ENROLLMENTS
-        |--------------------------------------------------------------------------
-        */
         Schema::table('student_enrollments', function (Blueprint $table) {
             $table->index('student_id', 'idx_student_enrollments_student_id');
             $table->index('school_id', 'idx_student_enrollments_school_id');
@@ -119,7 +75,6 @@ return new class extends Migration
             $table->index('shift', 'idx_student_enrollments_shift');
             $table->index('status', 'idx_student_enrollments_status');
 
-            // útil pra achar "aguardando turma" por escola/ano/turno/status
             $table->index(
                 ['school_id', 'academic_year', 'shift', 'status'],
                 'idx_student_enrollments_school_year_shift_status'
@@ -142,11 +97,6 @@ return new class extends Migration
                 ->nullOnDelete();
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | CLASSROOMS
-        |--------------------------------------------------------------------------
-        */
         Schema::table('classrooms', function (Blueprint $table) {
             $table->index('school_id', 'idx_classrooms_school_id');
             $table->index('school_workshop_id', 'idx_classrooms_school_workshop_id');
@@ -166,11 +116,6 @@ return new class extends Migration
                 ->restrictOnDelete();
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | PIVOT: classroom_grade_level
-        |--------------------------------------------------------------------------
-        */
         Schema::table('classroom_grade_level', function (Blueprint $table) {
             $table->unique(['classroom_id', 'grade_level_id'], 'uq_classroom_grade_level_pair');
             $table->index('grade_level_id', 'idx_classroom_grade_level_grade_level_id');
@@ -184,11 +129,6 @@ return new class extends Migration
                 ->restrictOnDelete();
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | CLASSROOM_MEMBERSHIPS
-        |--------------------------------------------------------------------------
-        */
         Schema::table('classroom_memberships', function (Blueprint $table) {
             $table->index('classroom_id', 'idx_classroom_memberships_classroom_id');
             $table->index('student_enrollment_id', 'idx_classroom_memberships_enrollment_id');
@@ -205,11 +145,6 @@ return new class extends Migration
                 ->cascadeOnDelete();
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | LESSONS
-        |--------------------------------------------------------------------------
-        */
         Schema::table('lessons', function (Blueprint $table) {
             $table->index('teacher_id', 'idx_lessons_teacher_id');
             $table->index(['classroom_id', 'taught_at'], 'idx_lessons_classroom_taught_at');
@@ -223,11 +158,6 @@ return new class extends Migration
                 ->restrictOnDelete();
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | LESSON_ATTENDANCES
-        |--------------------------------------------------------------------------
-        */
         Schema::table('lesson_attendances', function (Blueprint $table) {
             $table->unique(['lesson_id', 'student_enrollment_id'], 'uq_lesson_attendances_pair');
             $table->index('student_enrollment_id', 'idx_lesson_attendances_enrollment_id');
@@ -241,11 +171,6 @@ return new class extends Migration
                 ->cascadeOnDelete();
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | ASSESSMENTS
-        |--------------------------------------------------------------------------
-        */
         Schema::table('assessments', function (Blueprint $table) {
             $table->index(['classroom_id', 'due_at'], 'idx_assessments_classroom_due_at');
 
@@ -254,11 +179,6 @@ return new class extends Migration
                 ->cascadeOnDelete();
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | ASSESSMENT_GRADES
-        |--------------------------------------------------------------------------
-        */
         Schema::table('assessment_grades', function (Blueprint $table) {
             $table->unique(['assessment_id', 'student_enrollment_id'], 'uq_assessment_grades_pair');
             $table->index('student_enrollment_id', 'idx_assessment_grades_enrollment_id');
@@ -272,11 +192,6 @@ return new class extends Migration
                 ->cascadeOnDelete();
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | TEACHER_ENGAGEMENTS
-        |--------------------------------------------------------------------------
-        */
         Schema::table('teacher_engagements', function (Blueprint $table) {
             $table->index('teacher_id', 'idx_teacher_engagements_teacher_id');
             $table->index('city_id', 'idx_teacher_engagements_city_id');
@@ -291,11 +206,6 @@ return new class extends Migration
                 ->nullOnDelete();
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | TEACHER_CITY_ACCESS
-        |--------------------------------------------------------------------------
-        */
         Schema::table('teacher_city_access', function (Blueprint $table) {
             $table->unique(['teacher_id', 'city_id'], 'uq_teacher_city_access_pair');
             $table->index('city_id', 'idx_teacher_city_access_city_id');
@@ -309,11 +219,6 @@ return new class extends Migration
                 ->cascadeOnDelete();
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | TEACHING_ASSIGNMENTS
-        |--------------------------------------------------------------------------
-        */
         Schema::table('teaching_assignments', function (Blueprint $table) {
             $table->unique(['teacher_id', 'school_id', 'academic_year'], 'uq_teaching_assignments_teacher_school_year');
             $table->index(['school_id', 'academic_year'], 'idx_teaching_assignments_school_year');
@@ -332,11 +237,6 @@ return new class extends Migration
                 ->nullOnDelete();
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | RBAC: ROLES / PERMISSIONS / PIVOT
-        |--------------------------------------------------------------------------
-        */
         Schema::table('roles', function (Blueprint $table) {
             $table->unique('name', 'uq_roles_name');
         });
@@ -358,11 +258,6 @@ return new class extends Migration
                 ->cascadeOnDelete();
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | RBAC: ROLE_ASSIGNMENTS
-        |--------------------------------------------------------------------------
-        */
         Schema::table('role_assignments', function (Blueprint $table) {
             $table->index('user_id', 'idx_role_assignments_user_id');
             $table->index('role_id', 'idx_role_assignments_role_id');
@@ -377,18 +272,15 @@ return new class extends Migration
                 ->cascadeOnDelete();
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | USERS / SESSIONS
-        |--------------------------------------------------------------------------
-        */
         Schema::table('users', function (Blueprint $table) {
+            $table->unique('email', 'uq_users_email');
             $table->unique('cpf', 'uq_users_cpf');
             $table->index('is_master', 'idx_users_is_master');
         });
 
+        DB::statement("ALTER TABLE users ADD CONSTRAINT chk_users_email_or_cpf CHECK (email IS NOT NULL OR cpf IS NOT NULL)");
+
         Schema::table('sessions', function (Blueprint $table) {
-            // FK opcional (session pode existir sem user)
             $table->foreign('user_id', 'fk_sessions_user_id')
                 ->references('id')->on('users')
                 ->nullOnDelete();
@@ -397,10 +289,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        /*
-         * Ordem: primeiro dropa FKs, depois uniques/índices.
-         */
-
         Schema::table('sessions', function (Blueprint $table) {
             $table->dropForeign('fk_sessions_user_id');
         });
@@ -579,6 +467,7 @@ return new class extends Migration
         });
 
         Schema::table('users', function (Blueprint $table) {
+            $table->dropUnique('uq_users_email');
             $table->dropUnique('uq_users_cpf');
             $table->dropIndex('idx_users_is_master');
         });

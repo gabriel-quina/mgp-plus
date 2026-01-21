@@ -91,7 +91,7 @@
     </div>
 
     <div class="card-footer d-flex justify-content-between">
-        <a href="{{ route('admin.teachers.index') }}" class="btn btn-outline-secondary">
+        <a href="{{ route('teachers.index') }}" class="btn btn-outline-secondary">
             Cancelar
         </a>
         <button type="submit" class="btn btn-primary">
