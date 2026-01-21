@@ -27,7 +27,7 @@
         <div class="card-header">Atuar como</div>
 
         <div class="card-body">
-            <form class="row gy-3" method="GET" action="{{ route('dashboard') }}">
+            <form class="row gy-3" method="GET" action="{{ route('admin.dashboard') }}">
                 <div class="col-md-4">
                     <label for="scope" class="form-label">Escopo</label>
                     <select id="scope" name="scope" class="form-select" required>
@@ -93,3 +93,4 @@
         </script>
     @endpush
 @endsection
+

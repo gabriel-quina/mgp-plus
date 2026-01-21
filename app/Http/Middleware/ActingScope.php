@@ -13,11 +13,31 @@ class ActingScope
         $user = $request->user();
         $accessibleSchools = $user ? $user->accessibleSchools() : collect();
 
+        /**
+         * REGRA DE OURO:
+         * - /admin* força escopo company (sempre)
+         * - /escola/{school}* força escopo school via hydrateFromRoute()
+         */
+        if ($request->is('admin') || $request->is('admin/*')) {
+            $request->session()->put('acting_scope', 'company');
+            $request->session()->forget('acting_school_id');
+
+            view()->share('actingScope', $request->session()->get('acting_scope'));
+            view()->share('actingSchoolId', $request->session()->get('acting_school_id'));
+            view()->share('scopeSchools', $accessibleSchools);
+
+            return $next($request);
+        }
+
         [$incomingScope, $incomingSchoolId] = $this->extractScopeFromRequest($request);
 
         if ($user && $incomingScope) {
             $this->persistScope($request, $incomingScope, $incomingSchoolId, $accessibleSchools);
         } elseif (! $request->session()->has('acting_scope')) {
+            $this->hydrateFromRoute($request);
+        } else {
+            // Se já existe acting_scope, e estamos numa rota de escola, atualiza a sessão
+            // (garante que "entrar em escola" sempre fixe school)
             $this->hydrateFromRoute($request);
         }
 
@@ -30,8 +50,10 @@ class ActingScope
 
     private function extractScopeFromRequest(Request $request): array
     {
-        $scope = $request->input('scope');
-        $schoolId = $request->input('school_id');
+        // Como seu form é GET, priorizamos querystring.
+        // (input() também funciona em muitos casos, mas query() é o correto para GET)
+        $scope = $request->query('scope');
+        $schoolId = $request->query('school_id');
 
         if (is_string($scope) && str_starts_with($scope, 'school:')) {
             return ['school', (int) str_replace('school:', '', $scope)];
@@ -110,3 +132,4 @@ class ActingScope
         }
     }
 }
+
