@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
-
 use App\Http\Requests\GradeLevelRequest;
 use App\Models\GradeLevel;
 
@@ -13,12 +12,12 @@ class GradeLevelController extends Controller
     {
         $levels = GradeLevel::orderBy('sequence')->orderBy('name')->paginate(20);
 
-        return view('grade_levels.index', compact('levels'));
+        return view('company.grade_levels.index', compact('levels'));
     }
 
     public function create()
     {
-        return view('grade_levels.create');
+        return view('company.grade_levels.create');
     }
 
     public function store(GradeLevelRequest $request)
@@ -35,12 +34,12 @@ class GradeLevelController extends Controller
 
     public function show(GradeLevel $gradeLevel)
     {
-        return view('grade_levels.show', compact('gradeLevel'));
+        return view('company.grade_levels.show', compact('gradeLevel'));
     }
 
     public function edit(GradeLevel $gradeLevel)
     {
-        return view('grade_levels.edit', compact('gradeLevel'));
+        return view('company.grade_levels.edit', compact('gradeLevel'));
     }
 
     public function update(GradeLevelRequest $request, GradeLevel $gradeLevel)
