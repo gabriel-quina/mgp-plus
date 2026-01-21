@@ -167,7 +167,7 @@
                                 Professores
                             </a>
                         </li>
-
+{{--
 //                        <li class="nav-item">
 //                            <a class="nav-link {{ request()->routeIs('students.*') ? 'active' : '' }}"
 //                                href="{{ route('students.index') }}">
@@ -187,7 +187,7 @@
 //                                href="{{ route('classrooms.index') }}">
 //                                Turmas
 //                            </a>
-//                        </li>
+//                        </li>--}}
                     @endif
                 @elseif ($resolvedScope === 'school')
                     {{-- Links do escopo ESCOLA (somente se tiver school id) --}}
