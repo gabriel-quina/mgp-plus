@@ -94,10 +94,6 @@
                                     <td>{{ $gl->name }}</td>
                                     <td>{{ $gl->classrooms_count }}</td>
                                     <td>{{ $gl->enrollments_count }}</td>
-                                    <td class="text-end">
-                                        <a href="{{ route('admin.schools.grade-level-students.index', [$school, $gl]) }}"
-                                            class="btn btn-sm btn-outline-secondary">Ver</a>
-                                    </td>
                                 </tr>
                             @endforeach
                         @else
