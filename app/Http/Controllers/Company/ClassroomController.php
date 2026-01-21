@@ -15,13 +15,12 @@ class ClassroomController extends Controller
 {
     public function index()
     {
-        $q = request('q', '');
+        $q  = request('q', '');
         $yr = request('year');
         $sh = request('shift');
 
         $classroomsQuery = Classroom::query()
-            ->with(['school', 'gradeLevels'])
-            ->whereNull('parent_classroom_id');
+            ->with(['school', 'gradeLevels']);
 
         if ($q !== '') {
             $classroomsQuery->where('name', 'like', "%{$q}%");
@@ -52,11 +51,10 @@ class ClassroomController extends Controller
     public function create()
     {
         return view('company.classrooms.create', [
-            'schools' => School::orderBy('name')->pluck('name', 'id'),
-            'parentClassrooms' => Classroom::orderBy('name')->pluck('name', 'id'),
-            'gradeLevels' => GradeLevel::orderBy('sequence')->orderBy('name')->pluck('name', 'id'),
-            'workshops' => Workshop::orderBy('name')->pluck('name', 'id'),
-            'defaultYear' => (int) date('Y'),
+            'schools'      => School::orderBy('name')->pluck('name', 'id'),
+            'gradeLevels'  => GradeLevel::orderBy('sequence')->orderBy('name')->pluck('name', 'id'),
+            'workshops'    => Workshop::orderBy('name')->pluck('name', 'id'),
+            'defaultYear'  => (int) date('Y'),
         ]);
     }
 
@@ -65,12 +63,11 @@ class ClassroomController extends Controller
         $data = $request->validated();
 
         $classroom = Classroom::create([
-            'school_id' => (int) $data['school_id'],
-            'parent_classroom_id' => $data['parent_classroom_id'] ?? null,
-            'name' => $data['name'],
-            'shift' => $data['shift'],
-            'is_active' => $request->boolean('is_active'),
-            'academic_year' => (int) $data['academic_year'],
+            'school_id'       => (int) $data['school_id'],
+            'name'            => $data['name'],
+            'shift'           => $data['shift'],
+            'is_active'       => $request->boolean('is_active'),
+            'academic_year'   => (int) $data['academic_year'],
             'grade_level_key' => $data['grade_level_key'],
         ]);
 
@@ -87,12 +84,11 @@ class ClassroomController extends Controller
         $classroom->load(['gradeLevels', 'workshops']);
 
         return view('company.classrooms.edit', [
-            'classroom' => $classroom,
-            'schools' => School::orderBy('name')->pluck('name', 'id'),
-            'parentClassrooms' => Classroom::whereKeyNot($classroom->id)->orderBy('name')->pluck('name', 'id'),
-            'gradeLevels' => GradeLevel::orderBy('sequence')->orderBy('name')->pluck('name', 'id'),
-            'workshops' => Workshop::orderBy('name')->pluck('name', 'id'),
-            'selectedGrades' => $classroom->gradeLevels->pluck('id')->all(),
+            'classroom'         => $classroom,
+            'schools'           => School::orderBy('name')->pluck('name', 'id'),
+            'gradeLevels'       => GradeLevel::orderBy('sequence')->orderBy('name')->pluck('name', 'id'),
+            'workshops'         => Workshop::orderBy('name')->pluck('name', 'id'),
+            'selectedGrades'    => $classroom->gradeLevels->pluck('id')->all(),
             'existingWorkshops' => $classroom->workshops->map(fn ($w) => [
                 'id' => $w->id,
                 'max_students' => $w->pivot->max_students,
@@ -105,12 +101,11 @@ class ClassroomController extends Controller
         $data = $request->validated();
 
         $classroom->update([
-            'school_id' => (int) $data['school_id'],
-            'parent_classroom_id' => $data['parent_classroom_id'] ?? null,
-            'name' => $data['name'],
-            'shift' => $data['shift'],
-            'is_active' => $request->boolean('is_active'),
-            'academic_year' => (int) $data['academic_year'],
+            'school_id'       => (int) $data['school_id'],
+            'name'            => $data['name'],
+            'shift'           => $data['shift'],
+            'is_active'       => $request->boolean('is_active'),
+            'academic_year'   => (int) $data['academic_year'],
             'grade_level_key' => $data['grade_level_key'],
         ]);
 
@@ -142,6 +137,7 @@ class ClassroomController extends Controller
     private function buildWorkshopSyncPayload(array $workshops): array
     {
         $out = [];
+
         foreach ($workshops as $row) {
             if (! empty($row['id'])) {
                 $out[(int) $row['id']] = [
