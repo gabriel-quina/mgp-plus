@@ -64,6 +64,12 @@
                                 <a href="{{ route('admin.schools.show', $school) }}"
                                     class="btn btn-sm btn-outline-primary">Ver</a>
                             @endif
+
+                            @if (Route::has('admin.schools.workshops.index'))
+                                <a href="{{ route('admin.schools.workshops.index', $school) }}"
+                                    class="btn btn-sm btn-outline-primary">Oficinas</a>
+                            @endif
+
                             @if (Route::has('admin.schools.edit'))
                                 <a href="{{ route('admin.schools.edit', $school) }}"
                                     class="btn btn-sm btn-outline-secondary">Editar</a>
@@ -94,3 +100,4 @@
         </div>
     @endif
 @endsection
+

@@ -23,16 +23,14 @@
             <a class="btn btn-primary" href="{{ route('schools.classrooms.create', $school) }}">
                 Novo grupo
             </a>
-            {{-- Espaço futuro: botão do planner de grupos --}}
-            {{-- <a class="btn btn-outline-primary" href="#">Planejar grupos</a> --}}
         </div>
     </div>
 
     <form method="GET" class="card card-body mb-3">
         <div class="row g-2 align-items-end">
             <div class="col-12 col-md-5">
-                <label class="form-label mb-1">Buscar por nome</label>
-                <input type="text" name="q" class="form-control" placeholder="Ex.: 5º A / Grupo Inglês 4º+5º"
+                <label class="form-label mb-1">Buscar</label>
+                <input type="text" name="q" class="form-control" placeholder="Ex.: nome da oficina"
                     value="{{ $q }}">
             </div>
 
@@ -44,7 +42,7 @@
 
             <div class="col-12 col-md-2">
                 <label class="form-label mb-1">Turno</label>
-                <input type="text" name="shift" class="form-control" placeholder="Manhã/Tarde..."
+                <input type="text" name="shift" class="form-control" placeholder="morning/afternoon/evening"
                     value="{{ $sh }}">
             </div>
 
@@ -77,19 +75,10 @@
                 <tbody>
                     @forelse ($classrooms as $classroom)
                         @php
-                            $isGroup = !is_null($classroom->workshop_id ?? null);
-                            $gradeLevels = null;
-
-                            if ($classroom->relationLoaded('gradeLevels') && $classroom->gradeLevels?->count()) {
-                                $gradeLevels = $classroom->gradeLevels;
-                            } elseif (
-                                !empty($classroom->workshop_group_set_id)
-                                && isset($classroom->groupSet)
-                                && optional($classroom->groupSet)->relationLoaded('gradeLevels')
-                                && optional($classroom->groupSet)->gradeLevels?->count()
-                            ) {
-                                $gradeLevels = $classroom->groupSet->gradeLevels;
-                            }
+                            $isGroup = !is_null($classroom->school_workshop_id ?? null);
+                            $gradeLevels = ($classroom->relationLoaded('gradeLevels') && $classroom->gradeLevels?->count())
+                                ? $classroom->gradeLevels
+                                : null;
                         @endphp
                         <tr>
                             <td class="fw-semibold">
@@ -127,9 +116,6 @@
                             </td>
 
                             <td class="text-nowrap text-end">
-                                {{-- No seu ClassroomController MASTER você injeta total_all_students.
-                             Se o SchoolClassroomController fizer igual, mostra.
-                             Caso contrário, fica "—" sem quebrar. --}}
                                 {{ isset($classroom->total_all_students) ? $classroom->total_all_students : '—' }}
                             </td>
 
@@ -158,3 +144,4 @@
         @endif
     </div>
 @endsection
+

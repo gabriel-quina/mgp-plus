@@ -3,158 +3,187 @@
 namespace App\Http\Controllers\Schools;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreClassroomRequest;
 use App\Models\Classroom;
 use App\Models\GradeLevel;
 use App\Models\School;
-use App\Models\StudentEnrollment;
+use App\Models\SchoolWorkshop;
+use App\Models\Workshop;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 
 class SchoolClassroomController extends Controller
 {
-    public function index(School $school, Request $request)
+    public function index(Request $request, School $school)
     {
-        $q = $request->get('q', '');
-        $yr = $request->get('year');
-        $sh = $request->get('shift');
+        $q  = (string) $request->query('q', '');
+        $yr = $request->query('year');
+        $sh = $request->query('shift');
 
-        $classroomsQuery = Classroom::query()
-            ->with(['gradeLevels', 'groupSet.gradeLevels']) // segue o padrão do seu index MASTER
-            ->where('school_id', $school->id);
+        $query = Classroom::query()
+            ->where('school_id', $school->id)
+            ->with([
+                'gradeLevels',
+                'schoolWorkshop.workshop',
+            ]);
 
         if ($q !== '') {
-            $classroomsQuery->where('name', 'like', "%{$q}%");
+            // Classroom::name é accessor (não dá pra filtrar direto). Filtra por nome da oficina do contrato.
+            $query->whereHas('schoolWorkshop.workshop', function ($w) use ($q) {
+                $w->where('name', 'like', "%{$q}%");
+            });
         }
 
-        if ($yr) {
-            $classroomsQuery->where('academic_year', (int) $yr);
+        if ($yr !== null && $yr !== '') {
+            $query->where('academic_year', (int) $yr);
         }
 
-        if ($sh) {
-            $classroomsQuery->where('shift', $sh);
+        if ($sh !== null && $sh !== '') {
+            $query->where('shift', (string) $sh);
         }
 
-        // Ordenação que ajuda a leitura quando mistura base + grupos
-        $classrooms = $classroomsQuery
-            ->orderBy('academic_year', 'desc')
-            ->orderBy('name')
+        $classrooms = $query
+            ->orderByDesc('academic_year')
+            ->orderBy('shift')
+            ->orderBy('grades_signature')
+            ->orderBy('group_number')
             ->paginate(20)
             ->withQueryString();
 
-        // Mesmo “enriquecimento” do MASTER, sem assumir que child tem esse método
+        // Compatível com view que tenta exibir total_all_students (se existir método no model).
         $classrooms->getCollection()->transform(function ($classroom) {
+            if (method_exists($classroom, 'eligibleEnrollments')) {
+                $classroom->total_all_students = $classroom->eligibleEnrollments()->count();
+            }
+
             return $classroom;
         });
 
-        return view('schools.classrooms.index', [
-            'school' => $school,
-            'schoolNav' => $school,
-            'classrooms' => $classrooms,
-            'q' => $q,
-            'yr' => $yr,
-            'sh' => $sh,
-        ]);
+        return view('schools.classrooms.index', compact('school', 'classrooms', 'q', 'yr', 'sh'));
     }
 
     public function show(School $school, Classroom $classroom)
     {
-        // Segurança básica sem mexer nas rotas
-        abort_if((int) $classroom->school_id !== (int) $school->id, 404);
+        abort_unless((int) $classroom->school_id === (int) $school->id, 404);
 
-        return redirect()->route('classrooms.show', $classroom);
+        $classroom->load([
+            'gradeLevels',
+            'schoolWorkshop.workshop',
+        ]);
+
+        return view('schools.classrooms.show', compact('school', 'classroom'));
     }
 
     public function create(School $school)
     {
+        $gradeLevels = GradeLevel::query()
+            ->orderBy('sequence')
+            ->orderBy('name')
+            ->pluck('name', 'id');
+
+        // Mantido para compatibilidade com wizard/helper e/ou form legado
+        $workshops = Workshop::query()
+            ->orderBy('name')
+            ->get();
+
+        // NOVO: contratos escola↔oficina (ativos hoje)
+        $schoolWorkshops = $school->schoolWorkshops()
+            ->with('workshop')
+            ->activeAt()
+            ->orderBy('starts_at')
+            ->get();
+
         return view('schools.classrooms.create', [
             'school' => $school,
-            'schoolNav' => $school,
-            'schools' => [$school->id => $school->name],
-            'gradeLevels' => $this->gradeLevelsWithEnrollments($school),
-            'workshops' => $school->workshops()
-                ->select('workshops.id', 'workshops.name')
-                ->orderBy('workshops.name')
-                ->pluck('workshops.name', 'workshops.id'),
+            'gradeLevels' => $gradeLevels,
+            'workshops' => $workshops,
+            'schoolWorkshops' => $schoolWorkshops,
             'defaultYear' => (int) date('Y'),
         ]);
     }
 
-    public function store(School $school, StoreClassroomRequest $request)
+    public function store(Request $request, School $school)
     {
-        $data = $request->validated();
-        $data['school_id'] = $school->id;
+        $data = $request->validate([
+            // Compatibilidade: form novo usa school_workshop_id; wizard/legado ainda pode mandar workshop_id.
+            'school_workshop_id' => ['nullable', 'integer'],
+            'workshop_id'        => ['nullable', 'integer'],
 
-        $this->validateGradeLevels($data['grade_level_ids'], $school);
+            'grade_level_ids'    => ['required', 'array', 'min:1'],
+            'grade_level_ids.*'  => ['integer'],
 
-        $classroom = Classroom::create([
-            'school_id' => $data['school_id'],
-            'name' => $data['name'],
-            'shift' => $data['shift'],
-            'is_active' => $request->boolean('is_active'),
-            'academic_year' => (int) $data['academic_year'],
-            'grade_level_key' => $data['grade_level_key'],
+            'academic_year'      => ['required', 'integer', 'min:2000', 'max:2100'],
+            'shift'              => ['required', 'string', 'max:50'],
+
+            'capacity_hint'      => ['nullable', 'integer', 'min:0'],
+            'status'             => ['nullable', 'string', 'max:50'],
         ]);
 
-        $classroom->gradeLevels()->sync($data['grade_level_ids']);
+        $schoolWorkshop = null;
 
-        $allowedWorkshopIds = $school->workshops()
-            ->select('workshops.id')
-            ->pluck('workshops.id')
-            ->all();
-        $workshopsPayload = collect($data['workshops'] ?? [])
-            ->filter(fn ($row) => empty($row['id']) || in_array((int) $row['id'], $allowedWorkshopIds, true))
-            ->values()
-            ->all();
-        $classroom->workshops()->sync($this->buildWorkshopSyncPayload($workshopsPayload));
+        if (!empty($data['school_workshop_id'])) {
+            $schoolWorkshop = SchoolWorkshop::query()
+                ->whereKey((int) $data['school_workshop_id'])
+                ->where('school_id', $school->id)
+                ->firstOrFail();
+        } elseif (!empty($data['workshop_id'])) {
+            // Compatibilidade: resolve contrato ativo da oficina para esta escola.
+            $schoolWorkshop = SchoolWorkshop::query()
+                ->where('school_id', $school->id)
+                ->where('workshop_id', (int) $data['workshop_id'])
+                ->activeAt()
+                ->orderByDesc('starts_at')
+                ->firstOrFail();
+        } else {
+            return back()
+                ->withErrors(['school_workshop_id' => 'Selecione a oficina (contrato).'])
+                ->withInput();
+        }
+
+        $gradeIds = Classroom::normalizeGradeLevelIds($data['grade_level_ids']);
+        $gradesSignature = Classroom::buildGradesSignature($data['grade_level_ids']);
+
+        if (empty($gradeIds) || $gradesSignature === '') {
+            return back()
+                ->withErrors(['grade_level_ids' => 'Selecione ao menos uma série válida.'])
+                ->withInput();
+        }
+
+        $academicYear = (int) $data['academic_year'];
+        $shift = (string) $data['shift'];
+
+        $classroom = DB::transaction(function () use ($school, $schoolWorkshop, $gradeIds, $gradesSignature, $academicYear, $shift, $data) {
+            // group_number sequencial por (contrato + assinatura + ano + turno)
+            $last = Classroom::query()
+                ->where('school_id', $school->id)
+                ->where('school_workshop_id', $schoolWorkshop->id)
+                ->where('grades_signature', $gradesSignature)
+                ->where('academic_year', $academicYear)
+                ->where('shift', $shift)
+                ->orderByDesc('group_number')
+                ->lockForUpdate()
+                ->first();
+
+            $nextGroupNumber = ((int) ($last?->group_number ?? 0)) + 1;
+
+            $classroom = Classroom::create([
+                'school_id'          => $school->id,
+                'school_workshop_id' => $schoolWorkshop->id,
+                'grades_signature'   => $gradesSignature,
+                'group_number'       => $nextGroupNumber,
+                'academic_year'      => $academicYear,
+                'shift'              => $shift,
+                'capacity_hint'      => $data['capacity_hint'] ?? null,
+                'status'             => $data['status'] ?? null,
+            ]);
+
+            $classroom->gradeLevels()->sync($gradeIds);
+
+            return $classroom;
+        });
 
         return redirect()
             ->route('schools.classrooms.show', [$school, $classroom])
-            ->with('success', 'Grupo criado com sucesso.');
-    }
-
-    private function gradeLevelsWithEnrollments(School $school)
-    {
-        $gradeIds = StudentEnrollment::query()
-            ->where('school_id', $school->id)
-            ->whereIn('status', StudentEnrollment::ongoingStatuses())
-            ->whereNull('ended_at')
-            ->whereNotNull('grade_level_id')
-            ->distinct()
-            ->pluck('grade_level_id');
-
-        return GradeLevel::query()
-            ->whereIn('id', $gradeIds)
-            ->orderBy('sequence')
-            ->orderBy('name')
-            ->pluck('name', 'id');
-    }
-
-    private function validateGradeLevels(array $gradeLevelIds, School $school): void
-    {
-        $allowed = $this->gradeLevelsWithEnrollments($school)->keys()->all();
-        $invalid = array_diff($gradeLevelIds, $allowed);
-
-        if (! empty($invalid)) {
-            throw ValidationException::withMessages([
-                'grade_level_ids' => 'Selecione apenas anos com alunos matriculados nesta escola.',
-            ]);
-        }
-    }
-
-    private function buildWorkshopSyncPayload(array $workshops): array
-    {
-        $out = [];
-        foreach ($workshops as $row) {
-            if (! empty($row['id'])) {
-                $out[(int) $row['id']] = [
-                    'max_students' => (isset($row['max_students']) && $row['max_students'] !== '')
-                        ? (int) $row['max_students']
-                        : null,
-                ];
-            }
-        }
-
-        return $out;
+            ->with('success', 'Grupo criado.');
     }
 }
+

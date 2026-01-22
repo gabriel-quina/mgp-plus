@@ -20,6 +20,7 @@ class SchoolEnrollmentController extends Controller
         return [
             StudentEnrollment::STATUS_PRE_ENROLLED => 'Pré-matrícula',
             StudentEnrollment::STATUS_ENROLLED => 'Matriculado',
+            StudentEnrollment::STATUS_ALLOCATED => 'Alocado',
             StudentEnrollment::STATUS_ACTIVE => 'Cursando',
             StudentEnrollment::STATUS_COMPLETED => 'Concluído',
             StudentEnrollment::STATUS_FAILED => 'Reprovado',

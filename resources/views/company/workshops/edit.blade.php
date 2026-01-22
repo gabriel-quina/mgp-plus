@@ -10,7 +10,7 @@
 <form method="POST" action="{{ route('admin.workshops.update', $workshop) }}">
   @csrf
   @method('PUT')
-  @include('workshops._form', ['submitLabel' => 'Salvar alterações'])
+  @include('company.workshops._form', ['submitLabel' => 'Salvar alterações'])
 </form>
 @endsection
 

@@ -16,11 +16,9 @@
         @csrf
 
         @include('schools.classrooms._form', [
-            'showSchoolSelect' => false,
-            'fixedSchoolId' => $school->id,
-            'schoolName' => $school->short_name ?? $school->name,
+            'school' => $school,
             'gradeLevels' => $gradeLevels,
-            'workshops' => $workshops,
+            'schoolWorkshops' => $schoolWorkshops,
             'defaultYear' => $defaultYear,
         ])
 
@@ -34,3 +32,4 @@
 @endsection
 
 @stack('scripts')
+
