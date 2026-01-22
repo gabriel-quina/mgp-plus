@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Novo aluno')
+@section('title', 'Editar aluno')
 
 @section('content')
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h1 class="h3 mb-0">Novo aluno</h1>
+            <h1 class="h3 mb-0">Editar aluno</h1>
         </div>
     </div>
 
@@ -15,9 +15,10 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('schools.students.store', $school) }}">
+    <form method="POST" action="{{ route('schools.students.update', ['school' => $school, 'student' => $student]) }}">
         @csrf
-        @include('schools.students._form', ['submitLabel' => 'Cadastrar aluno'])
+        @method('PUT')
+        @include('schools.students._form', ['submitLabel' => 'Salvar aluno'])
     </form>
 @endsection
 

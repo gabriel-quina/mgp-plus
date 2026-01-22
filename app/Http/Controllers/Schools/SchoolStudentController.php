@@ -4,8 +4,12 @@ namespace App\Http\Controllers\Schools;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Schools\SchoolStudentIndexRequest;
-use App\Http\Requests\{StoreStudentRequest, UpdateStudentRequest};
-use App\Models\{City, GradeLevel, School, State, Student, StudentEnrollment};
+use App\Http\Requests\Schools\Students\StoreStudentRequest;
+use App\Http\Requests\Schools\Students\UpdateStudentRequest;
+use App\Models\GradeLevel;
+use App\Models\School;
+use App\Models\Student;
+use App\Models\StudentEnrollment;
 use App\Services\GradeLevelStudentReportService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -45,6 +49,7 @@ class SchoolStudentController extends Controller
         if ($gradeLevelFilter && ($showAvg || $showAtt)) {
             $reportService = app(GradeLevelStudentReportService::class);
             $report = $reportService->forSchoolAndGrade($school, $gradeLevelFilter);
+
             $studentMetrics = $report->mapWithKeys(function ($row) {
                 $student = is_array($row) ? ($row['student'] ?? null) : ($row->student ?? null);
                 $enrollment = is_array($row) ? ($row['enrollment'] ?? null) : ($row->enrollment ?? null);
@@ -91,11 +96,11 @@ class SchoolStudentController extends Controller
     {
         $gradeLevels = GradeLevel::orderBy('sequence')->orderBy('name')->pluck('name', 'id');
 
-        // IMPORTANTE: precisa ser Collection de Models para o Blade usar $st->id / $st->uf
-        $states = State::orderBy('name')->get(['id', 'name', 'uf']);
-
-        return view('schools.students.create', [ 'schoolNav' => $school],
-            compact('school', 'gradeLevels', 'states'));
+        return view('schools.students.create', [
+            'schoolNav' => $school,
+            'school' => $school,
+            'gradeLevels' => $gradeLevels,
+        ]);
     }
 
     public function store(StoreStudentRequest $request, School $school)
@@ -105,18 +110,12 @@ class SchoolStudentController extends Controller
         $s = $data['student'] ?? [];
         $e = $data['enrollment'] ?? [];
 
-        $e['destination_school_id'] = $school->id;
-
         DB::transaction(function () use ($s, $e, $school) {
-
             $cpf = trim((string) ($s['cpf'] ?? ''));
             $cpf = $cpf !== '' ? $cpf : null;
 
             $email = trim((string) ($s['email'] ?? ''));
             $email = $email !== '' ? $email : null;
-
-            $birthdate = $s['birthdate'] ?? null;
-            $disabilityTypeIds = $s['disability_type_ids'] ?? null;
 
             $student = null;
 
@@ -144,13 +143,12 @@ class SchoolStudentController extends Controller
 
             $student->fill([
                 'name' => $s['name'] ?? null,
-                'social_name' => $s['social_name'] ?? null,
                 'cpf' => $cpf,
                 'email' => $email,
-                'birthdate' => $birthdate,
+                'birthdate' => $s['birthdate'] ?? null,
                 'race_color' => $s['race_color'] ?? null,
                 'has_disability' => (bool) ($s['has_disability'] ?? false),
-                'disability_types' => $disabilityTypeIds,
+                'disability_types' => $s['disability_type_ids'] ?? [],
                 'disability_details' => $s['disability_details'] ?? null,
                 'allergies' => $s['allergies'] ?? null,
                 'emergency_contact_name' => $s['emergency_contact_name'] ?? null,
@@ -171,18 +169,13 @@ class SchoolStudentController extends Controller
                     ]);
                 }
 
-                $activeSchoolName = School::query()->whereKey($activeEnrollment->school_id)->value('name') ?? 'outra escola';
+                $activeSchoolName = School::query()
+                    ->whereKey($activeEnrollment->school_id)
+                    ->value('name') ?? 'outra escola';
 
                 throw ValidationException::withMessages([
-                    'student.cpf' => "Este aluno já possui matrícula ativa em {$activeSchoolName}. Encerre/realize a transferência antes de matricular nesta escola.",
+                    'student.cpf' => "Este aluno já possui matrícula ativa em {$activeSchoolName}. Encerre a matrícula antes de matricular nesta escola.",
                 ]);
-            }
-
-            $transferScope = (string) ($e['transfer_scope'] ?? 'first');
-
-            $originSchoolId = null;
-            if ($transferScope !== 'first') {
-                $originSchoolId = $this->resolveOriginSchoolId($transferScope, $e, $school);
             }
 
             StudentEnrollment::create([
@@ -191,9 +184,9 @@ class SchoolStudentController extends Controller
                 'grade_level_id' => $e['grade_level_id'],
                 'academic_year' => $e['academic_year'],
                 'shift' => $e['shift'] ?? 'morning',
-                'status' => StudentEnrollment::STATUS_ACTIVE,
-                'transfer_scope' => $transferScope,
-                'origin_school_id' => $originSchoolId,
+                'status' => StudentEnrollment::STATUS_ENROLLED,
+                'transfer_scope' => 'first',
+                'origin_school_id' => null,
                 'started_at' => $e['started_at'] ?? now()->toDateString(),
                 'ended_at' => null,
             ]);
@@ -208,7 +201,7 @@ class SchoolStudentController extends Controller
     {
         $enrollments = $student->enrollments()
             ->where('school_id', $school->id)
-            ->with(['gradeLevel', 'originSchool'])
+            ->with(['gradeLevel'])
             ->orderByDesc('academic_year')
             ->orderByDesc('id')
             ->get();
@@ -236,7 +229,11 @@ class SchoolStudentController extends Controller
             404
         );
 
-        return redirect()->route('students.edit', $student);
+        return view('schools.students.edit', [
+            'school' => $school,
+            'schoolNav' => $school,
+            'student' => $student,
+        ]);
     }
 
     public function update(UpdateStudentRequest $request, School $school, Student $student)
@@ -269,13 +266,12 @@ class SchoolStudentController extends Controller
 
         $student->fill([
             'name' => $s['name'] ?? $student->name,
-            'social_name' => $s['social_name'] ?? null,
-            'cpf' => $cpf ?? $student->cpf,
+            'cpf' => $cpf,
             'email' => $email,
             'birthdate' => $s['birthdate'] ?? null,
             'race_color' => $s['race_color'] ?? null,
             'has_disability' => (bool) ($s['has_disability'] ?? false),
-            'disability_types' => $s['disability_type_ids'] ?? null,
+            'disability_types' => $s['disability_type_ids'] ?? [],
             'disability_details' => $s['disability_details'] ?? null,
             'allergies' => $s['allergies'] ?? null,
             'emergency_contact_name' => $s['emergency_contact_name'] ?? null,
@@ -283,85 +279,8 @@ class SchoolStudentController extends Controller
         ])->save();
 
         return redirect()
-            ->route('students.show', $student)
+            ->route('schools.students.show', [$school, $student])
             ->with('success', 'Aluno atualizado.');
     }
-
-    /* ================= Privados ================= */
-
-    protected function resolveOriginSchoolId(string $scope, array $enr, School $destSchool): ?int
-    {
-        if (! empty($enr['origin_school_id'])) {
-            $origin = School::find((int) $enr['origin_school_id']);
-            if (! $origin) {
-                return null;
-            }
-
-            if ($scope === 'internal' && (int) $origin->city_id !== (int) $destSchool->city_id) {
-                throw ValidationException::withMessages([
-                    'enrollment.origin_school_id' => 'Transferência interna exige escola de origem na mesma cidade.',
-                ]);
-            }
-
-            if ($scope === 'external' && (int) $origin->city_id === (int) $destSchool->city_id) {
-                throw ValidationException::withMessages([
-                    'enrollment.origin_school_id' => 'Transferência externa exige escola de origem em outra cidade.',
-                ]);
-            }
-
-            return (int) $origin->id;
-        }
-
-        $name = trim((string) ($enr['origin_school_name'] ?? ''));
-        if ($name === '') {
-            return null;
-        }
-
-        if ($scope === 'internal') {
-            return $this->findOrCreateSchoolByNameInCity($name, (int) $destSchool->city_id)->id;
-        }
-
-        $cityName = trim((string) ($enr['origin_city_name'] ?? ''));
-        $stateId = (int) ($enr['origin_state_id'] ?? 0);
-
-        if ($cityName === '' || $stateId <= 0) {
-            return null;
-        }
-
-        $city = $this->findOrCreateCityByNameStateId($cityName, $stateId);
-
-        return $this->findOrCreateSchoolByNameInCity($name, (int) $city->id)->id;
-    }
-
-    protected function findOrCreateSchoolByNameInCity(string $name, int $cityId): School
-    {
-        $raw = trim($name);
-        $norm = preg_replace('/\s+/', ' ', mb_strtolower($raw));
-
-        $existing = School::query()
-            ->where('city_id', $cityId)
-            ->whereRaw('LOWER(TRIM(REPLACE(name, "  ", " "))) = ?', [$norm])
-            ->first();
-
-        return $existing ?: School::create([
-            'city_id' => $cityId,
-            'name' => $raw,
-            'is_historical' => true,
-        ]);
-    }
-
-    protected function findOrCreateCityByNameStateId(string $cityName, int $stateId): City
-    {
-        $name = trim($cityName);
-
-        $city = City::query()
-            ->where('state_id', $stateId)
-            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
-            ->first();
-
-        return $city ?: City::create([
-            'state_id' => $stateId,
-            'name' => $name,
-        ]);
-    }
 }
+

@@ -44,35 +44,6 @@
         <input type="text" name="cep" class="form-control" placeholder="12345-678" value="{{ $val('cep') }}">
     </div>
 
-    @if (isset($workshops) && count($workshops))
-        @php
-            $selectedWorkshops = collect(
-                old('workshop_ids', isset($school) ? $school->workshops->pluck('id')->all() : []),
-            )
-                ->map(fn($v) => (int) $v)
-                ->all();
-        @endphp
-
-        <div class="col-12">
-            <fieldset class="border rounded p-3">
-                <legend class="float-none w-auto px-2 small mb-0">Oficinas oferecidas pela escola</legend>
-                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-2">
-                    @foreach ($workshops as $wid => $wname)
-                        <div class="col">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="wk_{{ $wid }}"
-                                    name="workshop_ids[]" value="{{ $wid }}" @checked(in_array($wid, $selectedWorkshops, true))>
-                                <label class="form-check-label"
-                                    for="wk_{{ $wid }}">{{ $wname }}</label>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-                <div class="form-text">Marque as oficinas que esta escola oferece.</div>
-            </fieldset>
-        </div>
-    @endif
-
     <div class="col-12 d-flex gap-2">
         <button class="btn btn-primary" type="submit">{{ $submitLabel ?? 'Salvar' }}</button>
         <a href="{{ route('admin.schools.index') }}" class="btn btn-outline-secondary">Cancelar</a>

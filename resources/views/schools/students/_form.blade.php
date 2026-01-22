@@ -1,345 +1,197 @@
 @php
-  $val = fn($k, $d = null) => old($k, $d);
+    // Normaliza gradeLevels para array (pluck() costuma vir como Collection)
+    $gradeLevels = $gradeLevels ?? [];
+    if ($gradeLevels instanceof \Illuminate\Support\Collection) {
+        $gradeLevels = $gradeLevels->all();
+    }
+
+    // Helpers de preenchimento (prioriza old())
+    $sval = fn($k, $default = null) => old("student.$k", isset($student) ? data_get($student, $k, $default) : $default);
+    $eval = fn($k, $default = null) => old("enrollment.$k", $default);
+
+    // PcD
+    $hasDisability = (bool) $sval('has_disability', false);
+
+    // Tipos de PcD: ideal é o controller passar [id => label].
+    // Fallback com IDs "estáveis":
+    $pcdOptions = $pcdOptions ?? [
+        1 => 'Visual',
+        2 => 'Auditiva',
+        3 => 'Física',
+        4 => 'Intelectual',
+        5 => 'Psicossocial',
+        6 => 'TEA',
+        7 => 'Múltipla',
+        8 => 'Outra',
+    ];
+
+    // Selecionados (em edição, pegue do $student->disability_types que é JSON/array de IDs)
+    $selectedTypes = collect(old('student.disability_type_ids', data_get($student ?? null, 'disability_types', [])))
+        ->map(fn($v) => (string) $v)
+        ->all();
+
+    // Estamos editando?
+    $isEdit = isset($student) && $student->exists;
 @endphp
 
-<input type="hidden" name="enrollment[destination_school_id]" value="{{ $school->id }}">
+<div id="student-form" class="row g-3">
 
-<input type="hidden" name="enrollment[origin_school_id]" id="origin_school_id" value="{{ $val('enrollment.origin_school_id') }}">
-<input type="hidden" name="enrollment[origin_school_name]" id="origin_school_name" value="{{ $val('enrollment.origin_school_name') }}">
+    {{-- ====================== DADOS DO ALUNO ====================== --}}
+    <div class="col-12">
+        <h5 class="border-bottom pb-2 mb-0">Dados do aluno</h5>
+    </div>
 
-<div class="row g-3">
+    <div class="col-md-6">
+        <label class="form-label">Nome *</label>
+        <input type="text" name="student[name]" class="form-control" value="{{ $sval('name') }}" required>
+    </div>
 
-  <div class="col-12">
-    <h2 class="h5 mb-0">Dados do aluno</h2>
-  </div>
+    <div class="col-md-3">
+        <label class="form-label">CPF</label>
+        <input type="text" name="student[cpf]" class="form-control" value="{{ $sval('cpf') }}">
+    </div>
 
-  <div class="col-md-8">
-    <label class="form-label">Nome</label>
-    <input type="text" name="student[name]" class="form-control" value="{{ $val('student.name') }}" required>
-  </div>
-
-  <div class="col-md-4">
-    <label class="form-label">Nome social</label>
-    <input type="text" name="student[social_name]" class="form-control" value="{{ $val('student.social_name') }}">
-  </div>
-
-  <div class="col-md-4">
-    <label class="form-label">CPF</label>
-    <input type="text" name="student[cpf]" class="form-control" value="{{ $val('student.cpf') }}">
-  </div>
-
-  <div class="col-md-4">
-    <label class="form-label">E-mail</label>
-    <input type="email" name="student[email]" class="form-control" value="{{ $val('student.email') }}">
-  </div>
-
-  <div class="col-md-4">
-    <label class="form-label">Data de nascimento</label>
-    <input type="date" name="student[birthdate]" class="form-control" value="{{ $val('student.birthdate') }}">
-  </div>
-
-  <div class="col-12"><hr class="my-2"></div>
-
-  <div class="col-12">
-    <h2 class="h5 mb-0">Matrícula na escola</h2>
-  </div>
-
-  <div class="col-md-4">
-    <label class="form-label">Ano escolar</label>
-    <select name="enrollment[grade_level_id]" class="form-select" required>
-      <option value="">Selecione…</option>
-      @foreach($gradeLevels as $id => $name)
-        <option value="{{ $id }}" @selected($val('enrollment.grade_level_id') == $id)>{{ $name }}</option>
-      @endforeach
-    </select>
-  </div>
-
-  <div class="col-md-4">
-    <label class="form-label">Ano letivo</label>
-    <input type="number" name="enrollment[academic_year]" class="form-control"
-           value="{{ $val('enrollment.academic_year', now()->year) }}" required>
-  </div>
-
-  <div class="col-md-4">
-    <label class="form-label">Turno</label>
-    @php $shift = $val('enrollment.shift', 'morning'); @endphp
-    <select name="enrollment[shift]" class="form-select">
-      <option value="morning" @selected($shift==='morning')>Manhã</option>
-      <option value="afternoon" @selected($shift==='afternoon')>Tarde</option>
-      <option value="evening" @selected($shift==='evening')>Noite</option>
-    </select>
-  </div>
-
-  <div class="col-md-4">
-    <label class="form-label">Início</label>
-    <input type="date" name="enrollment[started_at]" class="form-control" value="{{ $val('enrollment.started_at') }}">
-  </div>
-
-  <div class="col-md-8">
-    <label class="form-label">Tipo de entrada</label>
-    @php $ts = $val('enrollment.transfer_scope', 'first'); @endphp
-    <select name="enrollment[transfer_scope]" id="transfer_scope" class="form-select">
-      <option value="first" @selected($ts==='first')>Primeira matrícula</option>
-      <option value="internal" @selected($ts==='internal')>Transferência (mesma cidade)</option>
-      <option value="external" @selected($ts==='external')>Transferência (outra cidade/UF)</option>
-    </select>
-  </div>
-
-  <div class="col-12" id="origin_block">
-    <fieldset class="border rounded p-3">
-      <legend class="float-none w-auto px-2 small mb-0">Origem (se transferência)</legend>
-
-      <div class="row g-3 mt-1">
-
-        <div class="col-md-12 position-relative">
-          <label class="form-label">Escola de origem</label>
-
-          <input
-            type="text"
-            id="origin_school_search"
+    <div class="col-md-3">
+        <label class="form-label">Nascimento</label>
+        <input
+            type="date"
+            name="student[birthdate]"
             class="form-control"
-            value="{{ $val('enrollment.origin_school_name') }}"
-            placeholder="Digite pelo menos 2 letras…"
-            autocomplete="off"
-          >
+            value="{{ $sval('birthdate') }}"
+        >
+    </div>
 
-          <div id="origin_suggestions"
-               class="list-group position-absolute w-100"
-               style="z-index: 1000; display:none;"></div>
+    <div class="col-md-6">
+        <label class="form-label">E-mail</label>
+        <input type="email" name="student[email]" class="form-control" value="{{ $sval('email') }}">
+    </div>
 
-          <div class="small mt-2 text-muted" id="origin_selected_meta" style="display:none;"></div>
+    <div class="col-md-3">
+        <label class="form-label">Cor/raça (IBGE)</label>
+        <input type="text" name="student[race_color]" class="form-control text-capitalize"
+            value="{{ $sval('race_color') }}" placeholder="branca, parda, preta, amarela, indígena...">
+    </div>
 
-          <div class="form-text">
-            Transferência interna mostra apenas escolas da mesma cidade. Transferência externa mostra apenas escolas de outras cidades.
-            Se você não selecionar nenhuma sugestão, o nome digitado será usado para criar escola histórica.
-          </div>
+    <div class="col-12">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="has_disability" name="student[has_disability]"
+                value="1" @checked($hasDisability)>
+            <label class="form-check-label" for="has_disability">Pessoa com Deficiência (PcD)</label>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <fieldset id="pcd_types_fieldset" class="border rounded p-3">
+            <legend class="float-none w-auto px-2 small mb-0">Tipos de PcD</legend>
+
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-2 mt-1">
+                @foreach ($pcdOptions as $id => $label)
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input pcd-type" type="checkbox"
+                                name="student[disability_type_ids][]" value="{{ $id }}"
+                                id="pcd_{{ $id }}" @checked(in_array((string) $id, $selectedTypes, true))>
+                            <label class="form-check-label" for="pcd_{{ $id }}">{{ $label }}</label>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="mt-2">
+                <label class="form-label">Detalhes (opcional)</label>
+                <textarea class="form-control" name="student[disability_details]" rows="2">{{ $sval('disability_details') }}</textarea>
+            </div>
+        </fieldset>
+
+        <div class="form-text">Os tipos acima só ficam ativos se “PcD” estiver marcado.</div>
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label">Alergias (opcional)</label>
+        <input type="text" name="student[allergies]" class="form-control" value="{{ $sval('allergies') }}">
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">Contato de emergência</label>
+        <input type="text" name="student[emergency_contact_name]" class="form-control"
+            value="{{ $sval('emergency_contact_name') }}">
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">Telefone (emergência)</label>
+        <input type="text" name="student[emergency_contact_phone]" class="form-control"
+            value="{{ $sval('emergency_contact_phone') }}">
+    </div>
+
+    {{-- ====================== MATRÍCULA (somente CREATE) ====================== --}}
+    @if (! $isEdit)
+        <div class="col-12 mt-2">
+            <h5 class="border-bottom pb-2 mb-0">Matrícula inicial</h5>
         </div>
 
-        <div class="col-md-6" id="origin_city_col">
-          <label class="form-label">Cidade de origem (apenas externa)</label>
-          <input type="text" name="enrollment[origin_city_name]" id="origin_city_name" class="form-control"
-                 value="{{ $val('enrollment.origin_city_name') }}">
+        <div class="col-md-5">
+            <label class="form-label">Ano escolar / Série *</label>
+            <select name="enrollment[grade_level_id]" class="form-select" required>
+                <option value="">Selecione…</option>
+                @foreach ($gradeLevels as $id => $name)
+                    <option value="{{ $id }}" @selected((string) $eval('grade_level_id') === (string) $id)>{{ $name }}</option>
+                @endforeach
+            </select>
         </div>
 
-        <div class="col-md-6" id="origin_state_col">
-          <label class="form-label">Estado (apenas externa)</label>
-          <select name="enrollment[origin_state_id]" id="origin_state_id" class="form-select">
-            <option value="">Selecione…</option>
-            @foreach($states as $st)
-              <option value="{{ $st->id }}"
-                      data-uf="{{ $st->uf }}"
-                      @selected((string)$val('enrollment.origin_state_id') === (string)$st->id)>
-                {{ $st->name }} ({{ $st->uf }})
-              </option>
-            @endforeach
-          </select>
+        <div class="col-md-3">
+            <label class="form-label">Ano letivo *</label>
+            <input type="number" name="enrollment[academic_year]" class="form-control"
+                value="{{ $eval('academic_year', now()->year) }}" min="1900" max="9999" required>
         </div>
 
-      </div>
-    </fieldset>
-  </div>
+        <div class="col-md-3">
+            <label class="form-label">Turno</label>
+            <select name="enrollment[shift]" class="form-select">
+                @php $shift = $eval('shift','morning'); @endphp
+                <option value="morning" @selected($shift === 'morning')>Manhã</option>
+                <option value="afternoon" @selected($shift === 'afternoon')>Tarde</option>
+                <option value="evening" @selected($shift === 'evening')>Noite</option>
+            </select>
+        </div>
 
-  <div class="col-12 d-flex gap-2">
-    <button class="btn btn-primary" type="submit">{{ $submitLabel ?? 'Salvar' }}</button>
-    <a href="{{ route('schools.students.index', $school) }}" class="btn btn-outline-secondary">Cancelar</a>
-  </div>
+        <div class="col-md-3">
+            <label class="form-label">Início do vínculo</label>
+            <input type="date" name="enrollment[started_at]" class="form-control"
+                value="{{ $eval('started_at', now()->toDateString()) }}">
+        </div>
+    @endif
+
+    {{-- ====================== AÇÕES ====================== --}}
+    <div class="col-12 d-flex gap-2">
+        <button class="btn btn-primary" type="submit">{{ $submitLabel ?? 'Salvar' }}</button>
+        <a href="{{ route('schools.students.index', $school) }}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
 </div>
 
-<script>
-(function () {
-  const apiUrl = @json(url('/api/escolas/buscar'));
-  const destCityId = @json($school->city_id);
+@push('scripts')
+    <script>
+        (function() {
+            // ---------- PcD toggle ----------
+            const chk = document.getElementById('has_disability');
+            const fieldset = document.getElementById('pcd_types_fieldset');
 
-  const transferScope = document.getElementById('transfer_scope');
-  const originBlock = document.getElementById('origin_block');
+            function togglePcd() {
+                if (!fieldset) return;
+                const enabled = !!(chk && chk.checked);
 
-  const searchInput = document.getElementById('origin_school_search');
-  const suggestions = document.getElementById('origin_suggestions');
-  const selectedMeta = document.getElementById('origin_selected_meta');
+                fieldset.classList.toggle('opacity-50', !enabled);
+                fieldset.querySelectorAll('input,textarea,select').forEach(el => {
+                    // não apaga valores automaticamente; apenas desabilita
+                    el.disabled = !enabled;
+                });
+            }
 
-  const originId = document.getElementById('origin_school_id');
-  const originName = document.getElementById('origin_school_name');
-
-  const originCityCol = document.getElementById('origin_city_col');
-  const originStateCol = document.getElementById('origin_state_col');
-  const originCityName = document.getElementById('origin_city_name');
-  const originStateId = document.getElementById('origin_state_id');
-
-  let debounceTimer = null;
-
-  function hideSuggestions() {
-    suggestions.style.display = 'none';
-    suggestions.innerHTML = '';
-  }
-
-  function clearSelectedMeta() {
-    selectedMeta.style.display = 'none';
-    selectedMeta.textContent = '';
-  }
-
-  function clearSelection() {
-    originId.value = '';
-    originName.value = '';
-    clearSelectedMeta();
-  }
-
-  function stateIdByUf(uf) {
-    if (!uf) return '';
-    uf = String(uf).toUpperCase().trim();
-
-    for (const opt of originStateId.options) {
-      if (opt?.dataset?.uf && String(opt.dataset.uf).toUpperCase() === uf) {
-        return opt.value;
-      }
-    }
-    return '';
-  }
-
-  function updateOriginVisibility() {
-    const scope = transferScope.value;
-
-    if (scope === 'first') {
-      originBlock.style.display = 'none';
-      searchInput.disabled = true;
-      hideSuggestions();
-
-      searchInput.value = '';
-      clearSelection();
-
-      originCityName.value = '';
-      originStateId.value = '';
-      originCityName.disabled = true;
-      originStateId.disabled = true;
-      return;
-    }
-
-    originBlock.style.display = '';
-    searchInput.disabled = false;
-
-    const isExternal = scope === 'external';
-    originCityCol.style.display = isExternal ? '' : 'none';
-    originStateCol.style.display = isExternal ? '' : 'none';
-
-    originCityName.disabled = !isExternal;
-    originStateId.disabled = !isExternal;
-
-    if (!isExternal) {
-      originCityName.value = '';
-      originStateId.value = '';
-    }
-  }
-
-  async function fetchSchools(q) {
-    const scope = transferScope.value;
-
-    const url = new URL(apiUrl, window.location.origin);
-    url.searchParams.set('q', q);
-
-    if (scope === 'internal') {
-      url.searchParams.set('city_id', String(destCityId));
-    }
-
-    const res = await fetch(url.toString(), { headers: { 'Accept': 'application/json' } });
-    if (!res.ok) return [];
-
-    let items = await res.json();
-
-    if (scope === 'external') {
-      items = (items || []).filter(it => String(it.city_id || '') !== String(destCityId));
-    } else if (scope === 'internal') {
-      items = (items || []).filter(it => String(it.city_id || '') === String(destCityId));
-    }
-
-    return items;
-  }
-
-  function renderSuggestions(items) {
-    suggestions.innerHTML = '';
-
-    if (!items || !items.length) {
-      hideSuggestions();
-      return;
-    }
-
-    items.forEach((it) => {
-      const meta = [it.city_name, it.state_uf].filter(Boolean).join('/');
-      const hist = it.is_historical ? ' (histórica)' : '';
-
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'list-group-item list-group-item-action';
-      btn.textContent = `${it.name}${meta ? ' — ' + meta : ''}${hist}`;
-
-      btn.addEventListener('click', () => {
-        originId.value = String(it.id);
-        originName.value = it.name;
-
-        searchInput.value = `${it.name}${meta ? ' — ' + meta : ''}${hist}`;
-
-        selectedMeta.style.display = '';
-        selectedMeta.textContent = `Selecionada: ${it.name}${meta ? ' — ' + meta : ''}${hist}`;
-
-        // Preenche automaticamente cidade/estado (útil principalmente no external)
-        if (it.city_name) originCityName.value = it.city_name;
-        const sid = stateIdByUf(it.state_uf);
-        if (sid) originStateId.value = sid;
-
-        hideSuggestions();
-      });
-
-      suggestions.appendChild(btn);
-    });
-
-    suggestions.style.display = '';
-  }
-
-  searchInput.addEventListener('focus', () => {
-    hideSuggestions();
-    if (originId.value) {
-      clearSelection();
-      searchInput.value = '';
-      originCityName.value = '';
-      originStateId.value = '';
-    }
-  });
-
-  searchInput.addEventListener('input', () => {
-    const q = (searchInput.value || '').trim();
-
-    if (originId.value) {
-      clearSelection();
-    }
-
-    originName.value = q;
-
-    if (q.length < 2) {
-      hideSuggestions();
-      return;
-    }
-
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(async () => {
-      const items = await fetchSchools(q);
-      renderSuggestions(items);
-    }, 250);
-  });
-
-  searchInput.addEventListener('blur', () => {
-    setTimeout(hideSuggestions, 150);
-    if (!originId.value) {
-      originName.value = (searchInput.value || '').trim();
-    }
-  });
-
-  transferScope.addEventListener('change', () => {
-    hideSuggestions();
-    clearSelection();
-    originCityName.value = '';
-    originStateId.value = '';
-    updateOriginVisibility();
-  });
-
-  updateOriginVisibility();
-})();
-</script>
+            if (chk && fieldset) {
+                togglePcd();
+                chk.addEventListener('change', togglePcd);
+            }
+        })();
+    </script>
+@endpush
 

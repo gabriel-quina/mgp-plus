@@ -1,19 +1,22 @@
 {{-- resources/views/schools/students/show.blade.php --}}
 @extends('layouts.app')
 
-@section('title', 'Aluno — ' . ($student->display_name ?? $student->name ?? 'Aluno'))
+@section('title', 'Aluno — ' . ($student->display_name ?? ($student->name ?? 'Aluno')))
 
 @section('content')
     @php
         $backUrl = route('schools.students.index', $school);
 
         if (request('back') === 'students') {
-            $query = array_filter([
-                'grade_level' => request('grade_level'),
-                'q' => request('q'),
-            ], fn ($value) => ! is_null($value) && $value !== '');
+            $query = array_filter(
+                [
+                    'grade_level' => request('grade_level'),
+                    'q' => request('q'),
+                ],
+                fn($value) => !is_null($value) && $value !== '',
+            );
 
-            if (! empty($query)) {
+            if (!empty($query)) {
                 $backUrl .= '?' . http_build_query($query);
             }
         }
@@ -22,9 +25,9 @@
     <div class="d-flex justify-content-between align-items-start mb-3">
         <div>
             <h1 class="mb-0">👤 {{ $student->display_name }}</h1>
-            <small class="text-muted">{{ $school->name }}</small>
         </div>
         <div class="d-flex gap-2">
+            <a class="btn btn-outline-primary" href="{{ route('schools.students.edit', ['school' => $school, 'student' => $student]) }}">Editar</a>
             <a class="btn btn-link" href="{{ $backUrl }}">← Voltar</a>
         </div>
     </div>
@@ -93,12 +96,33 @@
         <div class="card-header">Contato e observações</div>
         <div class="card-body">
             <dl class="row mb-0">
-                <dt class="col-4">Contato emergência</dt>
-                <dd class="col-8">{{ $student->emergency_contact_name ?? '—' }}</dd>
-                <dt class="col-4">Telefone (emerg.)</dt>
-                <dd class="col-8">{{ $student->emergency_contact_phone ?? '—' }}</dd>
-                <dt class="col-4">Alergias</dt>
-                <dd class="col-8">{{ $student->allergies ?? '—' }}</dd>
+                <dt class="col-5">Cor/raça (IBGE)</dt>
+                <dd class="col-7 text-capitalize">{{ $student->race_color ?? '—' }}</dd>
+                <dt class="col-5">Pessoa com Deficiência</dt>
+                <dd class="col-7">
+                    @if ($student->has_disability)
+                        <span class="badge bg-warning text-dark">Sim</span>
+                        @php
+                            $types = collect($student->disability_types ?? [])
+                                ->map(function ($t) {
+                                    return is_numeric($t) ? $t : null;
+                                })
+                                ->filter()
+                                ->all();
+                        @endphp
+                        @if (!empty($types))
+                            <div class="small text-muted mt-1">Tipos: {{ implode(', ', $types) }}</div>
+                        @endif
+                    @else
+                        <span class="badge bg-secondary">Não</span>
+                    @endif
+                </dd>
+                <dt class="col-5">Alergias</dt>
+                <dd class="col-7">{{ $student->allergies ?? '—' }}</dd>
+                <dt class="col-5">Contato emergência</dt>
+                <dd class="col-7">{{ $student->emergency_contact_name ?? '—' }}</dd>
+                <dt class="col-5">Telefone (emerg.)</dt>
+                <dd class="col-7">{{ $student->emergency_contact_phone ?? '—' }}</dd>
             </dl>
         </div>
     </div>

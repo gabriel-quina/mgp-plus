@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Schools;
 
 use App\Http\Controllers\Controller;
 
-use App\Http\Requests\{StoreStudentRequest, UpdateStudentRequest};
+use App\Http\Requests\Schools\Students\{StoreStudentRequest, UpdateStudentRequest};
 use App\Models\{City, GradeLevel, School, State, Student, StudentEnrollment};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
