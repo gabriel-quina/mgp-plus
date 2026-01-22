@@ -8,23 +8,26 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('role_assignments', function (Blueprint $table) {
+        Schema::create('company_role_assignments', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('user_id');          // FK depois
+            $table->unsignedBigInteger('company_role_id');  // FK depois
+            $table->timestamps();
+        });
 
-            $table->unsignedBigInteger('user_id'); // FK depois
-            $table->unsignedBigInteger('role_id'); // FK depois
-
-            // escopo polimórfico (School, City, State) ou global (null)
-            $table->string('scope_type')->nullable();
-            $table->unsignedBigInteger('scope_id')->nullable();
-
+        Schema::create('school_role_assignments', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('user_id');         // FK depois
+            $table->unsignedBigInteger('school_role_id');  // FK depois
+            $table->unsignedBigInteger('school_id');       // FK depois
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('role_assignments');
+        Schema::dropIfExists('school_role_assignments');
+        Schema::dropIfExists('company_role_assignments');
     }
 };
 

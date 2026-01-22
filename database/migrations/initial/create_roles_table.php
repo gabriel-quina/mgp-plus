@@ -8,19 +8,25 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('roles', function (Blueprint $table) {
+        Schema::create('company_roles', function (Blueprint $table) {
             $table->id();
-
-            $table->string('name');   // ex: admin, teacher
+            $table->string('name');   // ex: company_admin, company_consultant
             $table->string('label')->nullable();
+            $table->timestamps();
+        });
 
+        Schema::create('school_roles', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');   // ex: teacher, principal
+            $table->string('label')->nullable();
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('roles');
+        Schema::dropIfExists('school_roles');
+        Schema::dropIfExists('company_roles');
     }
 };
 

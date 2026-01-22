@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 
 class User extends Authenticatable
@@ -20,7 +20,6 @@ class User extends Authenticatable
         'password',
         'is_master',
         'must_change_password',
-        // 'role', // legado: se existir no banco, ok manter, mas não use para permissão
     ];
 
     protected $hidden = [
@@ -34,17 +33,6 @@ class User extends Authenticatable
         'must_change_password' => 'boolean',
     ];
 
-    /* =========================
-     | RBAC in-memory cache
-     *=========================*/
-    protected bool $rbacIndexed = false;
-
-    /** @var array<string, array<string, bool>> roleName => [scopeKey => true] */
-    protected array $rbacRoleIndex = [];
-
-    /** @var array<string, array<string, bool>> permissionName => [scopeKey => true] */
-    protected array $rbacPermissionIndex = [];
-
     public function setCpfAttribute($value): void
     {
         $this->attributes['cpf'] = preg_replace('/\D+/', '', (string) $value) ?: null;
@@ -53,190 +41,168 @@ class User extends Authenticatable
     /* =========================
      | Relations
      *=========================*/
-    public function roleAssignments(): HasMany
+
+    public function userScope(): HasOne
     {
-        return $this->hasMany(RoleAssignment::class);
+        return $this->hasOne(UserScope::class, 'user_id', 'id');
     }
 
-    public function roles(): BelongsToMany
+    public function companyRoleAssignments(): HasMany
     {
-        return $this->belongsToMany(Role::class, 'role_assignments')
-            ->withPivot(['scope_type', 'scope_id'])
-            ->withTimestamps();
+        return $this->hasMany(CompanyRoleAssignment::class, 'user_id', 'id');
     }
+
+    public function schoolRoleAssignments(): HasMany
+    {
+        return $this->hasMany(SchoolRoleAssignment::class, 'user_id', 'id');
+    }
+
+    public function companySchoolAccessGrants(): HasMany
+    {
+        return $this->hasMany(CompanySchoolAccessGrant::class, 'user_id', 'id');
+    }
+
+    /* =========================
+     | Scope helpers
+     *=========================*/
+
+    public function scopeType(): ?string
+    {
+        // master é transversal, mas você ainda grava 'company' em user_scopes por conveniência
+        return $this->userScope?->scope;
+    }
+
+    public function isCompany(): bool
+    {
+        return $this->scopeType() === 'company';
+    }
+
+    public function isSchool(): bool
+    {
+        return $this->scopeType() === 'school';
+    }
+
+    /* =========================
+     | Role helpers
+     *=========================*/
+
+    public function hasCompanyRole(string $roleName): bool
+    {
+        return $this->companyRoleAssignments()
+            ->whereHas('role', fn ($q) => $q->where('name', $roleName))
+            ->exists();
+    }
+
+    public function hasSchoolRole(string $roleName, int $schoolId): bool
+    {
+        return $this->schoolRoleAssignments()
+            ->where('school_id', $schoolId)
+            ->whereHas('role', fn ($q) => $q->where('name', $roleName))
+            ->exists();
+    }
+
+    /* =========================
+     | Permission helper
+     *=========================*/
 
     /**
-     * Use em listagens para evitar N+1:
-     * User::withRbac()->get()
+     * Company: verifica permissão em qualquer role company do usuário
+     * School: verifica permissão em roles school do usuário NAQUELA escola
+     *
+     * @param string $permissionName ex: 'dashboard.view'
+     * @param int|null $schoolId obrigatório quando usuário é school
      */
-    public function scopeWithRbac($q)
-    {
-        return $q->with(['roleAssignments.role.permissions']);
-    }
-
-    /* =========================
-     | RBAC cache helpers
-     *=========================*/
-    protected function rbacScopeKey($scope): string
-    {
-        if (! $scope) {
-            return 'global|global';
-        }
-
-        return $scope->getMorphClass() . '|' . $scope->getKey();
-    }
-
-    protected function buildRbacIndex(): void
-    {
-        if ($this->rbacIndexed) {
-            return;
-        }
-
-        // carrega uma vez (se não tiver sido eager loaded)
-        $this->loadMissing(['roleAssignments.role.permissions']);
-
-        foreach ($this->roleAssignments as $ra) {
-            $roleName = $ra->role?->name;
-            if (! $roleName) {
-                continue;
-            }
-
-            $scopeKey = ($ra->scope_type ?? 'global') . '|' . ($ra->scope_id ?? 'global');
-
-            $this->rbacRoleIndex[$roleName][$scopeKey] = true;
-
-            $perms = $ra->role?->permissions ?? collect();
-            foreach ($perms as $perm) {
-                $permName = $perm->name ?? null;
-                if (! $permName) {
-                    continue;
-                }
-                $this->rbacPermissionIndex[$permName][$scopeKey] = true;
-            }
-        }
-
-        $this->rbacIndexed = true;
-    }
-
-    /* =========================
-     | RBAC helpers (no N+1)
-     *=========================*/
-    public function hasRole(string $roleName, $scope = null): bool
-    {
-        $this->buildRbacIndex();
-
-        $scopeKey = $this->rbacScopeKey($scope);
-
-        return isset($this->rbacRoleIndex[$roleName][$scopeKey]);
-    }
-
-    public function assignRole(string $roleName, $scope = null): void
-    {
-        $role = Role::firstOrCreate(['name' => $roleName]);
-
-        RoleAssignment::firstOrCreate([
-            'user_id' => $this->id,
-            'role_id' => $role->id,
-            'scope_type' => $scope ? $scope->getMorphClass() : null,
-            'scope_id' => $scope ? $scope->getKey() : null,
-        ]);
-
-        // invalida cache local (para refletir imediatamente no mesmo request)
-        $this->rbacIndexed = false;
-        $this->rbacRoleIndex = [];
-        $this->rbacPermissionIndex = [];
-    }
-
-    public function canByRole(string $permissionName, $scope = null): bool
+    public function canByRole(string $permissionName, ?int $schoolId = null): bool
     {
         if ($this->is_master) {
             return true;
         }
 
-        $this->buildRbacIndex();
+        if ($this->isCompany()) {
+            return $this->companyRoleAssignments()
+                ->whereHas('role.permissions', fn ($q) => $q->where('name', $permissionName))
+                ->exists();
+        }
 
-        $scopeKey = $this->rbacScopeKey($scope);
+        if ($this->isSchool()) {
+            if (! $schoolId) {
+                return false; // em school, permission sempre depende de uma escola
+            }
 
-        return isset($this->rbacPermissionIndex[$permissionName][$scopeKey]);
+            return $this->schoolRoleAssignments()
+                ->where('school_id', $schoolId)
+                ->whereHas('role.permissions', fn ($q) => $q->where('name', $permissionName))
+                ->exists();
+        }
+
+        return false;
     }
 
     /* =========================
      | Accessible schools
      *=========================*/
+
     public function accessibleSchools(): Collection
     {
-        // Master/empresa transversal
-        if ($this->is_master
-            || $this->hasRole('company_coordinator')
-            || $this->hasRole('company_consultant')
-        ) {
+        if ($this->is_master) {
             return School::orderBy('name')->get();
         }
 
-        // 1) Acesso direto por role escopada na escola
-        $directSchoolIds = RoleAssignment::query()
-            ->where('user_id', $this->id)
-            ->where('scope_type', School::class)
-            ->pluck('scope_id')
-            ->unique()
-            ->values();
+        if ($this->isCompany()) {
+            $schoolIds = $this->companySchoolAccessGrants()
+                ->pluck('school_id')
+                ->unique()
+                ->values();
 
-        // 2) Acesso por cidade (secretaria municipal)
-        $cityIds = RoleAssignment::query()
-            ->where('user_id', $this->id)
-            ->where('scope_type', City::class)
-            ->whereHas('role', function ($q) {
-                $q->whereIn('name', [
-                    'city_education_secretary',
-                    'city_coordinator',
-                ]);
-            })
-            ->pluck('scope_id')
-            ->unique()
-            ->values();
+            if ($schoolIds->isEmpty()) {
+                return collect();
+            }
 
-        // 3) Acesso por estado (secretaria estadual)
-        $stateIds = RoleAssignment::query()
-            ->where('user_id', $this->id)
-            ->where('scope_type', State::class)
-            ->whereHas('role', function ($q) {
-                $q->whereIn('name', [
-                    'state_education_secretary',
-                ]);
-            })
-            ->pluck('scope_id')
-            ->unique()
-            ->values();
-
-        // sem escopo, sem acesso
-        if ($directSchoolIds->isEmpty() && $cityIds->isEmpty() && $stateIds->isEmpty()) {
-            return collect();
+            return School::query()
+                ->whereIn('id', $schoolIds)
+                ->orderBy('name')
+                ->get();
         }
 
-        return School::query()
-            ->where(function ($q) use ($directSchoolIds, $cityIds, $stateIds) {
-                if ($directSchoolIds->isNotEmpty()) {
-                    $q->whereIn('id', $directSchoolIds);
-                }
+        if ($this->isSchool()) {
+            $schoolIds = $this->schoolRoleAssignments()
+                ->pluck('school_id')
+                ->unique()
+                ->values();
 
-                if ($cityIds->isNotEmpty()) {
-                    $q->orWhere(function ($qq) use ($cityIds) {
-                        $qq->whereIn('city_id', $cityIds)
-                            ->where('administrative_dependency', 'municipal');
-                    });
-                }
+            if ($schoolIds->isEmpty()) {
+                return collect();
+            }
 
-                if ($stateIds->isNotEmpty()) {
-                    $q->orWhere(function ($qq) use ($stateIds) {
-                        $qq->whereHas('city', function ($cq) use ($stateIds) {
-                            $cq->whereIn('state_id', $stateIds);
-                        })
-                            ->where('administrative_dependency', 'state');
-                    });
-                }
-            })
-            ->orderBy('name')
-            ->get();
+            return School::query()
+                ->whereIn('id', $schoolIds)
+                ->orderBy('name')
+                ->get();
+        }
+
+        return collect();
+    }
+
+    /**
+     * Retorna a "actingSchool" default:
+     * - se sessão tiver acting_school_id, usa ela
+     * - senão, se só tiver 1 escola acessível, usa essa
+     */
+    public function actingSchool(): ?School
+    {
+        $schoolId = session('acting_school_id');
+
+        if ($schoolId) {
+            return School::find($schoolId);
+        }
+
+        $schools = $this->accessibleSchools();
+
+        if ($schools->count() === 1) {
+            return $schools->first();
+        }
+
+        return null;
     }
 }
 

@@ -237,41 +237,12 @@ return new class extends Migration
                 ->nullOnDelete();
         });
 
-        Schema::table('roles', function (Blueprint $table) {
-            $table->unique('name', 'uq_roles_name');
-        });
-
+        // ===== permissions (mantém) =====
         Schema::table('permissions', function (Blueprint $table) {
             $table->unique('name', 'uq_permissions_name');
         });
 
-        Schema::table('permission_role', function (Blueprint $table) {
-            $table->unique(['permission_id', 'role_id'], 'uq_permission_role_pair');
-            $table->index('role_id', 'idx_permission_role_role_id');
-
-            $table->foreign('permission_id', 'fk_permission_role_permission_id')
-                ->references('id')->on('permissions')
-                ->cascadeOnDelete();
-
-            $table->foreign('role_id', 'fk_permission_role_role_id')
-                ->references('id')->on('roles')
-                ->cascadeOnDelete();
-        });
-
-        Schema::table('role_assignments', function (Blueprint $table) {
-            $table->index('user_id', 'idx_role_assignments_user_id');
-            $table->index('role_id', 'idx_role_assignments_role_id');
-            $table->index(['scope_type', 'scope_id'], 'idx_role_assignments_scope');
-
-            $table->foreign('user_id', 'fk_role_assignments_user_id')
-                ->references('id')->on('users')
-                ->cascadeOnDelete();
-
-            $table->foreign('role_id', 'fk_role_assignments_role_id')
-                ->references('id')->on('roles')
-                ->cascadeOnDelete();
-        });
-
+        // ===== users (mantém) =====
         Schema::table('users', function (Blueprint $table) {
             $table->unique('email', 'uq_users_email');
             $table->unique('cpf', 'uq_users_cpf');
@@ -280,11 +251,13 @@ return new class extends Migration
 
         DB::statement("ALTER TABLE users ADD CONSTRAINT chk_users_email_or_cpf CHECK (email IS NOT NULL OR cpf IS NOT NULL)");
 
+        // ===== sessions (mantém) =====
         Schema::table('sessions', function (Blueprint $table) {
             $table->foreign('user_id', 'fk_sessions_user_id')
                 ->references('id')->on('users')
                 ->nullOnDelete();
         });
+
     }
 
     public function down(): void
@@ -293,29 +266,8 @@ return new class extends Migration
             $table->dropForeign('fk_sessions_user_id');
         });
 
-        Schema::table('role_assignments', function (Blueprint $table) {
-            $table->dropForeign('fk_role_assignments_user_id');
-            $table->dropForeign('fk_role_assignments_role_id');
-
-            $table->dropIndex('idx_role_assignments_user_id');
-            $table->dropIndex('idx_role_assignments_role_id');
-            $table->dropIndex('idx_role_assignments_scope');
-        });
-
-        Schema::table('permission_role', function (Blueprint $table) {
-            $table->dropForeign('fk_permission_role_permission_id');
-            $table->dropForeign('fk_permission_role_role_id');
-
-            $table->dropUnique('uq_permission_role_pair');
-            $table->dropIndex('idx_permission_role_role_id');
-        });
-
         Schema::table('permissions', function (Blueprint $table) {
             $table->dropUnique('uq_permissions_name');
-        });
-
-        Schema::table('roles', function (Blueprint $table) {
-            $table->dropUnique('uq_roles_name');
         });
 
         Schema::table('teaching_assignments', function (Blueprint $table) {

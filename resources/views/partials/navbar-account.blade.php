@@ -4,41 +4,57 @@
     $user = auth()->user();
 
     $isMaster = (bool) ($user?->is_master ?? false);
-    $isCompany = $user && ($user->hasRole('company_coordinator') || $user->hasRole('company_consultant'));
-    $scopeSchools = collect($scopeSchools ?? ($schools ?? []));
 
-    // ===== Resolução de escopo =====
+    // Novo RBAC: escopo do usuário vem de user_scopes
+    $isCompany = $user && method_exists($user, 'isCompany') ? $user->isCompany() : false;
+    $isSchool  = $user && method_exists($user, 'isSchool') ? $user->isSchool() : false;
 
-    $isSchoolArea = request()->routeIs('schools.*');
-    $routeSchool = $isSchoolArea ? request()->route('school') : null;
+    // Lista de escolas acessíveis (novo RBAC)
+    $scopeSchools = $user && method_exists($user, 'accessibleSchools')
+        ? $user->accessibleSchools()
+        : collect();
 
-    $school = $routeSchool ?: ($schoolNav['school'] ?? null);
-
-    $schoolId = null;
-    $schoolName = null;
-
-    if ($school) {
-        $schoolId = is_object($school) ? $school->id ?? null : $school;
-        $schoolName = is_object($school) ? $school->name ?? null : null;
-    }
-
+    // ===== Resolução de escopo (UI) =====
     $actingScope = $actingScope ?? session('acting_scope');
     $actingSchoolId = $actingSchoolId ?? session('acting_school_id');
 
-    $resolvedScope = null;
+    // Se está em rota de escola, a rota manda no escopo
+    $isSchoolArea = request()->routeIs('schools.*');
+    $routeSchool = $isSchoolArea ? request()->route('school') : null;
 
-    if ($schoolId) {
+    $routeSchoolId = null;
+    if ($routeSchool) {
+        $routeSchoolId = is_object($routeSchool) ? ($routeSchool->id ?? null) : $routeSchool;
+    }
+
+    // resolvedScope: prioridade -> rota schools.* -> sessão -> escopo do usuário
+    if ($routeSchoolId) {
         $resolvedScope = 'school';
-        $actingSchoolId = (int) $schoolId;
+        $actingSchoolId = (int) $routeSchoolId;
     } elseif ($actingScope === 'school' && $actingSchoolId) {
         $resolvedScope = 'school';
     } elseif ($actingScope === 'company') {
         $resolvedScope = 'company';
+    } else {
+        // fallback pelo escopo do usuário
+        if ($isMaster || $isCompany) {
+            $resolvedScope = 'company';
+        } elseif ($isSchool) {
+            $resolvedScope = 'school';
+        } else {
+            $resolvedScope = 'company'; // fallback seguro para não quebrar UI
+        }
     }
 
-    if (! $resolvedScope && ($isMaster || $isCompany)) {
-        $resolvedScope = 'company';
+    // Se resolvedScope = school mas não tem actingSchoolId,
+    // tenta resolver automaticamente se só tiver 1 escola acessível
+    if ($resolvedScope === 'school' && ! $actingSchoolId && $scopeSchools->count() === 1) {
+        $actingSchoolId = (int) ($scopeSchools->first()?->id ?? 0);
+        if ($actingSchoolId > 0) {
+            session(['acting_scope' => 'school', 'acting_school_id' => $actingSchoolId]);
+        }
     }
+
 @endphp
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -98,42 +114,42 @@
                     {{-- ESCOLA --}}
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('schools.dashboard') ? 'active' : '' }}"
-                           href="{{ route('schools.dashboard', $actingSchoolId) }}">
+                           href="{{ route('schools.dashboard', ['school' => $actingSchoolId]) }}">
                             Resumo da escola
                         </a>
                     </li>
 
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('schools.students.*') ? 'active' : '' }}"
-                           href="{{ route('schools.students.index', $actingSchoolId) }}">
+                           href="{{ route('schools.students.index', ['school' => $actingSchoolId]) }}">
                             Alunos
                         </a>
                     </li>
 
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('schools.enrollments.*') ? 'active' : '' }}"
-                           href="{{ route('schools.enrollments.index', $actingSchoolId) }}">
+                           href="{{ route('schools.enrollments.index', ['school' => $actingSchoolId]) }}">
                             Matrículas
                         </a>
                     </li>
 
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('schools.teachers.*') ? 'active' : '' }}"
-                           href="{{ route('schools.teachers.index', $actingSchoolId) }}">
+                           href="{{ route('schools.teachers.index', ['school' => $actingSchoolId]) }}">
                             Professores
                         </a>
                     </li>
 
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('schools.classrooms.*') ? 'active' : '' }}"
-                           href="{{ route('schools.classrooms.index', $actingSchoolId) }}">
+                           href="{{ route('schools.classrooms.index', ['school' => $actingSchoolId]) }}">
                             Grupos
                         </a>
                     </li>
 
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('schools.reports.*') ? 'active' : '' }}"
-                           href="{{ route('schools.reports.index', $actingSchoolId) }}">
+                           href="{{ route('schools.reports.index', ['school' => $actingSchoolId]) }}">
                             Relatórios
                         </a>
                     </li>
@@ -160,11 +176,25 @@
                                 </a>
                             @elseif ($resolvedScope === 'school' && $actingSchoolId)
                                 <a class="dropdown-item"
-                                   href="{{ route('schools.dashboard', $actingSchoolId) }}">
+                                   href="{{ route('schools.dashboard', ['school' => $actingSchoolId]) }}">
                                     Dashboard da escola
                                 </a>
                             @endif
                         </li>
+
+                        {{-- (Opcional) seletor de escola, se user tem mais de 1 --}}
+                        @if ($resolvedScope === 'school' && $scopeSchools->count() > 1)
+                            <li><hr class="dropdown-divider"></li>
+                            <li class="px-3 py-1 text-muted small">Trocar escola</li>
+                            @foreach ($scopeSchools as $s)
+                                <li>
+                                    <a class="dropdown-item"
+                                       href="{{ route('schools.dashboard', ['school' => $s->id]) }}">
+                                        {{ $s->name }}
+                                    </a>
+                                </li>
+                            @endforeach
+                        @endif
 
                         <li><hr class="dropdown-divider"></li>
 
