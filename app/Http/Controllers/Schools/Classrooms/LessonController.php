@@ -4,29 +4,32 @@ namespace App\Http\Controllers\Schools\Classrooms;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Schools\Classrooms\StoreLessonRequest;
-use App\Models\{School, Classroom, Lesson, LessonAttendance, Teacher, User};
+use App\Models\{Classroom, Lesson, LessonAttendance, School, Teacher, User};
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\{Auth, DB, Schema};
 
 class LessonController extends Controller
 {
     private function resolveTeacherForUser(User $user): ?Teacher
     {
         // teachers.cpf
-        if (Schema::hasTable('teachers') && Schema::hasColumn('teachers', 'cpf') && !empty($user->cpf)) {
+        if (Schema::hasTable('teachers') && Schema::hasColumn('teachers', 'cpf') && ! empty($user->cpf)) {
             $cpf = preg_replace('/\D+/', '', (string) $user->cpf) ?: null;
             if ($cpf) {
                 $t = Teacher::query()->where('cpf', $cpf)->first();
-                if ($t) return $t;
+                if ($t) {
+                    return $t;
+                }
             }
         }
 
         // teachers.email
-        if (Schema::hasTable('teachers') && Schema::hasColumn('teachers', 'email') && !empty($user->email)) {
+        if (Schema::hasTable('teachers') && Schema::hasColumn('teachers', 'email') && ! empty($user->email)) {
             $t = Teacher::query()->where('email', $user->email)->first();
-            if ($t) return $t;
+            if ($t) {
+                return $t;
+            }
         }
 
         return null;
@@ -34,7 +37,9 @@ class LessonController extends Controller
 
     private function hasSchoolAccess(User $user, School $school): bool
     {
-        if ($user->is_master) return true;
+        if ($user->is_master) {
+            return true;
+        }
 
         return $user->schoolRoleAssignments()
             ->where('school_id', $school->id)
@@ -51,7 +56,7 @@ class LessonController extends Controller
     private function lessonLaunchContext(School $school): array
     {
         /** @var User $user */
-        $user = auth()->user();
+        $user = Auth::user();
 
         if (! $user) {
             abort(403, 'Não autenticado.');
@@ -94,7 +99,7 @@ class LessonController extends Controller
             ->paginate(30);
 
         /** @var User $user */
-        $user = auth()->user();
+        $user = Auth::user();
 
         $teacher = $user ? $this->resolveTeacherForUser($user) : null;
         $hasSchoolAccess = $user ? $this->hasSchoolAccess($user, $school) : false;
@@ -162,7 +167,7 @@ class LessonController extends Controller
         if ($teacherLocked) {
             $teacherIdToUse = $teacher?->id;
         } else {
-            $teacherIdToUse = !empty($data['teacher_id']) ? (int) $data['teacher_id'] : null;
+            $teacherIdToUse = ! empty($data['teacher_id']) ? (int) $data['teacher_id'] : null;
 
             if (! $teacherIdToUse) {
                 $teachersList = $teachers ?? Teacher::query()->orderBy('name')->get();
@@ -181,10 +186,10 @@ class LessonController extends Controller
         return DB::transaction(function () use ($classroom, $school, $teacherIdToUse, $taughtAt, $data, $attendances) {
             $lesson = $classroom->lessons()->create([
                 'teacher_id' => $teacherIdToUse,
-                'taught_at'  => $taughtAt->toDateString(),
-                'topic'      => $data['topic'] ?? null,
-                'notes'      => $data['notes'] ?? null,
-                'is_locked'  => false,
+                'taught_at' => $taughtAt->toDateString(),
+                'topic' => $data['topic'] ?? null,
+                'notes' => $data['notes'] ?? null,
+                'is_locked' => false,
             ]);
 
             if (! empty($attendances)) {
@@ -231,7 +236,7 @@ class LessonController extends Controller
             'attendances.enrollment.gradeLevel',
         ]);
 
-        $roster = $classroom->rosterAt($lesson->taught_at->copy()->startOfDay());
+        $roster = $classroom->rosterAt($lesson->taught_at->copy()->endOfDay());
         $attendanceByEnrollment = $lesson->attendances->keyBy('student_enrollment_id');
 
         return view('schools.lessons.show', compact(
@@ -243,4 +248,3 @@ class LessonController extends Controller
         ));
     }
 }
-

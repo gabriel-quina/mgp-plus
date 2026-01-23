@@ -31,7 +31,7 @@
                 <dd class="col-sm-9">{{ $enrollment->academic_year }}</dd>
 
                 <dt class="col-sm-3">Turno</dt>
-                <dd class="col-sm-9">{{ $enrollment->shift }}</dd>
+                <dd class="col-sm-9">{{ $shiftLabels[$enrollment->shift] }}</dd>
 
                 <dt class="col-sm-3">Status</dt>
                 <dd class="col-sm-9">

@@ -43,7 +43,7 @@
         @error('engagement_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
       </div>
 
-      <div class="col-12 col-md-4">
+      <div class="col-12 col-md-6">
         <label for="academic_year" class="form-label">Ano letivo <span class="text-danger">*</span></label>
         <input
           type="number"
@@ -57,19 +57,7 @@
         @error('academic_year') <div class="invalid-feedback">{{ $message }}</div> @enderror
       </div>
 
-      <div class="col-12 col-md-4">
-        <label for="shift" class="form-label">Turno</label>
-        @php $shift = old('shift', $assignment->shift ?? ''); @endphp
-        <select id="shift" name="shift" class="form-select @error('shift') is-invalid @enderror">
-          <option value="">—</option>
-          <option value="morning"   {{ $shift === 'morning' ? 'selected' : '' }}>Manhã</option>
-          <option value="afternoon" {{ $shift === 'afternoon' ? 'selected' : '' }}>Tarde</option>
-          <option value="evening"   {{ $shift === 'evening' ? 'selected' : '' }}>Noite</option>
-        </select>
-        @error('shift') <div class="invalid-feedback">{{ $message }}</div> @enderror
-      </div>
-
-      <div class="col-12 col-md-4">
+      <div class="col-12 col-md-6">
         <label for="hours_per_week" class="form-label">Horas por semana</label>
         <input
           type="number"

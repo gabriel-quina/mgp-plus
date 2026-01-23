@@ -7,7 +7,7 @@
 
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
     <div>
-        <h1 class="h3 mb-1">Alunos do grupo</h1>
+        <h1 class="h3 mb-1">Alunos da turma</h1>
         <div class="text-muted">
             {{ $school->short_name ?? $school->name }} · <strong>{{ $classroom->name }}</strong>
         </div>
@@ -54,7 +54,7 @@
 <div class="row g-3">
     <div class="col-lg-6">
         <div class="card">
-            <div class="card-header">No grupo (ativos em {{ $at->format('d/m/Y') }})</div>
+            <div class="card-header">Na turma (ativos em {{ $at->format('d/m/Y') }})</div>
             <div class="table-responsive">
                 <table class="table align-middle mb-0">
                     <thead class="table-light">
@@ -87,7 +87,7 @@
                                 <td class="text-end">
                                     <form method="POST"
                                           action="{{ route('schools.classrooms.memberships.end', [$school, $classroom, $m]) }}"
-                                          onsubmit="return confirm('Encerrar a alocação deste aluno no grupo?');">
+                                          onsubmit="return confirm('Encerrar a alocação deste aluno na turma?');">
                                         @csrf
                                         @method('PATCH')
                                         <button class="btn btn-sm btn-outline-danger">Encerrar</button>
@@ -97,7 +97,7 @@
                         @empty
                             <tr>
                                 <td colspan="4" class="text-center text-muted py-4">
-                                    Nenhum aluno alocado no grupo nesta data.
+                                    Nenhum aluno alocado na turma nesta data.
                                 </td>
                             </tr>
                         @endforelse
@@ -109,7 +109,7 @@
 
     <div class="col-lg-6">
         <div class="card">
-            <div class="card-header">Elegíveis (mesmas séries do grupo)</div>
+            <div class="card-header">Elegíveis</div>
             <div class="table-responsive">
                 <table class="table align-middle mb-0">
                     <thead class="table-light">
@@ -139,13 +139,13 @@
                                 </td>
                                 <td>
                                     @if($inThis)
-                                        <span class="badge bg-success">Já está no grupo</span>
+                                        <span class="badge bg-success">Já está na turma</span>
                                     @elseif($current)
                                         <span class="badge bg-warning text-dark">
-                                            Em outro grupo: {{ $current->classroom?->name ?? ('#'.$current->classroom_id) }}
+                                            Em outra turma: {{ $current->classroom?->name ?? ('#'.$current->classroom_id) }}
                                         </span>
                                     @else
-                                        <span class="badge bg-secondary">Sem grupo</span>
+                                        <span class="badge bg-secondary">Sem turma</span>
                                     @endif
                                 </td>
                                 <td class="text-end">
@@ -165,7 +165,7 @@
                         @empty
                             <tr>
                                 <td colspan="4" class="text-center text-muted py-4">
-                                    Nenhum aluno elegível para as séries deste grupo.
+                                    Nenhum aluno elegível para as séries desta turma.
                                 </td>
                             </tr>
                         @endforelse

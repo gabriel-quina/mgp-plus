@@ -44,11 +44,11 @@
 
         <div class="col-md-6">
             <div class="card h-100">
-                <div class="card-header">Resumo da escola</div>
+                <div class="card-header">Resumo da escola (Ano Vigente)</div>
                 <div class="card-body">
                     <div class="row g-3 mb-3">
                         <div class="col-4">
-                            <div class="text-muted small">Turmas ativas (ano letivo vigente)</div>
+                            <div class="text-muted small">Turmas ativas</div>
                             <div class="h3 mb-0">
                                 {{ $school->classrooms_count }}
                             </div>
@@ -60,7 +60,7 @@
                             </div>
                         </div>
                         <div class="col-4">
-                            <div class="text-muted small">Alunos matriculados (ano letivo vigente)</div>
+                            <div class="text-muted small">Alunos matriculados</div>
                             <div class="h3 mb-0">
                                 {{ $school->enrollments_count }}
                             </div>
@@ -84,7 +84,6 @@
                                 <th>Nome</th>
                                 <th style="width: 300px;">Qtd de turmas</th>
                                 <th style="width: 220px;">Alunos Matriculados</th>
-                                <th style="width: 150px;" class="text-end">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -123,7 +122,6 @@
                                 <th style="width: 150px;">Ano letivo</th>
                                 <th style="width: 150px;">Turno</th>
                                 <th>Anos atendidos</th>
-                                <th style="width: 150px;" class="text-end">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -143,12 +141,6 @@
                                         @endif
                                     </td>
                                     <td>{{ $classroom->gradeLevels->pluck('short_name')->filter()->join(', ') ?: $classroom->gradeLevels->pluck('name')->join(', ') }}
-                                    </td>
-                                    <td class="text-end">
-                                        <a href="{{ route('admin.classrooms.show', $classroom) }}"
-                                            class="btn btn-sm btn-outline-secondary">Ver</a>
-                                        <a href="{{ route('admin.classrooms.edit', $classroom) }}"
-                                            class="btn btn-sm btn-outline-primary">Editar</a>
                                     </td>
                                 </tr>
                             @endforeach

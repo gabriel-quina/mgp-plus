@@ -92,7 +92,7 @@ class SchoolTeacherController extends Controller
             ->paginate(10);
 
         // Reaproveita a view master por enquanto
-        return view('teachers.show', [
+        return view('schools.teachers.show', [
             'school' => $school,
             'schoolNav' => $school,
             'teacher' => $teacher,

@@ -19,19 +19,8 @@
                 @enderror
             </div>
 
-            {{-- Nome social --}}
-            <div class="col-12 col-md-6">
-                <label for="social_name" class="form-label">Nome social</label>
-                <input type="text" id="social_name" name="social_name"
-                    value="{{ old('social_name', $teacher->social_name ?? '') }}"
-                    class="form-control @error('social_name') is-invalid @enderror">
-                @error('social_name')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-
             {{-- CPF --}}
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-6">
                 <label for="cpf" class="form-label">
                     CPF <span class="text-danger">*</span>
                 </label>
@@ -53,7 +42,7 @@
             </div>
 
             {{-- E-mail --}}
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-6">
                 <label for="email" class="form-label">E-mail</label>
                 <input type="email" id="email" name="email" value="{{ old('email', $teacher->email ?? '') }}"
                     class="form-control @error('email') is-invalid @enderror">
@@ -63,7 +52,7 @@
             </div>
 
             {{-- Nascimento --}}
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-6">
                 <label for="birthdate" class="form-label">Data de nascimento</label>
                 <input type="date" id="birthdate" name="birthdate"
                     value="{{ old('birthdate', optional($teacher->birthdate ?? null)->format('Y-m-d')) }}"

@@ -23,7 +23,7 @@
             <div class="row g-2">
                 <div class="col-md-6"><strong>Aluno:</strong> {{ $enrollment->student?->name ?? '—' }}</div>
                 <div class="col-md-3"><strong>Ano letivo:</strong> {{ $enrollment->academic_year }}</div>
-                <div class="col-md-3"><strong>Turno:</strong> {{ $enrollment->shift }}</div>
+                <div class="col-md-3"><strong>Turno:</strong> {{ $shiftLabels[$enrollment->shift] }}</div>
                 <div class="col-md-6"><strong>Ano escolar:</strong> {{ $enrollment->gradeLevel?->name ?? '—' }}</div>
                 <div class="col-md-6"><strong>Status atual:</strong>
                     {{ $statusLabels[$enrollment->status] ?? $enrollment->status }}</div>

@@ -41,7 +41,7 @@
             <div class="d-flex gap-2">
                 <a href="{{ route('schools.classrooms.show', [$school, $classroom]) }}"
                    class="btn btn-outline-secondary btn-sm">
-                    Voltar para o grupo
+                    Voltar para a turma
                 </a>
 
                 @if (!empty($canLaunch) && $canLaunch)
@@ -62,7 +62,7 @@
             <div class="card-body p-0">
                 @if ($assessments->isEmpty())
                     <p class="p-3 mb-0 text-muted">
-                        Nenhuma avaliação lançada ainda para este grupo.
+                        Nenhuma avaliação lançada ainda para esta turma.
                     </p>
                 @else
                     <div class="table-responsive">

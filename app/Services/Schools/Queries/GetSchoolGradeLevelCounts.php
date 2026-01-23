@@ -17,6 +17,7 @@ class GetSchoolGradeLevelCounts
     {
         $eligibleStatuses = [
             StudentEnrollment::STATUS_ENROLLED,
+            StudentEnrollment::STATUS_ALLOCATED,
             StudentEnrollment::STATUS_ACTIVE,
         ];
 

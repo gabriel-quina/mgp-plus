@@ -10,18 +10,15 @@
 @section('content')
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div>
-            <h1 class="h3 mb-1">Grupos da Escola</h1>
+            <h1 class="h3 mb-1">Turmas da Escola</h1>
             <div class="text-muted">
                 {{ $school->short_name ?? $school->name }}
             </div>
         </div>
 
         <div class="d-flex gap-2 flex-wrap">
-            <a class="btn btn-primary" href="{{ route('schools.groups-wizard.create', $school) }}">
-                Novo grupo (helper)
-            </a>
             <a class="btn btn-primary" href="{{ route('schools.classrooms.create', $school) }}">
-                Novo grupo
+                Novo turma
             </a>
         </div>
     </div>
@@ -42,7 +39,7 @@
 
             <div class="col-12 col-md-2">
                 <label class="form-label mb-1">Turno</label>
-                <input type="text" name="shift" class="form-control" placeholder="morning/afternoon/evening"
+                <input type="text" name="shift" class="form-control" placeholder="Manhã / Tarde / Noite"
                     value="{{ $sh }}">
             </div>
 
@@ -64,11 +61,9 @@
                 <thead>
                     <tr>
                         <th>Nome</th>
-                        <th class="text-nowrap">Tipo</th>
                         <th class="text-nowrap">Ano letivo</th>
                         <th>Turno</th>
                         <th>Anos escolares</th>
-                        <th class="text-nowrap text-end">Alunos (base)</th>
                         <th class="text-end">Ações</th>
                     </tr>
                 </thead>
@@ -84,23 +79,12 @@
                             <td class="fw-semibold">
                                 {{ $classroom->name }}
                             </td>
-
-                            <td class="text-nowrap">
-                                @if ($isGroup)
-                                    <span class="badge text-bg-primary">Grupo</span>
-                                @else
-                                    <span class="badge text-bg-secondary">Base (legado)</span>
-                                @endif
-                            </td>
-
                             <td class="text-nowrap">
                                 {{ $classroom->academic_year ?? '—' }}
                             </td>
-
                             <td>
-                                {{ $classroom->shift ?? '—' }}
+                                {{ $shiftLabels[$classroom->shift] ?? $classroom->shift }}
                             </td>
-
                             <td>
                                 @if ($gradeLevels?->count())
                                     <div class="d-flex flex-wrap gap-1">
@@ -115,10 +99,6 @@
                                 @endif
                             </td>
 
-                            <td class="text-nowrap text-end">
-                                {{ isset($classroom->total_all_students) ? $classroom->total_all_students : '—' }}
-                            </td>
-
                             <td class="text-end">
                                 <a href="{{ route('schools.classrooms.show', [$school, $classroom]) }}"
                                     class="btn btn-sm btn-outline-primary">
@@ -129,7 +109,7 @@
                     @empty
                         <tr>
                             <td colspan="7" class="text-center text-muted py-4">
-                                Nenhum grupo encontrado para esta escola.
+                                Nenhuma turma encontrada para esta escola.
                             </td>
                         </tr>
                     @endforelse

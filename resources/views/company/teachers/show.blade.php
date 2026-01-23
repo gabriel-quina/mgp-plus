@@ -18,14 +18,6 @@
   <div class="card mb-4">
     <div class="card-body">
       <div class="row g-3">
-        <div class="col-md-4">
-          <div class="small text-muted">Nome</div>
-          <div class="fw-semibold">{{ $teacher->name }}</div>
-        </div>
-        <div class="col-md-4">
-          <div class="small text-muted">Nome social</div>
-          <div class="fw-semibold">{{ $teacher->social_name ?? '—' }}</div>
-        </div>
         <div class="col-md-2">
           <div class="small text-muted">CPF</div>
           <div class="fw-semibold">{{ $teacher->cpf_formatted ?? '—' }}</div>
@@ -34,11 +26,11 @@
           <div class="small text-muted">Nascimento</div>
           <div class="fw-semibold">{{ optional($teacher->birthdate)->format('d/m/Y') ?? '—' }}</div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-6">
           <div class="small text-muted">E-mail</div>
           <div class="fw-semibold">{{ $teacher->email ?? '—' }}</div>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-2 text-end">
           <div class="small text-muted">Ativo</div>
           <div class="fw-semibold">
             @if($teacher->is_active)
@@ -46,14 +38,6 @@
             @else
               <span class="badge bg-secondary">Não</span>
             @endif
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="small text-muted">Resumo</div>
-          <div class="fw-semibold">
-            {{ $teacher->engagements_count ?? 0 }} vínculo(s) •
-            {{ $teacher->city_accesses_count ?? $teacher->cityAccesses_count ?? 0 }} cidade(s) com acesso •
-            {{ $teacher->assignments_count ?? 0 }} alocação(ões)
           </div>
         </div>
       </div>
@@ -64,7 +48,6 @@
   <div class="card mb-4">
     <div class="p-3 d-flex align-items-center justify-content-between">
       <h5 class="mb-0">Vínculos</h5>
-      <a href="{{ route('admin.teacher-engagements.create', $teacher) }}" class="btn btn-sm btn-primary">Novo vínculo</a>
     </div>
     <div class="table-responsive">
       <table class="table align-middle mb-0">
@@ -116,7 +99,6 @@
   <div class="card mb-4">
     <div class="p-3 d-flex align-items-center justify-content-between">
       <h5 class="mb-0">Acessos de cidades</h5>
-      <a href="{{ route('admin.teacher-city-access.create', $teacher) }}" class="btn btn-sm btn-primary">Adicionar cidade</a>
     </div>
     <div class="table-responsive">
       <table class="table align-middle mb-0">
@@ -157,7 +139,6 @@
   <div class="card mb-4">
     <div class="p-3 d-flex align-items-center justify-content-between">
       <h5 class="mb-0">Alocações em escolas</h5>
-      <a href="{{ route('admin.teaching-assignments.create', $teacher) }}" class="btn btn-sm btn-primary">Nova alocação</a>
     </div>
     <div class="table-responsive">
       <table class="table align-middle mb-0">
@@ -166,7 +147,6 @@
             <th>Escola</th>
             <th>Cidade</th>
             <th style="width: 10%">Ano</th>
-            <th style="width: 12%">Turno</th>
             <th style="width: 12%">Horas/sem</th>
             <th>Vínculo</th>
             <th class="text-end" style="width: 220px;">Ações</th>
@@ -178,7 +158,6 @@
               <td>{{ $a->school?->name ?? '—' }}</td>
               <td>{{ $a->school?->city?->name ?? '—' }}</td>
               <td>{{ $a->academic_year }}</td>
-              <td>{{ $shiftLabel($a->shift) }}</td>
               <td>{{ $a->hours_per_week ?? '—' }}</td>
               <td>
                 @if($a->engagement)

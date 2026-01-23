@@ -48,11 +48,11 @@
 
         <div class="col-md-6">
             <div class="card h-100">
-                <div class="card-header">Resumo da escola</div>
+                <div class="card-header">Resumo da escola (Ano vigente)</div>
                 <div class="card-body">
                     <div class="row g-3 mb-3">
                         <div class="col-4">
-                            <div class="text-muted small">Turmas ativas (ano letivo vigente)</div>
+                            <div class="text-muted small">Turmas ativas</div>
                             <div class="h3 mb-0">
                                 {{ $school->classrooms_count }}
                             </div>
@@ -64,7 +64,7 @@
                             </div>
                         </div>
                         <div class="col-4">
-                            <div class="text-muted small">Alunos matriculados (ano letivo vigente)</div>
+                            <div class="text-muted small">Alunos matriculados</div>
                             <div class="h3 mb-0">
                                 {{ $school->enrollments_count }}
                             </div>
@@ -88,6 +88,7 @@
                                 <th>Nome</th>
                                 <th style="width: 300px;">Qtd de turmas</th>
                                 <th style="width: 220px;">Alunos Matriculados</th>
+                                <th style="width: 220px;">Alunos sem Turma</th>
                                 <th style="width: 150px;" class="text-end">Ações</th>
                             </tr>
                         </thead>
@@ -98,6 +99,7 @@
                                     <td>{{ $gl->name }}</td>
                                     <td>{{ $gl->classrooms_count }}</td>
                                     <td>{{ $gl->enrollments_count }}</td>
+                                    <td>{{ $gl->no_enrollments_count }}</td>
                                     <td class="text-end">
                                         <a href="{{ route('schools.grade-level-students.index', [$school, $gl]) }}"
                                             class="btn btn-sm btn-outline-secondary">Ver</a>

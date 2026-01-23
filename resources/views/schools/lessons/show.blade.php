@@ -87,7 +87,7 @@
 
                     <div class="d-flex flex-wrap gap-3">
                         <div>
-                            <div class="text-muted small">Alunos no roster</div>
+                            <div class="text-muted small">Alunos na turma</div>
                             <div class="h3 mb-0">{{ $total }}</div>
                         </div>
                         <div>
@@ -103,10 +103,6 @@
                             <div class="h3 mb-0">{{ $justified }}</div>
                         </div>
                     </div>
-
-                    <div class="small text-muted mt-2">
-                        Roster calculado com base nas memberships no início do dia (00:00).
-                    </div>
                 </div>
             </div>
         </div>
@@ -115,7 +111,6 @@
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <strong>Presença dos alunos</strong>
-            <span class="text-muted small">Registro por matrícula (StudentEnrollment).</span>
         </div>
 
         <div class="table-responsive">
@@ -162,7 +157,7 @@
                     @empty
                         <tr>
                             <td colspan="4" class="text-muted text-center py-4">
-                                Nenhum aluno no roster para esta data.
+                                Nenhum aluno na turma para esta data.
                             </td>
                         </tr>
                     @endforelse

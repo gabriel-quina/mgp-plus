@@ -73,7 +73,7 @@
                             <td>{{ $enr->student?->name ?? '—' }}</td>
                             <td>{{ $enr->gradeLevel?->name ?? '—' }}</td>
                             <td>{{ $enr->academic_year }}</td>
-                            <td>{{ $enr->shift }}</td>
+                            <td>{{ $shiftLabels[$enr->shift] }}</td>
                             <td>
                                 <span class="badge text-bg-secondary">
                                     {{ $statusLabels[$enr->status] ?? $enr->status }}
@@ -97,19 +97,6 @@
                                             action="{{ route('schools.enrollments.confirm', [$school, $enr]) }}">
                                             @csrf
                                             <button class="btn btn-sm btn-outline-success" type="submit">Efetivar</button>
-                                        </form>
-                                    @endif
-
-                                    {{-- (pré ou matriculado) -> cursando --}}
-                                    @if (in_array(
-                                            $enr->status,
-                                            [\App\Models\StudentEnrollment::STATUS_PRE_ENROLLED, \App\Models\StudentEnrollment::STATUS_ENROLLED],
-                                            true))
-                                        <form method="POST"
-                                            action="{{ route('schools.enrollments.start-course', [$school, $enr]) }}">
-                                            @csrf
-                                            <button class="btn btn-sm btn-outline-success" type="submit">Iniciar
-                                                curso</button>
                                         </form>
                                     @endif
                                 </div>

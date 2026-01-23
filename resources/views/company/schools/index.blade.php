@@ -49,7 +49,7 @@
                     <th>Escola</th>
                     <th>Cidade</th>
                     <th>UF</th>
-                    <th style="width: 260px;">Ações</th>
+                    <th style="width: 360px;">Ações</th>
                 </tr>
             </thead>
             <tbody>

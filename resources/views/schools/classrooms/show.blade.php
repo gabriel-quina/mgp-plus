@@ -2,7 +2,7 @@
 
 @extends('layouts.app')
 
-@section('title', 'Grupo — ' . ($classroom->name ?? ''))
+@section('title', 'Turma — ' . ($classroom->name ?? ''))
 
 @section('content')
     @php
@@ -50,28 +50,15 @@
                 <div class="text-muted small">
                     Escola: <strong>{{ $school?->name ?? '—' }}</strong> ·
                     Ano letivo: <strong>{{ $classroom->academic_year ?? '—' }}</strong> ·
-                    Turno: <strong>{{ $classroom->shift ?? '—' }}</strong>
+                    Turno: <strong>{{ $shiftLabels[$classroom->shift] ?? '—' }}</strong>
                     @if (!empty($classroom->group_number) && (int) $classroom->group_number > 1)
-                        · Grupo: <strong>#{{ $classroom->group_number }}</strong>
+                        · Turma: <strong>#{{ $classroom->group_number }}</strong>
                     @endif
                 </div>
 
                 <div class="text-muted small mt-1">
                     Oficina:
                     <strong>{{ $workshop?->name ?? '—' }}</strong>
-                    @if ($contract)
-                        · Contrato:
-                        <strong>#{{ $contract->id }}</strong>
-                        @if ($contract->starts_at)
-                            · Início: <strong>{{ $contract->starts_at->format('d/m/Y') }}</strong>
-                        @endif
-                        @if ($contract->ends_at)
-                            · Fim: <strong>{{ $contract->ends_at->format('d/m/Y') }}</strong>
-                        @endif
-                        @if (!empty($contract->status))
-                            · Status: <strong>{{ $contract->status }}</strong>
-                        @endif
-                    @endif
                 </div>
 
                 <div class="text-muted small mt-1">
@@ -91,7 +78,7 @@
 
                 <a href="{{ route('schools.classrooms.memberships.index', [$school, $classroom]) }}"
                     class="btn btn-outline-primary btn-sm">
-                    Alunos do grupo
+                    Alunos da turma
                 </a>
 
                 <a href="{{ route('schools.classrooms.lessons.index', [$school, $classroom]) }}"
@@ -107,7 +94,7 @@
                 @if (\Illuminate\Support\Facades\Route::has('schools.classrooms.edit'))
                     <a href="{{ route('schools.classrooms.edit', [$school, $classroom]) }}"
                         class="btn btn-outline-primary btn-sm">
-                        Editar grupo
+                        Editar turma
                     </a>
                 @endif
             </div>
@@ -119,7 +106,7 @@
             <div class="col-md-3">
                 <div class="card h-100">
                     <div class="card-body">
-                        <div class="text-muted small">Alunos no grupo (hoje)</div>
+                        <div class="text-muted small">Alunos na turma</div>
                         <div class="display-6">{{ $totalRoster }}</div>
                     </div>
                 </div>
@@ -144,57 +131,8 @@
                     </div>
                 </div>
             </div>
-
-            <div class="col-md-3">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="text-muted small">Bloqueado em</div>
-                        <div class="display-6" style="font-size: 1.5rem;">
-                            {{ $classroom->locked_at ? $classroom->locked_at->format('d/m/Y H:i') : '—' }}
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
 
-        {{-- Oficina do grupo (novo modelo: 1 contrato por grupo) --}}
-        <div class="card mb-4">
-            <div class="card-body">
-                <div class="text-muted small mb-2">
-                    Oficina do grupo (via contrato escola↔oficina)
-                </div>
-
-                @if (!$contract || !$workshop)
-                    <div class="text-muted">Nenhuma oficina/contrato associado a este grupo.</div>
-                @else
-                    <dl class="row mb-0">
-                        <dt class="col-sm-3">Oficina</dt>
-                        <dd class="col-sm-9 mb-2">{{ $workshop->name }}</dd>
-
-                        <dt class="col-sm-3">Contrato</dt>
-                        <dd class="col-sm-9 mb-2">#{{ $contract->id }}</dd>
-
-                        <dt class="col-sm-3">Vigência</dt>
-                        <dd class="col-sm-9 mb-2">
-                            @if ($contract->starts_at)
-                                {{ $contract->starts_at->format('d/m/Y') }}
-                            @else
-                                —
-                            @endif
-                            @if ($contract->ends_at)
-                                → {{ $contract->ends_at->format('d/m/Y') }}
-                                <span class="text-muted small">(ends_at exclusivo)</span>
-                            @endif
-                        </dd>
-
-                        <dt class="col-sm-3">Status do contrato</dt>
-                        <dd class="col-sm-9 mb-0">{{ $contract->status ?? '—' }}</dd>
-                    </dl>
-                @endif
-            </div>
-        </div>
-
-        {{-- Lista de alunos no grupo (hoje) --}}
         <div class="card">
             <div class="card-body p-0">
                 <table class="table align-middle mb-0">
@@ -223,7 +161,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="text-center text-muted py-4">Nenhum aluno no grupo (hoje).</td>
+                                <td colspan="4" class="text-center text-muted py-4">Nenhum aluno na turma.</td>
                             </tr>
                         @endforelse
                     </tbody>

@@ -11,6 +11,7 @@ use App\Models\Teacher;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -51,7 +52,7 @@ class AssessmentController extends Controller
     private function authorizeAssessmentLaunch(School $school): void
     {
         /** @var User|null $user */
-        $user = auth()->user();
+        $user = Auth::user();
 
         if (! $user) {
             abort(403, 'Não autenticado.');
@@ -81,7 +82,7 @@ class AssessmentController extends Controller
             ->orderByDesc('created_at')
             ->paginate(30);
 
-        $user = auth()->user();
+        $user = Auth::user();
         $teacher = $user ? $this->resolveTeacherForUser($user) : null;
 
         $canLaunch = $user && $this->hasSchoolAccess($user, $school) && ($user->is_master || (bool) $teacher);
@@ -130,11 +131,14 @@ class AssessmentController extends Controller
         $roster = $classroom->rosterAt($dueAt->copy()->endOfDay());
         $allowedEnrollmentIds = $roster->pluck('id')->map(fn ($id) => (int) $id)->all();
 
-        $gradesPoints = (array)($data['grades_points'] ?? []);
-        $gradesConcept = (array)($data['grades_concept'] ?? []);
+        /** @var array<int|string, mixed> $gradesPoints */
+        $gradesPoints = is_array($data['grades_points'] ?? null) ? $data['grades_points'] : [];
+        /** @var array<int|string, mixed> $gradesConcept */
+        $gradesConcept = is_array($data['grades_concept'] ?? null) ? $data['grades_concept'] : [];
 
         // ids presentes no payload (pontos ou conceito)
-        $payloadIds = collect(array_merge(array_keys($gradesPoints), array_keys($gradesConcept)))
+        $payloadIds = collect($gradesPoints)->keys()
+            ->merge(collect($gradesConcept)->keys())
             ->map(fn ($id) => (int) $id)
             ->unique()
             ->values()

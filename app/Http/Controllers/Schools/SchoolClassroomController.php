@@ -3,19 +3,24 @@
 namespace App\Http\Controllers\Schools;
 
 use App\Http\Controllers\Controller;
-use App\Models\Classroom;
-use App\Models\GradeLevel;
-use App\Models\School;
-use App\Models\SchoolWorkshop;
-use App\Models\Workshop;
+use App\Models\{Classroom, GradeLevel, School, SchoolWorkshop, Workshop};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class SchoolClassroomController extends Controller
 {
+    protected function shiftLabels(): array
+    {
+        return [
+            'morning' => 'Manhã',
+            'afternoon' => 'Tarde',
+            'evening' => 'Noite',
+        ];
+    }
+
     public function index(Request $request, School $school)
     {
-        $q  = (string) $request->query('q', '');
+        $q = (string) $request->query('q', '');
         $yr = $request->query('year');
         $sh = $request->query('shift');
 
@@ -58,7 +63,14 @@ class SchoolClassroomController extends Controller
             return $classroom;
         });
 
-        return view('schools.classrooms.index', compact('school', 'classrooms', 'q', 'yr', 'sh'));
+        return view('schools.classrooms.index', [
+            'school' => $school,
+            'classrooms' => $classrooms,
+            'q' => $q,
+            'yr' => $yr,
+            'sh' => $sh,
+            'shiftLabels' => $this->shiftLabels(),
+        ]);
     }
 
     public function show(School $school, Classroom $classroom)
@@ -70,7 +82,11 @@ class SchoolClassroomController extends Controller
             'schoolWorkshop.workshop',
         ]);
 
-        return view('schools.classrooms.show', compact('school', 'classroom'));
+        return view('schools.classrooms.show', [
+            'school' => $school,
+            'classroom' => $classroom,
+            'shiftLabels' => $this->shiftLabels(),
+        ]);
     }
 
     public function create(School $school)
@@ -98,6 +114,7 @@ class SchoolClassroomController extends Controller
             'workshops' => $workshops,
             'schoolWorkshops' => $schoolWorkshops,
             'defaultYear' => (int) date('Y'),
+            'shiftLabels' => $this->shiftLabels(),
         ]);
     }
 
@@ -106,26 +123,26 @@ class SchoolClassroomController extends Controller
         $data = $request->validate([
             // Compatibilidade: form novo usa school_workshop_id; wizard/legado ainda pode mandar workshop_id.
             'school_workshop_id' => ['nullable', 'integer'],
-            'workshop_id'        => ['nullable', 'integer'],
+            'workshop_id' => ['nullable', 'integer'],
 
-            'grade_level_ids'    => ['required', 'array', 'min:1'],
-            'grade_level_ids.*'  => ['integer'],
+            'grade_level_ids' => ['required', 'array', 'min:1'],
+            'grade_level_ids.*' => ['integer'],
 
-            'academic_year'      => ['required', 'integer', 'min:2000', 'max:2100'],
-            'shift'              => ['required', 'string', 'max:50'],
+            'academic_year' => ['required', 'integer', 'min:2000', 'max:2100'],
+            'shift' => ['required', 'string', 'max:50'],
 
-            'capacity_hint'      => ['nullable', 'integer', 'min:0'],
-            'status'             => ['nullable', 'string', 'max:50'],
+            'capacity_hint' => ['nullable', 'integer', 'min:0'],
+            'status' => ['nullable', 'string', 'max:50'],
         ]);
 
         $schoolWorkshop = null;
 
-        if (!empty($data['school_workshop_id'])) {
+        if (! empty($data['school_workshop_id'])) {
             $schoolWorkshop = SchoolWorkshop::query()
                 ->whereKey((int) $data['school_workshop_id'])
                 ->where('school_id', $school->id)
                 ->firstOrFail();
-        } elseif (!empty($data['workshop_id'])) {
+        } elseif (! empty($data['workshop_id'])) {
             // Compatibilidade: resolve contrato ativo da oficina para esta escola.
             $schoolWorkshop = SchoolWorkshop::query()
                 ->where('school_id', $school->id)
@@ -135,7 +152,7 @@ class SchoolClassroomController extends Controller
                 ->firstOrFail();
         } else {
             return back()
-                ->withErrors(['school_workshop_id' => 'Selecione a oficina (contrato).'])
+                ->withErrors(['school_workshop_id' => 'Selecione a oficina.'])
                 ->withInput();
         }
 
@@ -166,14 +183,14 @@ class SchoolClassroomController extends Controller
             $nextGroupNumber = ((int) ($last?->group_number ?? 0)) + 1;
 
             $classroom = Classroom::create([
-                'school_id'          => $school->id,
+                'school_id' => $school->id,
                 'school_workshop_id' => $schoolWorkshop->id,
-                'grades_signature'   => $gradesSignature,
-                'group_number'       => $nextGroupNumber,
-                'academic_year'      => $academicYear,
-                'shift'              => $shift,
-                'capacity_hint'      => $data['capacity_hint'] ?? null,
-                'status'             => $data['status'] ?? null,
+                'grades_signature' => $gradesSignature,
+                'group_number' => $nextGroupNumber,
+                'academic_year' => $academicYear,
+                'shift' => $shift,
+                'capacity_hint' => $data['capacity_hint'] ?? null,
+                'status' => $data['status'] ?? null,
             ]);
 
             $classroom->gradeLevels()->sync($gradeIds);
@@ -183,7 +200,6 @@ class SchoolClassroomController extends Controller
 
         return redirect()
             ->route('schools.classrooms.show', [$school, $classroom])
-            ->with('success', 'Grupo criado.');
+            ->with('success', 'Turma criada.');
     }
 }
-

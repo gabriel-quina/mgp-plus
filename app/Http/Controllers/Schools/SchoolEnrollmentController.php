@@ -30,6 +30,15 @@ class SchoolEnrollmentController extends Controller
         ];
     }
 
+    protected function shiftLabels(): array
+    {
+        return [
+            'morning' => 'Manhã',
+            'afternoon' => 'Tarde',
+            'evening' => 'Noite',
+        ];
+    }
+
     public function index(School $school, Request $request)
     {
         $q = trim((string) $request->query('q', ''));
@@ -86,6 +95,7 @@ class SchoolEnrollmentController extends Controller
             'sh' => $sh,
             'st' => $st,
             'allowedStatuses' => $this->allowedStatuses(),
+            'shiftLabels' => $this->shiftLabels(),
             'statusLabels' => $this->statusLabels(),
         ]);
     }
@@ -101,6 +111,7 @@ class SchoolEnrollmentController extends Controller
             'schoolNav' => $school,
             'enrollment' => $enrollment,
             'statusLabels' => $this->statusLabels(),
+            'shiftLabels' => $this->shiftLabels(),
         ]);
     }
 
@@ -113,6 +124,7 @@ class SchoolEnrollmentController extends Controller
             'schoolNav' => $school,
             'gradeLevels' => $gradeLevels,
             'statusLabels' => $this->statusLabels(),
+            'shiftLabels' => $this->shiftLabels(),
         ]);
     }
 
@@ -192,6 +204,7 @@ class SchoolEnrollmentController extends Controller
             'enrollment' => $enrollment,
             'allowedStatuses' => $this->allowedStatuses(),
             'statusLabels' => $this->statusLabels(),
+            'shiftLabels' => $this->shiftLabels(),
         ]);
     }
 

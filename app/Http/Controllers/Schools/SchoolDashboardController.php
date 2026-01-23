@@ -29,6 +29,7 @@ class SchoolDashboardController extends Controller
                 $q->select(DB::raw('count(distinct student_id)'))
                     ->where('academic_year', $currentAcademicYear)
                     ->whereIn('status', [
+                        StudentEnrollment::STATUS_ALLOCATED,
                         StudentEnrollment::STATUS_ENROLLED,
                         StudentEnrollment::STATUS_ACTIVE,
                     ])

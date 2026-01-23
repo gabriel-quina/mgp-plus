@@ -4,7 +4,7 @@
 @include('partials.messages')
 
 <div class="card mb-3">
-    <div class="card-header">Dados do Grupo</div>
+    <div class="card-header">Dados da Turma</div>
     <div class="card-body">
         <div class="mb-3">
             <label class="form-label">Escola</label>
@@ -28,7 +28,7 @@
             </select>
             @error('school_workshop_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
             <div class="form-text">
-                O nome do grupo é gerado automaticamente (oficina + séries + ano + grupo).
+                O nome da turma é gerado automaticamente com base na oficina, ano escolar, ano vigente e indice da turma.
             </div>
         </div>
 

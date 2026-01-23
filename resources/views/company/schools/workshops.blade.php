@@ -60,8 +60,7 @@
     <div class="card-body">
         <h5 class="mb-2">Novo vínculo (contrato)</h5>
         <p class="text-muted mb-3">
-            Aqui você cria um vínculo <strong>com vigência</strong> e <strong>status</strong>.
-            Observação: no sistema, <code>ends_at</code> é <strong>exclusivo</strong> (o contrato vale até o dia anterior).
+            Aqui você cria um vínculo <strong>com vigência</strong>.
         </p>
 
         <form method="POST" action="{{ route('admin.schools.workshops.store', $school) }}">
@@ -163,58 +162,16 @@
                         <td>{{ $sw->workshop?->name ?? '—' }}</td>
                         <td>{{ $sw->starts_at ? $sw->starts_at->format('d/m/Y') : '—' }}</td>
                         <td>{{ $sw->ends_at ? $sw->ends_at->format('d/m/Y') : '—' }}</td>
-                        <td>
-                            @php
-                                $badge = match ($sw->status) {
-                                    \App\Models\SchoolWorkshop::STATUS_ACTIVE   => 'text-bg-success',
-                                    \App\Models\SchoolWorkshop::STATUS_INACTIVE => 'text-bg-secondary',
-                                    \App\Models\SchoolWorkshop::STATUS_EXPIRED  => 'text-bg-warning',
-                                    default => 'text-bg-light',
-                                };
-                            @endphp
-                            <span class="badge {{ $badge }}">{{ $sw->status }}</span>
-                        </td>
+                        <td>{{ $sw->status}}</td>
                         <td class="text-end">
-                            <div class="d-flex justify-content-end gap-2 flex-wrap">
-                                <form method="POST" action="{{ route('admin.schools.workshops.update', [$school, $sw]) }}" class="d-flex gap-2 align-items-end flex-wrap">
-                                    @csrf
-                                    @method('PATCH')
-
-                                    <div>
-                                        <label class="form-label mb-1 small text-muted">Início</label>
-                                        <input type="date" name="starts_at" class="form-control form-control-sm"
-                                               value="{{ optional($sw->starts_at)->toDateString() }}">
-                                    </div>
-
-                                    <div>
-                                        <label class="form-label mb-1 small text-muted">Fim</label>
-                                        <input type="date" name="ends_at" class="form-control form-control-sm"
-                                               value="{{ optional($sw->ends_at)->toDateString() }}">
-                                    </div>
-
-                                    <div>
-                                        <label class="form-label mb-1 small text-muted">Status</label>
-                                        <select name="status" class="form-select form-select-sm">
-                                            @foreach($statuses as $st)
-                                                <option value="{{ $st }}" @selected($sw->status === $st)>{{ $st }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-
-                                    <button type="submit" class="btn btn-sm btn-outline-primary">
-                                        Atualizar
-                                    </button>
-                                </form>
-
-                                <form method="POST" action="{{ route('admin.schools.workshops.destroy', [$school, $sw]) }}"
+                            <form method="POST" action="{{ route('admin.schools.workshops.destroy', [$school, $sw]) }}"
                                       onsubmit="return confirm('Remover este vínculo?');">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger">
                                         Excluir
                                     </button>
-                                </form>
-                            </div>
+                             </form>
                         </td>
                     </tr>
                 @empty

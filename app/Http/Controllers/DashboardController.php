@@ -20,13 +20,6 @@ class DashboardController extends Controller
             return view('master', compact('user', 'schools'));
         }
 
-        // 2) Empresa (somente por roles globais reais)
-        if ($user->hasRole('company_coordinator')
-            || $user->hasRole('company_consultant')) {
-            return view('dashboard.company', compact('user'));
-        }
-
-        // 3) Cliente (escolas acessíveis)
         $schools = School::query()
             ->whereHas('roleAssignments', function ($q) use ($user) {
                 $q->where('user_id', $user->id)
@@ -35,6 +28,6 @@ class DashboardController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('dashboard.client', compact('user', 'schools'));
+        return view('schools.dashboard.client', compact('user', 'schools'));
     }
 }

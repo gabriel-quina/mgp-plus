@@ -71,9 +71,9 @@
                     </div>
 
                     <div class="col-md-2">
-                        <label class="form-label">Máx. pontos</label>
+                        <label class="form-label">Valor da avaliação</label>
                         <input type="number" name="max_points" class="form-control"
-                               min="0" max="1000" step="0.1"
+                               min="0" max="100" step="1"
                                value="{{ old('max_points', 100) }}" id="max_points">
                         <small class="text-muted">
                             Valor máximo (usado apenas na escala por pontos).
@@ -91,9 +91,6 @@
             <div class="card">
                 <div class="card-header">
                     Notas dos alunos ({{ is_countable($roster) ? count($roster) : (method_exists($roster,'count') ? $roster->count() : 0) }})
-                    <div class="text-muted small mt-1">
-                        Roster baseado em <strong>endOfDay</strong> da data da avaliação (evita inconsistências em transferências no mesmo dia).
-                    </div>
                 </div>
 
                 <div class="card-body p-0">
@@ -132,7 +129,7 @@
                                                 <input type="number"
                                                        name="grades_points[{{ $enrollment->id }}]"
                                                        class="form-control form-control-sm"
-                                                       min="0" max="1000" step="0.1"
+                                                       min="0" max="100" step="0.1"
                                                        value="{{ old('grades_points.' . $enrollment->id) }}">
                                             </td>
 
