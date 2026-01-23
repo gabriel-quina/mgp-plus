@@ -111,10 +111,10 @@ class LessonController extends Controller
 
         $classroom->load(['school', 'schoolWorkshop.workshop', 'gradeLevels']);
 
-        $taughtAt = Carbon::parse($request->input('taught_at', now()->toDateString()));
+        $taughtAt = Carbon::parse($request->input('taught_at', now()->toDateString()))->startOfDay();
 
         // Mantém seu padrão atual (00:00 do dia)
-        $roster = $classroom->rosterAt($taughtAt);
+        $roster = $classroom->rosterAt($taughtAt->copy()->endOfDay());
 
         return view('schools.lessons.create', [
             'school' => $school,
@@ -132,9 +132,9 @@ class LessonController extends Controller
         [$teacher, $teacherLocked, $teachers] = $this->lessonLaunchContext($school);
 
         $data = $request->validated();
-        $taughtAt = Carbon::parse($data['taught_at']);
+        $taughtAt = Carbon::parse($data['taught_at'])->startOfDay();
 
-        $roster = $classroom->rosterAt($taughtAt);
+        $roster = $classroom->rosterAt($taughtAt->copy()->endOfDay());
         $allowedEnrollmentIds = $roster->pluck('id')->map(fn ($id) => (int) $id)->all();
 
         $attendances = $data['attendances'] ?? [];
@@ -231,7 +231,7 @@ class LessonController extends Controller
             'attendances.enrollment.gradeLevel',
         ]);
 
-        $roster = $classroom->rosterAt($lesson->taught_at);
+        $roster = $classroom->rosterAt($lesson->taught_at->copy()->startOfDay());
         $attendanceByEnrollment = $lesson->attendances->keyBy('student_enrollment_id');
 
         return view('schools.lessons.show', compact(
