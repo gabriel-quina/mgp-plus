@@ -3,237 +3,244 @@
 namespace App\Http\Controllers\Schools\Classrooms;
 
 use App\Http\Controllers\Controller;
-use App\Models\{Classroom, Lesson, LessonAttendance, School, StudentEnrollment, Workshop, WorkshopAllocation};
+use App\Http\Requests\Schools\Classrooms\StoreLessonRequest;
+use App\Models\{School, Classroom, Lesson, LessonAttendance, Teacher, User};
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class LessonController extends Controller
 {
-    /**
-     * Tela de lançamento de aula + grade de presença.
-     * Rota nova: GET /escolas/{school}/grupos/{classroom}/oficinas/{workshop}/aulas/criar
-     * name: schools.lessons.create
-     */
-    public function create(School $school, Classroom $classroom, Workshop $workshop)
+    private function resolveTeacherForUser(User $user): ?Teacher
     {
-        // Coerência de escopo
-        abort_unless((int) $classroom->school_id === (int) $school->id, 404);
-
-        // Garante que a oficina está vinculada a ESSA turma/subturma
-        $classroom->loadMissing('school', 'gradeLevels', 'workshops');
-
-        $workshopForClass = $classroom->workshops->firstWhere('id', $workshop->id);
-        abort_if(! $workshopForClass, 404);
-
-        // Pega os alunos do grupo certo (PAI x Subturma)
-        $enrollments = $this->resolveEnrollments($classroom, $workshopForClass);
-
-        $pageTitle = 'Lançar aula / presença';
-        $headerTitle = $classroom->name;
-
-        $contextLine = sprintf(
-            'Turma: <strong>%s</strong> · Escola: <strong>%s</strong> · Ano letivo: <strong>%d</strong> · Turno: <strong>%s</strong>',
-            e($classroom->name),
-            e(optional($classroom->school)->name ?? '—'),
-            $classroom->academic_year,
-            $classroom->shift ?? '—',
-        );
-
-        $workshopLine = 'Oficina: <strong>'.e($workshopForClass->name).'</strong>';
-
-        return view('lessons.create', [
-            'school' => $school,
-            'classroom' => $classroom,
-            'workshop' => $workshopForClass,
-            'enrollments' => $enrollments,
-            'pageTitle' => $pageTitle,
-            'headerTitle' => $headerTitle,
-            'contextLine' => $contextLine,
-            'workshopLine' => $workshopLine,
-        ]);
-    }
-
-    /**
-     * Lista aulas do grupo + oficina.
-     * Rota nova: GET /escolas/{school}/grupos/{classroom}/oficinas/{workshop}/aulas
-     * name: schools.lessons.index
-     */
-    public function index(School $school, Classroom $classroom, Workshop $workshop)
-    {
-        abort_unless((int) $classroom->school_id === (int) $school->id, 404);
-
-        $classroom->loadMissing('school', 'gradeLevels', 'workshops');
-
-        $workshopForClass = $classroom->workshops->firstWhere('id', $workshop->id);
-        abort_if(! $workshopForClass, 404);
-
-        $lessons = Lesson::query()
-            ->where('classroom_id', $classroom->id)
-            ->where('workshop_id', $workshopForClass->id)
-            ->withCount('attendances')
-            ->withCount([
-                'attendances as present_count' => function ($q) {
-                    $q->where('present', true);
-                },
-            ])
-            ->orderByDesc('taught_at')
-            ->orderByDesc('id')
-            ->paginate(10);
-
-        // Voltar: contexto escola (grupo)
-        $backUrl = route('schools.classrooms.show', [
-            'school' => $school->id,
-            'classroom' => $classroom->id,
-        ]);
-
-        return view('lessons.index', [
-            'school' => $school,
-            'classroom' => $classroom,
-            'workshop' => $workshopForClass,
-            'lessons' => $lessons,
-            'backUrl' => $backUrl,
-        ]);
-    }
-
-    /**
-     * Grava aula + presenças.
-     * Rota nova: POST /escolas/{school}/grupos/{classroom}/oficinas/{workshop}/aulas
-     * name: schools.lessons.store
-     */
-    public function store(Request $request, School $school, Classroom $classroom, Workshop $workshop)
-    {
-        abort_unless((int) $classroom->school_id === (int) $school->id, 404);
-
-        $classroom->loadMissing('school', 'gradeLevels', 'workshops');
-
-        $workshopForClass = $classroom->workshops->firstWhere('id', $workshop->id);
-        abort_if(! $workshopForClass, 404);
-
-        $data = $request->validate([
-            'taught_at' => ['required', 'date'],
-            'topic' => ['nullable', 'string', 'max:255'],
-            'notes' => ['nullable', 'string'],
-            'attendance' => ['nullable', 'array'],
-        ]);
-
-        $lesson = Lesson::create([
-            'classroom_id' => $classroom->id,
-            'workshop_id' => $workshopForClass->id,
-            'taught_at' => $data['taught_at'],
-            'topic' => $data['topic'] ?? null,
-            'notes' => $data['notes'] ?? null,
-        ]);
-
-        $enrollments = $this->resolveEnrollments($classroom, $workshopForClass);
-
-        $presentIds = collect($data['attendance'] ?? [])
-            ->keys()
-            ->map(fn ($id) => (int) $id);
-
-        $now = now();
-        $rows = [];
-
-        foreach ($enrollments as $enrollment) {
-            $rows[] = [
-                'lesson_id' => $lesson->id,
-                'student_enrollment_id' => $enrollment->id,
-                'present' => $presentIds->contains($enrollment->id),
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
+        // teachers.cpf
+        if (Schema::hasTable('teachers') && Schema::hasColumn('teachers', 'cpf') && !empty($user->cpf)) {
+            $cpf = preg_replace('/\D+/', '', (string) $user->cpf) ?: null;
+            if ($cpf) {
+                $t = Teacher::query()->where('cpf', $cpf)->first();
+                if ($t) return $t;
+            }
         }
 
-        LessonAttendance::insert($rows);
+        // teachers.email
+        if (Schema::hasTable('teachers') && Schema::hasColumn('teachers', 'email') && !empty($user->email)) {
+            $t = Teacher::query()->where('email', $user->email)->first();
+            if ($t) return $t;
+        }
 
-        return redirect()
-            ->route('schools.lessons.show', [
-                'school' => $school->id,
-                'classroom' => $classroom->id,
-                'workshop' => $workshopForClass->id,
-                'lesson' => $lesson->id,
-            ])
-            ->with('status', 'Aula lançada com sucesso!');
+        return null;
+    }
+
+    private function hasSchoolAccess(User $user, School $school): bool
+    {
+        if ($user->is_master) return true;
+
+        return $user->schoolRoleAssignments()
+            ->where('school_id', $school->id)
+            ->exists();
     }
 
     /**
-     * Tela de presença da aula.
-     * Rota nova: GET /escolas/{school}/grupos/{classroom}/oficinas/{workshop}/aulas/{lesson}
-     * name: schools.lessons.show
+     * Regra atual:
+     * - master: pode (se não tiver Teacher vinculado, escolhe um Teacher)
+     * - não-master: precisa ter acesso à escola + estar vinculado a Teacher
+     *
+     * Retorna: [Teacher|null $teacher, bool $teacherLocked, \Illuminate\Support\Collection|null $teachers]
      */
-    public function show(School $school, Classroom $classroom, Workshop $workshop, Lesson $lesson)
+    private function lessonLaunchContext(School $school): array
     {
-        abort_unless((int) $classroom->school_id === (int) $school->id, 404);
+        /** @var User $user */
+        $user = auth()->user();
 
-        $classroom->loadMissing('workshops');
+        if (! $user) {
+            abort(403, 'Não autenticado.');
+        }
 
-        $workshopForClass = $classroom->workshops->firstWhere('id', $workshop->id);
-        abort_if(! $workshopForClass, 404);
+        if (! $this->hasSchoolAccess($user, $school)) {
+            abort(403, 'Sem acesso a esta escola.');
+        }
 
-        abort_if(
-            $lesson->classroom_id !== $classroom->id ||
-            $lesson->workshop_id !== $workshopForClass->id,
-            404
-        );
+        $teacher = $this->resolveTeacherForUser($user);
+
+        // Usuário normal: tem que ser professor (vinculado)
+        if (! $user->is_master) {
+            if (! $teacher) {
+                abort(403, 'Usuário não está vinculado a um professor (Teacher).');
+            }
+
+            return [$teacher, true, null];
+        }
+
+        // Master: se tiver teacher vinculado, trava; senão, permite escolher teacher
+        if ($teacher) {
+            return [$teacher, true, null];
+        }
+
+        $teachers = Teacher::query()->orderBy('name')->get();
+
+        return [null, false, $teachers];
+    }
+
+    public function index(School $school, Classroom $classroom)
+    {
+        $classroom->load(['school', 'schoolWorkshop.workshop', 'gradeLevels']);
+
+        $lessons = $classroom->lessons()
+            ->with('teacher')
+            ->withCount('attendances')
+            ->orderByDesc('taught_at')
+            ->orderByDesc('created_at')
+            ->paginate(30);
+
+        /** @var User $user */
+        $user = auth()->user();
+
+        $teacher = $user ? $this->resolveTeacherForUser($user) : null;
+        $hasSchoolAccess = $user ? $this->hasSchoolAccess($user, $school) : false;
+
+        // ✅ sem canByRole: qualquer professor com acesso à escola pode lançar
+        $canLaunch = $user && $hasSchoolAccess && ($user->is_master || (bool) $teacher);
+
+        return view('schools.lessons.index', compact('school', 'classroom', 'lessons', 'canLaunch'));
+    }
+
+    public function create(Request $request, School $school, Classroom $classroom)
+    {
+        [$teacher, $teacherLocked, $teachers] = $this->lessonLaunchContext($school);
+
+        $classroom->load(['school', 'schoolWorkshop.workshop', 'gradeLevels']);
+
+        $taughtAt = Carbon::parse($request->input('taught_at', now()->toDateString()));
+
+        // Mantém seu padrão atual (00:00 do dia)
+        $roster = $classroom->rosterAt($taughtAt);
+
+        return view('schools.lessons.create', [
+            'school' => $school,
+            'classroom' => $classroom,
+            'taughtAt' => $taughtAt,
+            'roster' => $roster,
+            'teacher' => $teacher,
+            'teacherLocked' => $teacherLocked,
+            'teachers' => $teachers,
+        ]);
+    }
+
+    public function store(StoreLessonRequest $request, School $school, Classroom $classroom)
+    {
+        [$teacher, $teacherLocked, $teachers] = $this->lessonLaunchContext($school);
+
+        $data = $request->validated();
+        $taughtAt = Carbon::parse($data['taught_at']);
+
+        $roster = $classroom->rosterAt($taughtAt);
+        $allowedEnrollmentIds = $roster->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $attendances = $data['attendances'] ?? [];
+        $payloadEnrollmentIds = collect($attendances)->keys()->map(fn ($id) => (int) $id)->all();
+
+        $diff = array_diff($payloadEnrollmentIds, $allowedEnrollmentIds);
+        if (! empty($diff)) {
+            return back()
+                ->withErrors(['attendances' => 'Há alunos no lançamento que não pertencem à turma nesta data.'])
+                ->withInput();
+        }
+
+        if (count($allowedEnrollmentIds) > 0) {
+            $missing = array_diff($allowedEnrollmentIds, $payloadEnrollmentIds);
+            if (! empty($missing)) {
+                return back()
+                    ->withErrors(['attendances' => 'Você precisa lançar a presença para todos os alunos da turma.'])
+                    ->withInput();
+            }
+        }
+
+        // Resolve teacher_id (NUNCA NULL)
+        $teacherIdToUse = null;
+
+        if ($teacherLocked) {
+            $teacherIdToUse = $teacher?->id;
+        } else {
+            $teacherIdToUse = !empty($data['teacher_id']) ? (int) $data['teacher_id'] : null;
+
+            if (! $teacherIdToUse) {
+                $teachersList = $teachers ?? Teacher::query()->orderBy('name')->get();
+                if ($teachersList->count() === 1) {
+                    $teacherIdToUse = (int) $teachersList->first()->id;
+                }
+            }
+        }
+
+        if (! $teacherIdToUse) {
+            return back()
+                ->withErrors(['teacher_id' => 'Selecione um professor para lançar a aula.'])
+                ->withInput();
+        }
+
+        return DB::transaction(function () use ($classroom, $school, $teacherIdToUse, $taughtAt, $data, $attendances) {
+            $lesson = $classroom->lessons()->create([
+                'teacher_id' => $teacherIdToUse,
+                'taught_at'  => $taughtAt->toDateString(),
+                'topic'      => $data['topic'] ?? null,
+                'notes'      => $data['notes'] ?? null,
+                'is_locked'  => false,
+            ]);
+
+            if (! empty($attendances)) {
+                $now = now();
+                $rows = [];
+
+                foreach ($attendances as $enrollmentId => $att) {
+                    $status = $att['status'];
+                    $present = $status === 'present';
+                    $justification = $present ? null : ($att['justification'] ?? null);
+
+                    $rows[] = [
+                        'lesson_id' => $lesson->id,
+                        'student_enrollment_id' => (int) $enrollmentId,
+                        'present' => $present,
+                        'justification' => $justification,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                }
+
+                LessonAttendance::upsert(
+                    $rows,
+                    ['lesson_id', 'student_enrollment_id'],
+                    ['present', 'justification', 'updated_at']
+                );
+            }
+
+            return redirect()
+                ->route('schools.classrooms.lessons.show', [$school, $classroom, $lesson])
+                ->with('success', 'Aula lançada com sucesso.');
+        });
+    }
+
+    public function show(School $school, Classroom $classroom, Lesson $lesson)
+    {
+        abort_unless((int) $lesson->classroom_id === (int) $classroom->id, 404);
+
+        $classroom->load(['school', 'schoolWorkshop.workshop', 'gradeLevels']);
 
         $lesson->load([
-            'classroom.school',
-            'workshop',
+            'teacher',
             'attendances.enrollment.student',
             'attendances.enrollment.gradeLevel',
         ]);
 
-        $attendances = $lesson->attendances
-            ->sortBy(fn ($att) => mb_strtolower($att->enrollment->student->name));
+        $roster = $classroom->rosterAt($lesson->taught_at);
+        $attendanceByEnrollment = $lesson->attendances->keyBy('student_enrollment_id');
 
-        $backUrl = route('schools.lessons.index', [
-            'school' => $school->id,
-            'classroom' => $classroom->id,
-            'workshop' => $workshopForClass->id,
-        ]);
-
-        return view('lessons.show', [
-            'school' => $school,
-            'lesson' => $lesson,
-            'attendances' => $attendances,
-            'classroom' => $classroom,
-            'workshop' => $workshopForClass,
-            'backUrl' => $backUrl,
-        ]);
-    }
-
-    /**
-     * Resolve o grupo de alunos da aula:
-     * - Turma PAI: todos elegíveis (eligibleEnrollments)
-     * - Subturma: apenas alocados via WorkshopAllocation (child_classroom_id + workshop_id)
-     */
-    protected function resolveEnrollments(Classroom $classroom, Workshop $workshop)
-    {
-        if (is_null($classroom->parent_classroom_id)) {
-            if (! method_exists($classroom, 'eligibleEnrollments')) {
-                return collect();
-            }
-
-            return $classroom->eligibleEnrollments()
-                ->with(['student', 'gradeLevel'])
-                ->get()
-                ->sortBy(fn ($e) => mb_strtolower(optional($e->student)->name ?? ''))
-                ->values();
-        }
-
-        $allocatedIds = WorkshopAllocation::query()
-            ->where('child_classroom_id', $classroom->id)
-            ->where('workshop_id', $workshop->id)
-            ->pluck('student_enrollment_id');
-
-        if ($allocatedIds->isEmpty()) {
-            return collect();
-        }
-
-        return StudentEnrollment::query()
-            ->with(['student', 'gradeLevel', 'school'])
-            ->join('students', 'students.id', '=', 'student_enrollments.student_id')
-            ->whereIn('student_enrollments.id', $allocatedIds)
-            ->orderBy('students.name')
-            ->select('student_enrollments.*')
-            ->get();
+        return view('schools.lessons.show', compact(
+            'school',
+            'classroom',
+            'lesson',
+            'roster',
+            'attendanceByEnrollment'
+        ));
     }
 }
+

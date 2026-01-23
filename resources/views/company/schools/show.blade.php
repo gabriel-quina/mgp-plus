@@ -168,10 +168,6 @@
                     {{ $school->workshops_count ?? $school->workshops->count() }}
                 </span>
             </div>
-
-            <a href="{{ route('admin.schools.workshops.edit', $school) }}" class="btn btn-sm btn-primary">
-                Editar oficinas
-            </a>
         </div>
 
         <div class="card-body p-0">

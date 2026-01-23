@@ -2,15 +2,33 @@
 
 namespace App\Providers;
 
-use App\Models\City;
 use App\Models\School;
-use App\Models\State;
+use App\Models\Teacher;
 use App\Models\User;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
 
 class AuthServiceProvider extends ServiceProvider
 {
+    private function resolveTeacherForUser(User $user): ?Teacher
+    {
+        if (Schema::hasTable('teachers') && Schema::hasColumn('teachers', 'cpf') && !empty($user->cpf)) {
+            $cpf = preg_replace('/\D+/', '', (string) $user->cpf) ?: null;
+            if ($cpf) {
+                $t = Teacher::query()->where('cpf', $cpf)->first();
+                if ($t) return $t;
+            }
+        }
+
+        if (Schema::hasTable('teachers') && Schema::hasColumn('teachers', 'email') && !empty($user->email)) {
+            $t = Teacher::query()->where('email', $user->email)->first();
+            if ($t) return $t;
+        }
+
+        return null;
+    }
+
     public function boot(): void
     {
         // Master passa em tudo
@@ -18,84 +36,34 @@ class AuthServiceProvider extends ServiceProvider
             return $user->is_master ? true : null;
         });
 
-        // Acesso por escola com regra municipal/estadual
+        // Acesso à escola (novo RBAC)
         Gate::define('access-school', function (User $user, School $school) {
-
-            // Roles diretas na escola
-            if ($user->hasRole('school_teacher', $school)) {
-                return true;
-            }
-            if ($user->hasRole('school_director', $school)) {
-                return true;
-            }
-            if ($user->hasRole('school_secretary', $school)) {
-                return true;
-            }
-
-            // Autoridade municipal
-            if ($school->administrative_dependency === 'municipal') {
-                if ($user->hasRole('city_education_secretary', $school->city)) {
-                    return true;
-                }
-                if ($user->hasRole('city_coordinator', $school->city)) {
-                    return true;
-                } // exemplo
-            }
-
-            // Autoridade estadual (se você já tiver State)
-            if ($school->administrative_dependency === 'state') {
-                if (class_exists(State::class) && $school->city && $school->city->state) {
-                    if ($user->hasRole('state_education_secretary', $school->city->state)) {
-                        return true;
-                    }
-                }
-            }
-
-            // Equipe da empresa com acesso global por role (não-master)
-            if ($user->hasRole('company_coordinator')) {
-                return true;
-            }
-            if ($user->hasRole('company_consultant')) {
-                return true;
-            }
-
-            return false;
+            return $user->schoolRoleAssignments()
+                ->where('school_id', $school->id)
+                ->exists();
         });
 
-        // Acesso à cidade (secretaria municipal)
-        Gate::define('access-city', function (User $user, City $city) {
-            if ($user->hasRole('city_education_secretary', $city)) {
-                return true;
-            }
-            if ($user->hasRole('city_coordinator', $city)) {
-                return true;
-            }
-
-            if ($user->hasRole('company_coordinator')) {
-                return true;
-            }
-            if ($user->hasRole('company_consultant')) {
-                return true;
-            }
-
-            return false;
-        });
-
-        // Acesso global de empresa (não-master)
+        // Company (novo RBAC)
         Gate::define('access-company', function (User $user) {
-            return $user->hasRole('company_coordinator')
-                || $user->hasRole('company_consultant')
-                || $user->role !== null; // caso você use users.role como fallback
+            return $user->companyRoleAssignments()->exists()
+                || $user->scopeType() === 'company';
         });
 
-        // Permissões de ação internas (exemplos)
+        /**
+         * Aulas: por enquanto NÃO usa permission catalog.
+         * Regra: qualquer professor (Teacher vinculado ao User) com acesso à escola pode criar.
+         */
         Gate::define('lessons.create', function (User $user, School $school) {
-            return $user->canByRole('lessons.create', $school);
-        });
+            $hasSchoolAccess = $user->schoolRoleAssignments()
+                ->where('school_id', $school->id)
+                ->exists();
 
-        Gate::define('reports.view', function (User $user, School $school) {
-            return $user->canByRole('reports.view', $school)
-                || $user->canByRole('reports.view', $school->city);
+            if (! $hasSchoolAccess) {
+                return false;
+            }
+
+            return (bool) $this->resolveTeacherForUser($user);
         });
     }
 }
+

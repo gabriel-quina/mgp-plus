@@ -1,120 +1,159 @@
 @extends('layouts.app')
 
-@section('title', $pageTitle ?? 'Lançar aula / presença')
+@section('title', 'Lançamento de aula')
 
 @section('content')
-    <div class="container">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
-                <h1 class="h4 mb-1">{{ $headerTitle ?? $classroom->name }}</h1>
-                <div class="text-muted small">
-                    {{ $contextLine ?? '' }}<br>
-                    {{ $workshopLine ?? 'Oficina: ' . $workshop->name }}
-                </div>
-            </div>
+<div class="container-xxl">
 
-            <div class="text-end">
-                <a href="{{ url()->previous() }}" class="btn btn-outline-secondary btn-sm">
-                    Voltar
-                </a>
+    @if (session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+    @if (session('warning'))
+        <div class="alert alert-warning">{{ session('warning') }}</div>
+    @endif
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <strong>Erro:</strong>
+            <ul class="mb-0">
+                @foreach ($errors->all() as $e)
+                    <li>{{ $e }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h1 class="h3 mb-1">Lançamento de aula</h1>
+            <div class="text-muted small">
+                Escola: <strong>{{ $school->name }}</strong> ·
+                Turma: <strong>{{ $classroom->name }}</strong>
             </div>
         </div>
 
-        @if (session('status'))
-            <div class="alert alert-success">
-                {{ session('status') }}
-            </div>
-        @endif
+        <div class="d-flex gap-2">
+            <a href="{{ route('schools.classrooms.lessons.index', [$school, $classroom]) }}"
+               class="btn btn-outline-secondary btn-sm">
+                Voltar para Aulas
+            </a>
+            <a href="{{ route('schools.classrooms.show', [$school, $classroom]) }}"
+               class="btn btn-outline-secondary btn-sm">
+                Voltar para Turma
+            </a>
+        </div>
+    </div>
 
-        @if ($errors->any())
-            <div class="alert alert-danger">
-                <ul class="mb-0">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <strong>Detalhes da aula</strong>
+            <span class="text-muted small">Preencha a data, conteúdo e presença antes de salvar.</span>
+        </div>
 
-        <form action="{{ route('schools.lessons.store', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id]) }}" method="POST">
+        <form action="{{ route('schools.classrooms.lessons.store', [$school, $classroom]) }}" method="POST">
             @csrf
 
-            {{-- Dados da aula --}}
-            <div class="card mb-4">
-                <div class="card-header">
-                    Dados da aula
-                </div>
-                <div class="card-body row g-3">
+            <div class="card-body">
+                <div class="row g-3 mb-3">
                     <div class="col-md-3">
-                        <label for="taught_at" class="form-label">Data</label>
-                        <input type="date" id="taught_at" name="taught_at" class="form-control"
-                            value="{{ old('taught_at', now()->toDateString()) }}">
+                        <label class="form-label">Data da aula</label>
+                        <input type="date"
+                               name="taught_at"
+                               class="form-control"
+                               value="{{ old('taught_at', $taughtAt->toDateString()) }}"
+                               required>
                     </div>
 
                     <div class="col-md-5">
-                        <label for="topic" class="form-label">Conteúdo / Tema</label>
-                        <input type="text" id="topic" name="topic" class="form-control"
-                            value="{{ old('topic') }}">
-                    </div>
+                        <label class="form-label">Professor(a)</label>
 
-                    <div class="col-12">
-                        <label for="notes" class="form-label">Observações</label>
-                        <textarea id="notes" name="notes" rows="2" class="form-control">{{ old('notes') }}</textarea>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Grade de presença --}}
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>Presença dos alunos ({{ $enrollments->count() }})</span>
-
-                    {{-- Mark-all simples; JS opcional depois --}}
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" id="check_all" checked>
-                        <label class="form-check-label" for="check_all">
-                            Marcar todos como presentes
-                        </label>
+                        @if (!empty($teacherLocked) && $teacherLocked)
+                            <input type="text"
+                                   class="form-control"
+                                   value="{{ $teacher?->name ?? '—' }}"
+                                   readonly>
+                            <div class="form-text">Definido automaticamente pelo professor logado.</div>
+                        @else
+                            <select name="teacher_id" class="form-select" required>
+                                <option value="">— Selecione —</option>
+                                @foreach (($teachers ?? collect()) as $t)
+                                    <option value="{{ $t->id }}" @selected(old('teacher_id') == $t->id)>
+                                        {{ $t->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="form-text">
+                                Você está como <strong>master</strong> sem vínculo com Teacher. Selecione um professor para registrar a aula.
+                            </div>
+                        @endif
                     </div>
                 </div>
 
-                <div class="card-body p-0">
-                    @if ($enrollments->isEmpty())
-                        <p class="p-3 mb-0 text-muted">
-                            Nenhum aluno alocado para este grupo de oficina.
-                        </p>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-8">
+                        <label class="form-label">Conteúdo / tópico</label>
+                        <textarea name="topic"
+                                  rows="3"
+                                  class="form-control"
+                                  placeholder="Ex.: Present Simple, revisão, atividade em duplas.">{{ old('topic') }}</textarea>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Observações</label>
+                        <textarea name="notes"
+                                  rows="3"
+                                  class="form-control"
+                                  placeholder="Ex.: Boa participação, 2 alunos com dificuldade.">{{ old('notes') }}</textarea>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>Presença dos alunos</strong>
+                        <div class="small text-muted">
+                            Roster calculado com base nas memberships no início do dia (00:00).
+                        </div>
+                    </div>
+
+                    @if ($roster->isEmpty())
+                        <div class="alert alert-warning mb-0">
+                            Nenhum aluno encontrado na turma para esta data. Você pode salvar a aula sem presenças.
+                        </div>
                     @else
                         <div class="table-responsive">
-                            <table class="table table-sm mb-0 align-middle">
-                                <thead>
+                            <table class="table align-middle mb-0">
+                                <thead class="table-light">
                                     <tr>
-                                        <th style="width: 60%">Aluno</th>
-                                        <th style="width: 20%">Matrícula / Ano</th>
-                                        <th style="width: 20%" class="text-center">Presente?</th>
+                                        <th style="width: 40%;">Aluno</th>
+                                        <th style="width: 15%;">CPF</th>
+                                        <th style="width: 25%;">Situação</th>
+                                        <th style="width: 20%;">Justificativa/Observação</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($enrollments as $enrollment)
+                                    @foreach ($roster as $enrollment)
+                                        @php
+                                            $cpf = $enrollment->student?->cpf ?? '';
+                                            $statusOld = old("attendances.{$enrollment->id}.status", 'present');
+                                            $justOld = old("attendances.{$enrollment->id}.justification");
+                                        @endphp
+
                                         <tr>
+                                            <td>{{ $enrollment->student?->name ?? '—' }}</td>
+                                            <td>{{ $cpf ?: '—' }}</td>
                                             <td>
-                                                {{ $enrollment->student->name }}
-                                                @if (method_exists($enrollment->student, 'cpf_formatted'))
-                                                    <br>
-                                                    <small class="text-muted">
-                                                        CPF: {{ $enrollment->student->cpf_formatted }}
-                                                    </small>
-                                                @endif
+                                                <select name="attendances[{{ $enrollment->id }}][status]"
+                                                        class="form-select form-select-sm"
+                                                        required>
+                                                    <option value="present" @selected($statusOld === 'present')>Presente</option>
+                                                    <option value="absent" @selected($statusOld === 'absent')>Falta</option>
+                                                    <option value="justified" @selected($statusOld === 'justified')>Falta justificada</option>
+                                                </select>
                                             </td>
                                             <td>
-                                                <small class="text-muted">
-                                                    Matrícula #{{ $enrollment->id }}<br>
-                                                    Ano:
-                                                    {{ $enrollment->gradeLevel->name ?? $classroom->gradeLevels->pluck('name')->join(', ') }}
-                                                </small>
-                                            </td>
-                                            <td class="text-center">
-                                                <input type="checkbox" name="attendance[{{ $enrollment->id }}]"
-                                                    value="1" class="form-check-input attendance-checkbox" checked>
+                                                <input type="text"
+                                                       name="attendances[{{ $enrollment->id }}][justification]"
+                                                       class="form-control form-control-sm"
+                                                       value="{{ $justOld }}"
+                                                       placeholder="Opcional">
                                             </td>
                                         </tr>
                                     @endforeach
@@ -123,35 +162,25 @@
                         </div>
                     @endif
                 </div>
+            </div>
 
-                <div class="card-footer d-flex justify-content-between">
-                    <span class="text-muted small">
-                        Desmarque quem **faltou**. Depois você pode evoluir para outros tipos de status.
-                    </span>
-
-                    <button type="submit" class="btn btn-primary">
-                        Salvar aula e presença
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <div class="text-muted small">
+                    Campos obrigatórios: data da aula; presença é obrigatória quando houver alunos no roster.
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ route('schools.classrooms.lessons.index', [$school, $classroom]) }}"
+                       class="btn btn-outline-secondary btn-sm">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        Salvar lançamento
                     </button>
                 </div>
             </div>
         </form>
     </div>
 
-    {{-- Script simples pra "Marcar todos" --}}
-    @push('scripts')
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const checkAll = document.getElementById('check_all');
-                const boxes = document.querySelectorAll('.attendance-checkbox');
-
-                if (checkAll) {
-                    checkAll.addEventListener('change', function() {
-                        boxes.forEach(function(box) {
-                            box.checked = checkAll.checked;
-                        });
-                    });
-                }
-            });
-        </script>
-    @endpush
+</div>
 @endsection
+

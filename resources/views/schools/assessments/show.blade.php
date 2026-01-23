@@ -3,28 +3,34 @@
 @section('title', 'Avaliação')
 
 @section('content')
-    <div class="container">
+    @php
+        $classroom->loadMissing(['school', 'gradeLevels', 'schoolWorkshop.workshop']);
+        $school = $school ?? $classroom->school;
+        $workshop = $classroom->workshop;
+        $due = optional($assessment->due_at);
+    @endphp
+
+    <div class="container-xxl">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
-                <h1 class="h4 mb-1">
-                    {{ $assessment->title }} – {{ $classroom->name }}
-                </h1>
+                <h1 class="h3 mb-1">{{ $assessment->title }} – {{ $classroom->name }}</h1>
                 <div class="text-muted small">
-                    {{ $classroom->school->name ?? '—' }} ·
-                    Ano {{ $classroom->academic_year }} ·
-                    {{ $classroom->shift ?? '—' }}<br>
-                    Oficina: <strong>{{ $workshop->name }}</strong><br>
-                    Data: {{ optional($assessment->due_at)->format('d/m/Y') ?? '—' }}
+                    Escola: <strong>{{ $school->name ?? '—' }}</strong> ·
+                    Ano letivo: <strong>{{ $classroom->academic_year ?? '—' }}</strong> ·
+                    Turno: <strong>{{ $classroom->shift ?? '—' }}</strong><br>
+                    Oficina: <strong>{{ $workshop?->name ?? '—' }}</strong><br>
+                    Data: {{ $due?->format('d/m/Y') ?? '—' }}
                 </div>
             </div>
 
             <div class="d-flex gap-2">
-                <a href="{{ route('schools.assessments.create', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id]) }}"
-                    class="btn btn-outline-secondary btn-sm">
+                <a href="{{ route('schools.classrooms.assessments.create', [$school, $classroom]) }}"
+                   class="btn btn-outline-secondary btn-sm">
                     Lançar nova avaliação
                 </a>
 
-                <a href="{{ $backUrl }}" class="btn btn-outline-primary btn-sm">
+                <a href="{{ route('schools.classrooms.assessments.index', [$school, $classroom]) }}"
+                   class="btn btn-outline-secondary btn-sm">
                     Voltar para lista
                 </a>
             </div>
@@ -47,42 +53,42 @@
             </div>
         </div>
 
-        <div class="card">
+        {{-- Tabela de notas (roster da data) --}}
+        <div class="card mb-3">
             <div class="card-header">
-                Notas dos alunos ({{ $grades->count() }})
+                Notas dos alunos ({{ is_countable($roster) ? count($roster) : (method_exists($roster,'count') ? $roster->count() : 0) }})
             </div>
             <div class="card-body p-0">
-                @if ($grades->isEmpty())
+                @if (empty($roster) || (is_countable($roster) && count($roster) === 0) || (method_exists($roster,'count') && $roster->count() === 0))
                     <p class="p-3 mb-0 text-muted">
-                        Nenhuma nota registrada para esta avaliação.
+                        Nenhum aluno no grupo na data desta avaliação.
                     </p>
                 @else
                     <div class="table-responsive">
-                        <table class="table table-sm mb-0 align-middle">
-                            <thead>
+                        <table class="table align-middle mb-0">
+                            <thead class="table-light">
                                 <tr>
                                     <th>Aluno</th>
-                                    <th>Ano</th>
-                                    <th>Nota</th>
+                                    <th style="width: 16%;">Ano</th>
+                                    <th style="width: 20%;">Nota</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach ($grades as $grade)
+                                @foreach ($roster as $enrollment)
                                     @php
-                                        $enrollment = $grade->enrollment;
                                         $student = $enrollment->student;
+                                        $grade = $gradesByEnrollment[$enrollment->id] ?? null;
                                     @endphp
                                     <tr>
-                                        <td>{{ $student->name }}</td>
-                                        <td>{{ optional($enrollment->gradeLevel)->short_name ?? (optional($enrollment->gradeLevel)->name ?? '—') }}
+                                        <td>{{ $student->display_name ?? ($student->name ?? '—') }}</td>
+                                        <td>
+                                            {{ optional($enrollment->gradeLevel)->short_name ?? (optional($enrollment->gradeLevel)->name ?? '—') }}
                                         </td>
                                         <td>
                                             @if ($assessment->scale_type === 'points')
-                                                {{-- Escala numérica: mostra só o valor em pontos --}}
-                                                {{ $grade->score_points !== null ? number_format($grade->score_points, 1, ',', '.') : '—' }}
+                                                {{ $grade && $grade->score_points !== null ? number_format((float) $grade->score_points, 1, ',', '.') : '—' }}
                                             @else
-                                                {{-- Escala conceito: mostra só o conceito, sem pontos ao lado --}}
-                                                {{ $grade->score_concept ? ucfirst(str_replace('_', ' ', $grade->score_concept)) : '—' }}
+                                                {{ $grade && $grade->score_concept ? ucfirst(str_replace('_', ' ', $grade->score_concept)) : '—' }}
                                             @endif
                                         </td>
                                     </tr>
@@ -93,36 +99,37 @@
                 @endif
             </div>
         </div>
-        {{-- Card de estatísticas para pontos --}}
+
+        {{-- Estatísticas para pontos --}}
         @if ($assessment->scale_type === 'points' && !empty($numericStats))
             <div class="card mb-3">
                 <div class="card-body row g-3">
                     <div class="col-md-3">
                         <strong>Média da turma</strong><br>
                         <span class="fs-4">
-                            {{ number_format($numericStats['avg'], 1, ',', '.') }}
+                            {{ number_format((float) $numericStats['avg'], 1, ',', '.') }}
                         </span>
                         <span class="text-muted">
-                            / {{ number_format($numericStats['max_points'], 1, ',', '.') }}
+                            / {{ number_format((float) $numericStats['max_points'], 1, ',', '.') }}
                         </span>
                     </div>
                     <div class="col-md-3">
                         <strong>Maior nota</strong><br>
-                        {{ number_format($numericStats['max'], 1, ',', '.') }}
+                        {{ number_format((float) $numericStats['max'], 1, ',', '.') }}
                     </div>
                     <div class="col-md-3">
                         <strong>Menor nota</strong><br>
-                        {{ number_format($numericStats['min'], 1, ',', '.') }}
+                        {{ number_format((float) $numericStats['min'], 1, ',', '.') }}
                     </div>
                     <div class="col-md-3">
                         <strong>Alunos com nota</strong><br>
-                        {{ $numericStats['count'] }} de {{ $grades->count() }}
+                        {{ $numericStats['count'] }}
                     </div>
                 </div>
             </div>
         @endif
 
-        {{-- Card de distribuição de conceitos --}}
+        {{-- Distribuição de conceitos --}}
         @if ($assessment->scale_type === 'concept' && !empty($conceptStats))
             <div class="card mb-3">
                 <div class="card-body">
@@ -140,6 +147,6 @@
                 </div>
             </div>
         @endif
-
     </div>
 @endsection
+

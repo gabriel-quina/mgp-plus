@@ -19,16 +19,17 @@
 <body>
     @auth
         @php
+            /** @var \App\Models\User $user */
             $user = auth()->user();
 
-            // Equipe empresa + Master
+            // Equipe empresa + Master (RBAC novo)
             $canSeeMasterNav =
-                $user->is_master ||
-                $user->hasRole('company_coordinator') ||
-                $user->hasRole('company_consultant') ||
-                !empty($user->role); // fallback opcional caso você use users.role
+                ($user->is_master ?? false)
+                || $user->companyRoleAssignments()->exists()
+                || !empty($user->role); // fallback opcional caso você use users.role
         @endphp
-        @include('partials.navbar-account')
+
+        @include('partials.navbar-account', ['canSeeMasterNav' => $canSeeMasterNav])
     @endauth
 
     <main class="container py-4">
@@ -42,3 +43,4 @@
 </body>
 
 </html>
+

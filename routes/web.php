@@ -15,6 +15,7 @@ Route::get('/', function () {
         return redirect()->route('login');
     }
 
+    /** @var \App\Models\User $user */
     $user = Auth::user();
 
     $actingScope = session('acting_scope');
@@ -24,20 +25,22 @@ Route::get('/', function () {
         return redirect()->route('schools.dashboard', ['school' => (int) $actingSchoolId]);
     }
 
+    // Admin/company: master ou qualquer role de company ou escopo company
     $isAdmin =
         ($user->is_master ?? false)
-        || (
-            method_exists($user, 'hasRole')
-            && (
-                $user->hasRole('company_coordinator')
-                || $user->hasRole('company_consultant')
-                || $user->hasRole('admin')
-                || $user->hasRole('master')
-            )
-        );
+        || $user->companyRoleAssignments()->exists()
+        || ($user->scopeType() === 'company');
 
     if ($isAdmin) {
         return redirect()->route('admin.dashboard');
+    }
+
+    // Usuário de escola: tenta resolver uma escola padrão
+    $actingSchool = method_exists($user, 'actingSchool') ? $user->actingSchool() : null;
+
+    if ($actingSchool) {
+        session(['acting_scope' => 'school', 'acting_school_id' => (int) $actingSchool->id]);
+        return redirect()->route('schools.dashboard', ['school' => (int) $actingSchool->id]);
     }
 
     abort(404);

@@ -153,7 +153,7 @@
                                     <td>{{ $classroom->gradeLevels->pluck('short_name')->filter()->join(', ') ?: $classroom->gradeLevels->pluck('name')->join(', ') }}
                                     </td>
                                     <td class="text-end">
-                                        <a href="{{ route('classrooms.show', $classroom) }}"
+                                        <a href="{{ route('schools.classrooms.show', ['school' => $school, 'classroom' => $classroom]) }}"
                                             class="btn btn-sm btn-outline-secondary">Ver</a>
                                     </td>
                                 </tr>

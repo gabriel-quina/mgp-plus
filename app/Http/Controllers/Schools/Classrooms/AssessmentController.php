@@ -7,273 +7,293 @@ use App\Models\Assessment;
 use App\Models\AssessmentGrade;
 use App\Models\Classroom;
 use App\Models\School;
-use App\Models\StudentEnrollment;
-use App\Models\Workshop;
-use App\Models\WorkshopAllocation;
-use App\Services\AssessmentStatsService;
+use App\Models\Teacher;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class AssessmentController extends Controller
 {
-    public function __construct(
-        protected AssessmentStatsService $statsService,
-    ) {}
+    private function resolveTeacherForUser(User $user): ?Teacher
+    {
+        if (Schema::hasTable('teachers') && Schema::hasColumn('teachers', 'cpf') && !empty($user->cpf)) {
+            $cpf = preg_replace('/\D+/', '', (string) $user->cpf) ?: null;
+            if ($cpf) {
+                $t = Teacher::query()->where('cpf', $cpf)->first();
+                if ($t) return $t;
+            }
+        }
+
+        if (Schema::hasTable('teachers') && Schema::hasColumn('teachers', 'email') && !empty($user->email)) {
+            $t = Teacher::query()->where('email', $user->email)->first();
+            if ($t) return $t;
+        }
+
+        return null;
+    }
+
+    private function hasSchoolAccess(User $user, School $school): bool
+    {
+        if ($user->is_master) return true;
+
+        return $user->schoolRoleAssignments()
+            ->where('school_id', $school->id)
+            ->exists();
+    }
 
     /**
-     * Lista avaliações de um grupo (Turma PAI ou Subturma) + oficina.
-     *
-     * Rota nova:
-     * GET /escolas/{school}/grupos/{classroom}/oficinas/{workshop}/avaliacoes
-     * name: schools.assessments.index
+     * Regra atual (sem permissions específicas):
+     * - master: pode
+     * - não-master: precisa ter acesso à escola + estar vinculado a Teacher
      */
-    public function index(School $school, Classroom $classroom, Workshop $workshop)
+    private function authorizeAssessmentLaunch(School $school): void
     {
-        // Coerência de escopo: classroom precisa ser da escola da URL
-        abort_unless((int) $classroom->school_id === (int) $school->id, 404);
+        /** @var User|null $user */
+        $user = auth()->user();
 
-        $classroom->loadMissing('school', 'gradeLevels', 'workshops');
+        if (! $user) {
+            abort(403, 'Não autenticado.');
+        }
 
-        // Oficina vinculada a ESSA turma (pivot/classroom_workshop)
-        $workshopForClass = $classroom->workshops->firstWhere('id', $workshop->id);
-        abort_if(! $workshopForClass, 404);
+        if (! $this->hasSchoolAccess($user, $school)) {
+            abort(403, 'Sem acesso a esta escola.');
+        }
 
-        $assessments = Assessment::query()
-            ->where('classroom_id', $classroom->id)
-            ->where('workshop_id', $workshopForClass->id)
+        if (! $user->is_master) {
+            $teacher = $this->resolveTeacherForUser($user);
+            if (! $teacher) {
+                abort(403, 'Usuário não está vinculado a um professor (Teacher).');
+            }
+        }
+    }
+
+    public function index(School $school, Classroom $classroom)
+    {
+        $this->authorizeAssessmentLaunch($school);
+
+        $classroom->loadMissing(['school', 'gradeLevels', 'schoolWorkshop.workshop']);
+
+        $assessments = $classroom->assessments()
             ->withCount('grades')
             ->orderByDesc('due_at')
-            ->orderByDesc('id')
-            ->paginate(10);
+            ->orderByDesc('created_at')
+            ->paginate(30);
 
-        // Back dentro do escopo escola (limpo e consistente)
-        $backUrl = route('schools.classrooms.show', [
-            'school' => $school->id,
-            'classroom' => $classroom->id,
-        ]);
+        $user = auth()->user();
+        $teacher = $user ? $this->resolveTeacherForUser($user) : null;
 
-        return view('assessments.index', [
-            'classroom' => $classroom,
-            'workshop' => $workshopForClass,
-            'assessments' => $assessments,
-            'backUrl' => $backUrl,
+        $canLaunch = $user && $this->hasSchoolAccess($user, $school) && ($user->is_master || (bool) $teacher);
+
+        return view('schools.assessments.index', compact('school', 'classroom', 'assessments', 'canLaunch'));
+    }
+
+    public function create(Request $request, School $school, Classroom $classroom)
+    {
+        $this->authorizeAssessmentLaunch($school);
+
+        $classroom->loadMissing(['school', 'gradeLevels', 'schoolWorkshop.workshop']);
+
+        $dueAt = Carbon::parse($request->input('due_at', now()->toDateString()))->startOfDay();
+
+        // Convenção importante: roster endOfDay (evita "sumir aluno" em transferência no mesmo dia)
+        $roster = $classroom->rosterAt($dueAt->copy()->endOfDay());
+
+        return view('schools.assessments.create', [
             'school' => $school,
+            'classroom' => $classroom,
+            'dueAt' => $dueAt,
+            'roster' => $roster,
         ]);
     }
 
-    /**
-     * Tela de criação + lançamento de notas de uma avaliação.
-     *
-     * GET /escolas/{school}/grupos/{classroom}/oficinas/{workshop}/avaliacoes/criar
-     * name: schools.assessments.create
-     */
-    public function create(School $school, Classroom $classroom, Workshop $workshop)
+    public function store(Request $request, School $school, Classroom $classroom)
     {
-        abort_unless((int) $classroom->school_id === (int) $school->id, 404);
-
-        $classroom->loadMissing('school', 'gradeLevels', 'workshops');
-
-        $workshopForClass = $classroom->workshops->firstWhere('id', $workshop->id);
-        abort_if(! $workshopForClass, 404);
-
-        $enrollments = $this->resolveEnrollments($classroom, $workshopForClass);
-
-        return view('assessments.create', [
-            'classroom' => $classroom,
-            'workshop' => $workshopForClass,
-            'enrollments' => $enrollments,
-            'school' => $school,
-        ]);
-    }
-
-    /**
-     * Salva avaliação + notas.
-     *
-     * POST /escolas/{school}/grupos/{classroom}/oficinas/{workshop}/avaliacoes
-     * name: schools.assessments.store
-     */
-    public function store(Request $request, School $school, Classroom $classroom, Workshop $workshop)
-    {
-        abort_unless((int) $classroom->school_id === (int) $school->id, 404);
-
-        $classroom->loadMissing('school', 'gradeLevels', 'workshops');
-
-        $workshopForClass = $classroom->workshops->firstWhere('id', $workshop->id);
-        abort_if(! $workshopForClass, 404);
+        $this->authorizeAssessmentLaunch($school);
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'due_at' => ['nullable', 'date'],
+            'due_at' => ['required', 'date'],
             'scale_type' => ['required', 'in:points,concept'],
-
-            // 0–100
-            'max_points' => ['required', 'numeric', 'min:0', 'max:100'],
-
-            'grades_points' => ['nullable', 'array'],
-            'grades_points.*' => ['nullable', 'numeric', 'min:0', 'max:100'],
-
-            'grades_concept' => ['nullable', 'array'],
-            'grades_concept.*' => ['nullable', 'in:ruim,regular,bom,muito_bom,excelente'],
+            'max_points' => ['nullable', 'numeric', 'min:0', 'max:1000'],
+            'grades_points' => ['array'],
+            'grades_points.*' => ['nullable', 'numeric', 'min:0', 'max:1000'],
+            'grades_concept' => ['array'],
+            'grades_concept.*' => ['nullable', 'string'],
         ]);
 
-        $assessment = Assessment::create([
-            'classroom_id' => $classroom->id,
-            'workshop_id' => $workshopForClass->id,
-            'title' => $data['title'],
-            'description' => $data['description'] ?? null,
-            'due_at' => $data['due_at'] ?? null,
-            'scale_type' => $data['scale_type'],
-            'max_points' => $data['max_points'],
-        ]);
+        $dueAt = Carbon::parse($data['due_at'])->startOfDay();
+        $scale = $data['scale_type'];
 
-        $enrollments = $this->resolveEnrollments($classroom, $workshopForClass);
+        $roster = $classroom->rosterAt($dueAt->copy()->endOfDay());
+        $allowedEnrollmentIds = $roster->pluck('id')->map(fn ($id) => (int) $id)->all();
 
-        $pointsInput = collect($data['grades_points'] ?? []);
-        $conceptInput = collect($data['grades_concept'] ?? []);
+        $gradesPoints = (array)($data['grades_points'] ?? []);
+        $gradesConcept = (array)($data['grades_concept'] ?? []);
 
-        // Se re-lançar, apaga as antigas
-        $assessment->grades()->delete();
+        // ids presentes no payload (pontos ou conceito)
+        $payloadIds = collect(array_merge(array_keys($gradesPoints), array_keys($gradesConcept)))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
 
-        $now = now();
-        $rows = [];
+        // bloqueia nota para aluno fora do roster
+        $diff = array_diff($payloadIds, $allowedEnrollmentIds);
+        if (! empty($diff)) {
+            return back()
+                ->withErrors(['grades' => 'Há notas para alunos que não pertencem ao grupo nesta data.'])
+                ->withInput();
+        }
 
-        foreach ($enrollments as $enrollment) {
-            if ($data['scale_type'] === 'points') {
-                $rawPoints = $pointsInput->get($enrollment->id);
+        // max_points (para concept mantém um default seguro)
+        $maxPoints = isset($data['max_points']) && $data['max_points'] !== ''
+            ? (float) $data['max_points']
+            : 100.0;
 
-                if ($rawPoints === null || $rawPoints === '') {
+        // validação: points não pode ultrapassar max_points
+        if ($scale === 'points') {
+            foreach ($gradesPoints as $enrollmentId => $points) {
+                if ($points === null || $points === '') continue;
+                if ((float) $points > $maxPoints) {
+                    return back()
+                        ->withErrors(['grades_points' => "Há nota acima do máximo definido ({$maxPoints})."])
+                        ->withInput();
+                }
+            }
+        }
+
+        // validação: concept deve estar na lista
+        if ($scale === 'concept') {
+            foreach ($gradesConcept as $enrollmentId => $concept) {
+                $c = trim((string) $concept);
+                if ($c === '') continue;
+                if (! in_array($c, AssessmentGrade::CONCEPTS, true)) {
+                    return back()
+                        ->withErrors(['grades_concept' => 'Há um conceito inválido.'])
+                        ->withInput();
+                }
+            }
+        }
+
+        return DB::transaction(function () use ($classroom, $school, $data, $dueAt, $scale, $maxPoints, $gradesPoints, $gradesConcept, $allowedEnrollmentIds) {
+            $assessment = $classroom->assessments()->create([
+                'title' => $data['title'],
+                'description' => $data['description'] ?? null,
+                'due_at' => $dueAt->toDateString(),
+                'scale_type' => $scale,
+                'max_points' => $maxPoints,
+            ]);
+
+            $now = now();
+            $rows = [];
+
+            // percorre roster (não o payload) para consistência
+            foreach ($allowedEnrollmentIds as $enrollmentId) {
+                $enrollmentId = (int) $enrollmentId;
+
+                $scorePoints = null;
+                $scoreConcept = null;
+
+                if ($scale === 'points') {
+                    $v = $gradesPoints[$enrollmentId] ?? null;
+                    $v = ($v === '' ? null : $v);
+                    $scorePoints = ($v === null ? null : (float) $v);
+                } else {
+                    $v = $gradesConcept[$enrollmentId] ?? null;
+                    $v = trim((string) $v);
+                    $scoreConcept = ($v === '' ? null : $v);
+                }
+
+                // grava apenas se tiver nota
+                if ($scorePoints === null && $scoreConcept === null) {
                     continue;
                 }
 
                 $rows[] = [
                     'assessment_id' => $assessment->id,
-                    'student_enrollment_id' => $enrollment->id,
-                    'score_points' => (float) $rawPoints,
-                    'score_concept' => null,
-                    'notes' => null,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
-            } else {
-                $concept = $conceptInput->get($enrollment->id);
-
-                if ($concept === null || $concept === '') {
-                    continue;
-                }
-
-                $rows[] = [
-                    'assessment_id' => $assessment->id,
-                    'student_enrollment_id' => $enrollment->id,
-                    'score_points' => null,
-                    'score_concept' => $concept,
+                    'student_enrollment_id' => $enrollmentId,
+                    'score_points' => $scorePoints,
+                    'score_concept' => $scoreConcept,
                     'notes' => null,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
             }
-        }
 
-        if (! empty($rows)) {
-            AssessmentGrade::insert($rows);
-        }
-
-        return redirect()
-            ->route('schools.assessments.show', [
-                'school' => $school->id,
-                'classroom' => $classroom->id,
-                'workshop' => $workshopForClass->id,
-                'assessment' => $assessment->id,
-            ])
-            ->with('status', 'Avaliação lançada com sucesso!');
-    }
-
-    /**
-     * Mostra os detalhes de uma avaliação (com notas).
-     *
-     * GET /escolas/{school}/grupos/{classroom}/oficinas/{workshop}/avaliacoes/{assessment}
-     * name: schools.assessments.show
-     */
-    public function show(School $school, Classroom $classroom, Workshop $workshop, Assessment $assessment)
-    {
-        abort_unless((int) $classroom->school_id === (int) $school->id, 404);
-
-        // Garante que a oficina pertence à turma
-        $classroom->loadMissing('workshops');
-        $workshopForClass = $classroom->workshops->firstWhere('id', $workshop->id);
-        abort_if(! $workshopForClass, 404);
-
-        abort_if(
-            $assessment->classroom_id !== $classroom->id ||
-            $assessment->workshop_id !== $workshopForClass->id,
-            404
-        );
-
-        $assessment->load([
-            'classroom.school',
-            'workshop',
-            'grades.enrollment.student',
-            'grades.enrollment.gradeLevel',
-        ]);
-
-        $stats = $this->statsService->forAssessment($assessment);
-
-        $grades = $assessment->grades
-            ->sortBy(fn ($g) => mb_strtolower($g->enrollment->student->name));
-
-        $backUrl = route('schools.assessments.index', [
-            'school' => $school->id,
-            'classroom' => $classroom->id,
-            'workshop' => $workshopForClass->id,
-        ]);
-
-        return view('assessments.show', [
-            'assessment' => $assessment,
-            'grades' => $grades,
-            'classroom' => $classroom,
-            'workshop' => $workshopForClass,
-            'backUrl' => $backUrl,
-            'numericStats' => $stats['numeric'],
-            'conceptStats' => $stats['concept'],
-            'school' => $school,
-        ]);
-    }
-
-    /**
-     * Mesmo critério de grupo do LessonController:
-     * - Turma PAI: eligibleEnrollments
-     * - Subturma: WorkshopAllocation (child_classroom_id + workshop_id)
-     */
-    protected function resolveEnrollments(Classroom $classroom, Workshop $workshop)
-    {
-        // TURMA PAI → turma inteira elegível
-        if (is_null($classroom->parent_classroom_id)) {
-            if (! method_exists($classroom, 'eligibleEnrollments')) {
-                return collect();
+            if (! empty($rows)) {
+                AssessmentGrade::upsert(
+                    $rows,
+                    ['assessment_id', 'student_enrollment_id'],
+                    ['score_points', 'score_concept', 'notes', 'updated_at']
+                );
             }
 
-            return $classroom->eligibleEnrollments()
-                ->with(['student', 'gradeLevel'])
-                ->get()
-                ->sortBy(fn ($e) => mb_strtolower(optional($e->student)->name ?? ''))
+            return redirect()
+                ->route('schools.classrooms.assessments.show', [$school, $classroom, $assessment])
+                ->with('success', 'Avaliação salva com sucesso.');
+        });
+    }
+
+    public function show(School $school, Classroom $classroom, Assessment $assessment)
+    {
+        $this->authorizeAssessmentLaunch($school);
+
+        abort_unless((int) $assessment->classroom_id === (int) $classroom->id, 404);
+
+        $classroom->loadMissing(['school', 'gradeLevels', 'schoolWorkshop.workshop']);
+        $assessment->load(['grades.enrollment.student', 'grades.enrollment.gradeLevel']);
+
+        $dueAt = $assessment->due_at ? Carbon::parse($assessment->due_at)->startOfDay() : now()->startOfDay();
+
+        $roster = $classroom->rosterAt($dueAt->copy()->endOfDay());
+        $gradesByEnrollment = $assessment->grades->keyBy('student_enrollment_id');
+
+        $numericStats = null;
+        $conceptStats = null;
+
+        if ($assessment->scale_type === 'points') {
+            $vals = $assessment->grades
+                ->pluck('score_points')
+                ->filter(fn ($v) => $v !== null)
+                ->map(fn ($v) => (float) $v)
                 ->values();
+
+            if ($vals->count() > 0) {
+                $numericStats = [
+                    'avg' => $vals->avg(),
+                    'max' => $vals->max(),
+                    'min' => $vals->min(),
+                    'count' => $vals->count(),
+                    'max_points' => (float) ($assessment->max_points ?? 100.0),
+                ];
+            }
+        } else {
+            $dist = [];
+            foreach (AssessmentGrade::CONCEPTS as $c) $dist[$c] = 0;
+            $dist[null] = 0;
+
+            foreach ($roster as $en) {
+                $g = $gradesByEnrollment[$en->id] ?? null;
+                $c = $g?->score_concept ? (string) $g->score_concept : null;
+                if (! array_key_exists($c, $dist)) $dist[$c] = 0;
+                $dist[$c]++;
+            }
+
+            $conceptStats = ['distribution' => $dist];
         }
 
-        // SUBTURMA → alocados via WorkshopAllocation
-        $allocatedIds = WorkshopAllocation::query()
-            ->where('child_classroom_id', $classroom->id)
-            ->where('workshop_id', $workshop->id)
-            ->pluck('student_enrollment_id');
-
-        if ($allocatedIds->isEmpty()) {
-            return collect();
-        }
-
-        return StudentEnrollment::query()
-            ->with(['student', 'gradeLevel', 'school'])
-            ->join('students', 'students.id', '=', 'student_enrollments.student_id')
-            ->whereIn('student_enrollments.id', $allocatedIds)
-            ->orderBy('students.name')
-            ->select('student_enrollments.*')
-            ->get();
+        return view('schools.assessments.show', compact(
+            'school',
+            'classroom',
+            'assessment',
+            'roster',
+            'gradesByEnrollment',
+            'numericStats',
+            'conceptStats'
+        ));
     }
 }
+

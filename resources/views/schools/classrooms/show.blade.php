@@ -94,6 +94,16 @@
                     Alunos do grupo
                 </a>
 
+                <a href="{{ route('schools.classrooms.lessons.index', [$school, $classroom]) }}"
+                    class="btn btn-outline-primary btn-sm">
+                    Aulas
+                </a>
+                <a href="{{ route('schools.classrooms.assessments.index', [$school, $classroom]) }}"
+                    class="btn btn-outline-primary btn-sm">
+                    Avaliações
+                </a>
+
+
                 @if (\Illuminate\Support\Facades\Route::has('schools.classrooms.edit'))
                     <a href="{{ route('schools.classrooms.edit', [$school, $classroom]) }}"
                         class="btn btn-outline-primary btn-sm">

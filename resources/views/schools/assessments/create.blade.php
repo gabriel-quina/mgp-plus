@@ -4,30 +4,35 @@
 
 @section('content')
     @php
-        // Escala atual (para manter estado em caso de erro de validação)
+        $classroom->loadMissing(['school', 'gradeLevels', 'schoolWorkshop.workshop']);
+        $school = $school ?? $classroom->school;
+        $workshop = $classroom->workshop;
+
         $scale = old('scale_type', 'points');
+        $dueAtValue = old('due_at', ($dueAt ?? now())->toDateString());
     @endphp
 
-    <div class="container">
+    <div class="container-xxl">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
-                <h1 class="h4 mb-1">Lançar avaliação – {{ $classroom->name }}</h1>
+                <h1 class="h3 mb-1">Lançar avaliação – {{ $classroom->name }}</h1>
                 <div class="text-muted small">
-                    {{ $classroom->school->name ?? '—' }} ·
-                    Ano {{ $classroom->academic_year }} ·
-                    {{ $classroom->shift ?? '—' }}<br>
-                    Oficina: <strong>{{ $workshop->name }}</strong>
+                    Escola: <strong>{{ $school->name ?? '—' }}</strong> ·
+                    Ano letivo: <strong>{{ $classroom->academic_year ?? '—' }}</strong> ·
+                    Turno: <strong>{{ $classroom->shift ?? '—' }}</strong><br>
+                    Oficina: <strong>{{ $workshop?->name ?? '—' }}</strong>
                 </div>
             </div>
 
-            <a href="{{ route('schools.assessments.index', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id]) }}"
-                class="btn btn-outline-secondary btn-sm">
+            <a href="{{ route('schools.classrooms.assessments.index', [$school, $classroom]) }}"
+               class="btn btn-outline-secondary btn-sm">
                 Voltar
             </a>
         </div>
 
         @if ($errors->any())
             <div class="alert alert-danger">
+                <strong>Erro:</strong>
                 <ul class="mb-0">
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
@@ -36,7 +41,7 @@
             </div>
         @endif
 
-        <form action="{{ route('schools.assessments.store', ['school' => $school->id, 'classroom' => $classroom->id, 'workshop' => $workshop->id]) }}" method="POST">
+        <form action="{{ route('schools.classrooms.assessments.store', [$school, $classroom]) }}" method="POST">
             @csrf
 
             {{-- Card de dados da avaliação --}}
@@ -50,7 +55,7 @@
 
                     <div class="col-md-3">
                         <label class="form-label">Data</label>
-                        <input type="date" name="due_at" class="form-control" value="{{ old('due_at') }}">
+                        <input type="date" name="due_at" class="form-control" value="{{ $dueAtValue }}" required>
                     </div>
 
                     <div class="col-md-3">
@@ -67,10 +72,11 @@
 
                     <div class="col-md-2">
                         <label class="form-label">Máx. pontos</label>
-                        <input type="number" name="max_points" class="form-control" min="0" max="100"
-                            step="0.1" value="{{ old('max_points', 100) }}" id="max_points">
+                        <input type="number" name="max_points" class="form-control"
+                               min="0" max="1000" step="0.1"
+                               value="{{ old('max_points', 100) }}" id="max_points">
                         <small class="text-muted">
-                            Defina o valor máximo da avaliação (0 a 100).
+                            Valor máximo (usado apenas na escala por pontos).
                         </small>
                     </div>
 
@@ -84,23 +90,25 @@
             {{-- Card de notas --}}
             <div class="card">
                 <div class="card-header">
-                    Notas dos alunos ({{ $enrollments->count() }})
+                    Notas dos alunos ({{ is_countable($roster) ? count($roster) : (method_exists($roster,'count') ? $roster->count() : 0) }})
+                    <div class="text-muted small mt-1">
+                        Roster baseado em <strong>endOfDay</strong> da data da avaliação (evita inconsistências em transferências no mesmo dia).
+                    </div>
                 </div>
+
                 <div class="card-body p-0">
-                    @if ($enrollments->isEmpty())
+                    @if (empty($roster) || (is_countable($roster) && count($roster) === 0) || (method_exists($roster,'count') && $roster->count() === 0))
                         <p class="p-3 mb-0 text-muted">
-                            Nenhum aluno neste grupo.
+                            Nenhum aluno neste grupo na data informada.
                         </p>
                     @else
                         <div class="table-responsive">
-                            <table class="table table-sm mb-0 align-middle">
-                                <thead>
+                            <table class="table align-middle mb-0">
+                                <thead class="table-light">
                                     <tr>
                                         <th>Aluno</th>
-                                        <th>CPF</th>
-                                        <th>Ano</th>
-
-                                        {{-- Cabeçalho de pontos / conceito, alternando por escala --}}
+                                        <th style="width: 18%;">CPF</th>
+                                        <th style="width: 14%;">Ano</th>
                                         <th class="col-points" style="{{ $scale === 'points' ? '' : 'display:none;' }}">
                                             Pontos
                                         </th>
@@ -110,28 +118,28 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($enrollments as $enrollment)
+                                    @foreach ($roster as $enrollment)
                                         @php $st = $enrollment->student; @endphp
                                         <tr>
-                                            <td>{{ $st->name }}</td>
+                                            <td>{{ $st->display_name ?? ($st->name ?? '—') }}</td>
                                             <td>{{ $st->cpf_formatted ?? ($st->cpf ?? '—') }}</td>
                                             <td>
                                                 {{ optional($enrollment->gradeLevel)->short_name ?? (optional($enrollment->gradeLevel)->name ?? '—') }}
                                             </td>
 
-                                            {{-- Coluna de pontos --}}
-                                            <td class="col-points"
-                                                style="{{ $scale === 'points' ? '' : 'display:none;' }}">
-                                                <input type="number" name="grades_points[{{ $enrollment->id }}]"
-                                                    class="form-control form-control-sm" min="0" max="100"
-                                                    step="0.1" value="{{ old('grades_points.' . $enrollment->id) }}">
+                                            {{-- Pontos --}}
+                                            <td class="col-points" style="{{ $scale === 'points' ? '' : 'display:none;' }}">
+                                                <input type="number"
+                                                       name="grades_points[{{ $enrollment->id }}]"
+                                                       class="form-control form-control-sm"
+                                                       min="0" max="1000" step="0.1"
+                                                       value="{{ old('grades_points.' . $enrollment->id) }}">
                                             </td>
 
-                                            {{-- Coluna de conceito --}}
-                                            <td class="col-concept"
-                                                style="{{ $scale === 'concept' ? '' : 'display:none;' }}">
+                                            {{-- Conceito --}}
+                                            <td class="col-concept" style="{{ $scale === 'concept' ? '' : 'display:none;' }}">
                                                 <select name="grades_concept[{{ $enrollment->id }}]"
-                                                    class="form-select form-select-sm">
+                                                        class="form-select form-select-sm">
                                                     <option value="">—</option>
                                                     @foreach (\App\Models\AssessmentGrade::CONCEPTS as $concept)
                                                         <option value="{{ $concept }}" @selected(old('grades_concept.' . $enrollment->id) === $concept)>
@@ -148,7 +156,10 @@
                     @endif
                 </div>
 
-                <div class="card-footer text-end">
+                <div class="card-footer d-flex justify-content-between align-items-center">
+                    <div class="text-muted small">
+                        Você pode deixar notas em branco; apenas notas preenchidas serão registradas.
+                    </div>
                     <button type="submit" class="btn btn-primary">
                         Salvar avaliação
                     </button>
@@ -157,17 +168,15 @@
         </form>
     </div>
 
-    {{-- Script simples pra alternar pontos x conceito e travar max_points quando for conceito --}}
+    {{-- Alterna pontos x conceito e trava max_points quando for conceito --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const scaleSelect = document.getElementById('scale_type');
             const maxPointsInput = document.getElementById('max_points');
 
             function applyScale() {
-                if (!scaleSelect) return;
-                const type = scaleSelect.value;
+                const type = scaleSelect ? scaleSelect.value : 'points';
 
-                // mostra/esconde colunas
                 document.querySelectorAll('.col-points').forEach(function(el) {
                     el.style.display = (type === 'points') ? '' : 'none';
                 });
@@ -175,16 +184,14 @@
                     el.style.display = (type === 'concept') ? '' : 'none';
                 });
 
-                // habilita/desabilita (readonly) max_points
                 if (maxPointsInput) {
                     maxPointsInput.readOnly = (type !== 'points');
                 }
             }
 
             applyScale();
-            if (scaleSelect) {
-                scaleSelect.addEventListener('change', applyScale);
-            }
+            if (scaleSelect) scaleSelect.addEventListener('change', applyScale);
         });
     </script>
 @endsection
+

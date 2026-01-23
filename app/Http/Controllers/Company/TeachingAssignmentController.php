@@ -4,11 +4,79 @@ namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\{StoreTeachingAssignmentRequest, UpdateTeachingAssignmentRequest};
-use App\Models\{RoleAssignment, School, Teacher, TeachingAssignment, User};
+use App\Models\{
+    School,
+    Teacher,
+    TeachingAssignment,
+    User,
+    UserScope,
+    SchoolRole,
+    SchoolRoleAssignment
+};
 use Illuminate\Database\QueryException;
 
 class TeachingAssignmentController extends Controller
 {
+    private function normalizedCpf(?string $cpf): ?string
+    {
+        $cpf = preg_replace('/\D+/', '', (string) $cpf) ?: null;
+        return $cpf ?: null;
+    }
+
+    private function userForTeacher(Teacher $teacher): ?User
+    {
+        $cpf = $this->normalizedCpf($teacher->cpf);
+        if (! $cpf) return null;
+
+        return User::query()->where('cpf', $cpf)->first();
+    }
+
+    private function teacherRoleId(): int
+    {
+        // Seu RbacSeeder cria school_roles com name = 'teacher'
+        $roleId = SchoolRole::query()->where('name', 'teacher')->value('id');
+
+        if (! $roleId) {
+            abort(500, "RBAC inconsistente: role 'teacher' não encontrada em school_roles.");
+        }
+
+        return (int) $roleId;
+    }
+
+    private function ensureTeacherHasSchoolAccess(User $user, int $schoolId): void
+    {
+        // Garante que o usuário esteja no escopo school
+        UserScope::query()->updateOrCreate(
+            ['user_id' => $user->id],
+            ['scope' => 'school']
+        );
+
+        // Garante a role 'teacher' para aquela escola (idempotente)
+        SchoolRoleAssignment::query()->firstOrCreate([
+            'user_id' => $user->id,
+            'school_role_id' => $this->teacherRoleId(),
+            'school_id' => $schoolId,
+        ]);
+    }
+
+    private function revokeTeacherSchoolAccessIfNoLongerAssigned(User $user, Teacher $teacher, int $schoolId): void
+    {
+        $stillAssigned = TeachingAssignment::query()
+            ->where('teacher_id', $teacher->id)
+            ->where('school_id', $schoolId)
+            ->exists();
+
+        if ($stillAssigned) {
+            return;
+        }
+
+        SchoolRoleAssignment::query()
+            ->where('user_id', $user->id)
+            ->where('school_id', $schoolId)
+            ->where('school_role_id', $this->teacherRoleId())
+            ->delete();
+    }
+
     public function create(Teacher $teacher)
     {
         // Cidades liberadas por acesso (our_*) + cidades de vínculos municipais ativos
@@ -17,18 +85,16 @@ class TeachingAssignmentController extends Controller
             ->where('engagement_type', 'municipal')
             ->where('status', 'active')
             ->pluck('city_id')
-            ->filter() // tira null
+            ->filter()
             ->all();
 
         $allowedCityIds = array_values(array_unique(array_merge($accessCityIds, $municipalCityIds)));
 
-        // Sugere só escolas em cidades onde ele pode atuar
         $schools = School::with('city')
             ->when(count($allowedCityIds) > 0, fn ($q) => $q->whereIn('city_id', $allowedCityIds))
             ->orderBy('name')
             ->get();
 
-        // Vínculos do professor (para escolher "qual financia", opcional)
         $engagements = $teacher->engagements()
             ->orderBy('engagement_type')
             ->orderByDesc('start_date')
@@ -42,23 +108,14 @@ class TeachingAssignmentController extends Controller
     public function store(Teacher $teacher, StoreTeachingAssignmentRequest $request)
     {
         $data = $request->validated();
-
-        // não precisa setar teacher_id manualmente, mas não faz mal
         $data['teacher_id'] = $teacher->id;
 
         $assignment = $teacher->assignments()->create($data);
 
-        // ✅ RBAC: alocação em escola gera acesso à escola
-        if ($teacher->cpf) {
-            $user = User::where('cpf', $teacher->cpf)->first();
-
-            if ($user) {
-                $assignment->load('school');
-
-                if ($assignment->school) {
-                    $user->assignRole('school_teacher', $assignment->school);
-                }
-            }
+        // ✅ RBAC (seu RBAC): alocação em escola => SchoolRoleAssignment 'teacher' para o User do professor
+        $user = $this->userForTeacher($teacher);
+        if ($user && $assignment->school_id) {
+            $this->ensureTeacherHasSchoolAccess($user, (int) $assignment->school_id);
         }
 
         return redirect()
@@ -102,20 +159,21 @@ class TeachingAssignmentController extends Controller
     {
         abort_unless($teaching_assignment->teacher_id === $teacher->id, 404);
 
-        $oldSchoolId = $teaching_assignment->school_id;
+        $oldSchoolId = (int) $teaching_assignment->school_id;
 
         $teaching_assignment->update($request->validated());
 
-        // ✅ Se mudou a escola, garante acesso à nova também
-        if ($teacher->cpf && $oldSchoolId != $teaching_assignment->school_id) {
-            $user = User::where('cpf', $teacher->cpf)->first();
+        $newSchoolId = (int) $teaching_assignment->school_id;
 
-            if ($user) {
-                $teaching_assignment->load('school');
+        $user = $this->userForTeacher($teacher);
 
-                if ($teaching_assignment->school) {
-                    $user->assignRole('school_teacher', $teaching_assignment->school);
-                }
+        if ($user && $newSchoolId) {
+            // Garante acesso à escola atual (se mudou ou não)
+            $this->ensureTeacherHasSchoolAccess($user, $newSchoolId);
+
+            // Se mudou a escola, revoga a antiga caso não exista mais alocação nela
+            if ($oldSchoolId && $oldSchoolId !== $newSchoolId) {
+                $this->revokeTeacherSchoolAccessIfNoLongerAssigned($user, $teacher, $oldSchoolId);
             }
         }
 
@@ -128,7 +186,7 @@ class TeachingAssignmentController extends Controller
     {
         abort_unless($teaching_assignment->teacher_id === $teacher->id, 404);
 
-        $schoolId = $teaching_assignment->school_id;
+        $schoolId = (int) $teaching_assignment->school_id;
 
         try {
             $teaching_assignment->delete();
@@ -140,34 +198,11 @@ class TeachingAssignmentController extends Controller
                 ->withErrors('Não foi possível excluir esta alocação. Verifique dependências (ex.: aulas).');
         }
 
-        // RBAC pós-delete: se falhar, não deve impedir o sucesso do delete
+        // ✅ RBAC pós-delete (best effort)
         try {
-            if ($schoolId && $teacher->cpf) {
-                $user = User::where('cpf', $teacher->cpf)->first();
-
-                if ($user) {
-                    $stillAssigned = TeachingAssignment::where('teacher_id', $teacher->id)
-                        ->where('school_id', $schoolId)
-                        ->exists();
-
-                    if (! $stillAssigned) {
-                        if (method_exists($user, 'removeRole')) {
-                            $school = School::find($schoolId);
-                            if ($school) {
-                                $user->removeRole('school_teacher', $school);
-                            }
-                        } else {
-                            RoleAssignment::query()
-                                ->where('user_id', $user->id)
-                                ->where('scope_type', School::class)
-                                ->where('scope_id', $schoolId)
-                                ->whereHas('role', function ($q) {
-                                    $q->where('name', 'school_teacher'); // <= troque slug por name
-                                })
-                                ->delete();
-                        }
-                    }
-                }
+            $user = $this->userForTeacher($teacher);
+            if ($user && $schoolId) {
+                $this->revokeTeacherSchoolAccessIfNoLongerAssigned($user, $teacher, $schoolId);
             }
         } catch (\Throwable $e) {
             report($e);
@@ -178,3 +213,4 @@ class TeachingAssignmentController extends Controller
             ->with('success', 'Alocação excluída com sucesso e acesso à escola atualizado.');
     }
 }
+
